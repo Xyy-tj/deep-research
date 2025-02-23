@@ -1,0 +1,82 @@
+.research-tree {
+    margin-left: 20px;
+    border-left: 2px solid #e5e7eb;
+    padding-left: 20px;
+}
+
+.research-item {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease-in-out;
+}
+
+.research-item:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(99, 102, 241, 0.3);
+    border-radius: 50%;
+    border-top-color: #6366f1;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Fade in animation for results */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#results > div {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Stagger children animations */
+#results > div:nth-child(1) { animation-delay: 0s; }
+#results > div:nth-child(2) { animation-delay: 0.2s; }
+#results > div:nth-child(3) { animation-delay: 0.4s; }
+
+/* Progress bar animation */
+@keyframes progressFill {
+    from { width: 0; }
+    to { width: var(--target-width); }
+}
+
+#progressBar {
+    transition: width 0.3s ease-in-out;
+}
+
+/* Link hover effects */
+a.source-link {
+    position: relative;
+    text-decoration: none;
+}
+
+a.source-link::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s ease;
+}
+
+a.source-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}

@@ -1,0 +1,583 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('researchForm');
+    const startButton = document.getElementById('startResearch');
+    const breadthInput = document.getElementById('breadth');
+    const depthInput = document.getElementById('depth');
+    const breadthValue = document.getElementById('breadthValue');
+    const depthValue = document.getElementById('depthValue');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const results = document.getElementById('results');
+    const interactiveDialog = document.getElementById('interactiveDialog');
+    const questionText = document.getElementById('questionText');
+    const answerInput = document.getElementById('answerInput');
+    const submitAnswer = document.getElementById('submitAnswer');
+
+    let currentResearchId = null;
+    let currentQuestionId = null;
+    let currentEventSource = null;
+
+    // Enable detailed console logging
+    const logger = {
+        debug: (...args) => console.debug('[Deep Research]', ...args),
+        info: (...args) => console.info('[Deep Research]', ...args),
+        error: (...args) => console.error('[Deep Research]', ...args)
+    };
+
+    // Update range input values
+    breadthInput.addEventListener('input', (e) => {
+        breadthValue.textContent = e.target.value;
+    });
+
+    depthInput.addEventListener('input', (e) => {
+        depthValue.textContent = e.target.value;
+    });
+
+    // Handle answer submission
+    submitAnswer.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const answer = answerInput.value.trim();
+        if (!answer || !currentResearchId) {
+            logger.error('Cannot submit answer: ', { answer, currentResearchId });
+            return;
+        }
+
+        try {
+            logger.info('Submitting answer:', { researchId: currentResearchId, answer });
+            const response = await fetch(`/api/research/${currentResearchId}/answer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ answer })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Hide the dialog after submitting
+            interactiveDialog.classList.add('hidden');
+            answerInput.value = '';
+            logger.info('Answer submitted successfully');
+        } catch (error) {
+            logger.error('Error submitting answer:', error);
+            alert('Failed to submit answer. Please try again.');
+        }
+    });
+
+    // Cleanup function for event source
+    function cleanupEventSource() {
+        if (currentEventSource) {
+            logger.info('Cleaning up event source');
+            currentEventSource.close();
+            currentEventSource = null;
+        }
+    }
+
+    // Handle research start
+    async function startResearch() {
+        const query = document.getElementById('query').value;
+        const breadth = parseInt(document.getElementById('breadth').value) || 4;
+        const depth = parseInt(document.getElementById('depth').value) || 2;
+
+        if (!query) {
+            logger.error('Missing query');
+            alert('Please enter a research topic');
+            return;
+        }
+
+        // Clear previous results and state
+        document.getElementById('results').innerHTML = '';
+        currentResearchId = null;
+        currentQuestionId = null;
+
+        // Show progress section
+        const progressSection = document.createElement('div');
+        progressSection.id = 'progress-section';
+        progressSection.className = 'mb-8';
+        progressSection.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 class="text-lg font-semibold mb-4">Research Progress</h3>
+                <div id="progress-bar" class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="progress-status" class="text-sm text-gray-600">Starting research...</p>
+                <div id="question-area" class="mt-4 hidden">
+                    <p id="question-text" class="text-sm font-medium text-gray-900 mb-2"></p>
+                    <div class="flex space-x-4">
+                        <button id="yes-button"
+                                class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                            Yes
+                        </button>
+                        <button id="no-button"
+                                class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                            No
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('results').appendChild(progressSection);
+
+        try {
+            // Start research
+            const response = await fetch('/api/research', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query, breadth, depth })
+            });
+
+            const data = await response.json();
+            if (!data.researchId) {
+                throw new Error('No research ID received');
+            }
+
+            // Store current research ID
+            currentResearchId = data.researchId;
+
+            // Start listening for events
+            const eventSource = new EventSource(`/api/events/${data.researchId}`);
+
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                logger.info('Received event:', data);
+
+                switch (data.type) {
+                    case 'progress':
+                        updateProgress(data.progress);
+                        break;
+                    case 'question':
+                        currentQuestionId = data.questionId;
+                        showQuestion(data.question);
+                        break;
+                    case 'result':
+                        logger.info('Displaying result:', data.result);
+                        displayResult(data.result);
+                        eventSource.close();
+                        break;
+                    case 'complete':
+                        eventSource.close();
+                        break;
+                    case 'error':
+                        logger.error('Research error:', data.error);
+                        alert(data.error);
+                        eventSource.close();
+                        break;
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                logger.error('EventSource failed:', error);
+                eventSource.close();
+                alert('Connection lost. Please try again.');
+            };
+        } catch (error) {
+            logger.error('Error starting research:', error);
+            alert('An error occurred while processing your request');
+        }
+    }
+
+    // Bind start button click
+    startButton.addEventListener('click', startResearch);
+
+    // Handle form submission (prevent default and use our custom handler)
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        startResearch();
+    });
+
+    // Clean up when leaving the page
+    window.addEventListener('beforeunload', cleanupEventSource);
+
+    // Update progress bar and status
+    function updateProgress(progress) {
+        const progressBar = document.querySelector('#progress-bar div');
+        const progressStatus = document.getElementById('progress-status');
+
+        const percent = Math.round((progress.completedQueries / progress.totalQueries) * 100);
+        progressBar.style.width = `${percent}%`;
+
+        let status = `Depth: ${progress.currentDepth}/${progress.totalDepth}, `;
+        status += `Breadth: ${progress.currentBreadth}/${progress.totalBreadth}, `;
+        status += `Queries: ${progress.completedQueries}/${progress.totalQueries}`;
+
+        if (progress.currentQuery) {
+            status += `<br>Currently researching: ${progress.currentQuery}`;
+        }
+
+        progressStatus.innerHTML = status;
+    }
+
+    // Handle user's answer to question
+    async function answerQuestion(answer) {
+        if (!currentResearchId || !currentQuestionId) {
+            console.error('No active research session or question');
+            return;
+        }
+
+        const questionArea = document.getElementById('question-area');
+        questionArea.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/api/answer/${currentResearchId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    answer: answer ? 'yes' : 'no',
+                    questionId: currentQuestionId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error('Failed to submit answer');
+            }
+
+            // Clear current question ID after successful submission
+            currentQuestionId = null;
+        } catch (error) {
+            console.error('Error submitting answer:', error);
+            showError('Failed to submit answer. The research process may be affected.');
+
+            // Show the question area again in case of error
+            questionArea.classList.remove('hidden');
+        }
+    }
+
+    // Show question to user
+    function showQuestion(question) {
+        const questionArea = document.getElementById('question-area');
+        const questionText = document.getElementById('question-text');
+
+        // Hide any previous error messages
+        const errorMessages = document.querySelectorAll('.error-message');
+        errorMessages.forEach(msg => msg.remove());
+
+        questionText.textContent = question;
+        questionArea.classList.remove('hidden');
+    }
+
+    // Helper function to show error messages
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4';
+        errorDiv.textContent = message;
+
+        // Insert error message before the question area if it exists
+        const questionArea = document.getElementById('question-area');
+        if (questionArea) {
+            questionArea.parentNode.insertBefore(errorDiv, questionArea);
+        } else {
+            document.getElementById('results').prepend(errorDiv);
+        }
+    }
+
+    // Initialize question buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('#yes-button')) {
+            answerQuestion(true);
+        } else if (e.target.matches('#no-button')) {
+            answerQuestion(false);
+        }
+    });
+
+    // Display result including markdown preview
+    function displayResult(result) {
+        logger.info('Displaying result with:', result);
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8';
+        
+        // Add title
+        const title = document.createElement('h3');
+        title.className = 'text-lg font-semibold mb-4';
+        title.textContent = 'Research Results';
+        resultDiv.appendChild(title);
+
+        if (result.filename) {
+            // Create preview container
+            const previewContainer = document.createElement('div');
+            previewContainer.id = 'markdown-preview';
+            previewContainer.className = 'prose max-w-none mb-4 p-4 bg-gray-50 rounded';
+            previewContainer.innerHTML = '<p>Loading preview...</p>';
+            resultDiv.appendChild(previewContainer);
+
+            // Add download button
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2';
+            downloadBtn.textContent = 'Download Report';
+            downloadBtn.onclick = () => downloadMarkdown(result.filename);
+            resultDiv.appendChild(downloadBtn);
+
+            // Load markdown preview
+            loadMarkdownPreview(result.filename)
+                .then(content => {
+                    if (!content) {
+                        throw new Error('No content received');
+                    }
+                    const html = marked.parse(content);
+                    previewContainer.innerHTML = html;
+                })
+                .catch(error => {
+                    previewContainer.innerHTML = `
+                        <div class="text-red-600 p-4">
+                            Failed to load preview: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+
+        // Add to results
+        const results = document.getElementById('results');
+        results.innerHTML = ''; // Clear previous results
+        results.appendChild(resultDiv);
+        results.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Load markdown preview
+    async function loadMarkdownPreview(filename) {
+        try {
+            logger.info('Loading markdown preview:', filename);
+            const response = await fetch(`/output/${filename}`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load file: ${response.statusText}`);
+            }
+            
+            const content = await response.text();
+            if (!content) {
+                throw new Error('No content received from server');
+            }
+            logger.info('Loaded content length:', content.length);
+            return content;
+        } catch (error) {
+            logger.error('Error loading markdown preview:', error);
+            throw error;
+        }
+    }
+
+    // Handle markdown download
+    async function downloadMarkdown(filename) {
+        try {
+            logger.info('Downloading markdown file:', filename);
+            
+            // Create a link and trigger download
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = `/output/${filename}?download=true`;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showNotification('File downloaded successfully', 'success');
+        } catch (error) {
+            logger.error('Error downloading markdown:', error);
+            showNotification('Failed to download file', 'error');
+        }
+    }
+
+    // Helper function to copy text to clipboard
+    function copyToClipboard(text, button) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = button.innerHTML;
+            button.innerHTML = `
+                <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M5 13l4 4L19 7"/>
+                </svg>
+                Copied!
+            `;
+            setTimeout(() => {
+                button.innerHTML = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            alert('Failed to copy to clipboard');
+        });
+    }
+
+    // Helper function to toggle note textarea
+    function addNote(index) {
+        const noteContainer = document.querySelector(`.note-container-${index}`);
+        noteContainer.classList.toggle('hidden');
+    }
+
+    // Helper function to save note
+    function saveNote(index) {
+        const noteContainer = document.querySelector(`.note-container-${index}`);
+        const textarea = noteContainer.querySelector('textarea');
+        if (textarea.value.trim()) {
+            noteContainer.classList.add('hidden');
+            // You could also save this to localStorage or your backend
+            localStorage.setItem(`note-${index}`, textarea.value);
+        }
+    }
+
+    // Helper function to show notifications
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Save research results
+    async function saveResults() {
+        if (!currentResearchId) {
+            showError('No active research session');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    researchId: currentResearchId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            if (data.success && data.filename) {
+                // Load markdown preview
+                await loadMarkdownPreview(data.filename);
+                
+                // Store filename for download
+                document.getElementById('download-report').onclick = () => downloadMarkdown(data.filename);
+                
+                // Show success message
+                showMessage('Research results saved successfully!');
+            }
+        } catch (error) {
+            console.error('Error saving results:', error);
+            showError('Failed to save results. Please try again.');
+        }
+    }
+
+    // Load markdown preview
+    async function loadMarkdownPreview(filename) {
+        const previewContainer = document.getElementById('markdown-preview');
+        if (!previewContainer) return;
+
+        previewContainer.innerHTML = '<p class="text-gray-500">Loading preview...</p>';
+
+        try {
+            const response = await fetch(`/api/markdown/${filename}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            if (data.content) {
+                // Convert markdown to HTML using marked
+                const previewHtml = marked.parse(data.content);
+                previewContainer.innerHTML = previewHtml;
+            } else {
+                previewContainer.innerHTML = '<p class="text-gray-500">No content available</p>';
+            }
+        } catch (error) {
+            console.error('Error loading markdown preview:', error);
+            previewContainer.innerHTML = `
+                <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">
+                                Error loading preview: ${error.message}
+                            </p>
+                        </div>
+                    </div>
+                </div>`;
+        }
+    }
+
+    // Handle markdown download
+    async function downloadMarkdown(filename) {
+        try {
+            const response = await fetch(`/api/download/${filename}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Get the content as text
+            const content = await response.text();
+            
+            // Create a blob with markdown content type
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = window.URL.createObjectURL(blob);
+            
+            // Create a temporary link and click it
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showNotification('File downloaded successfully', 'success');
+        } catch (error) {
+            console.error('Error downloading markdown:', error);
+            showError('Failed to download the report. Please try again.');
+        }
+    }
+
+    // Show success message
+    function showMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'fixed bottom-4 right-4 bg-green-50 border-l-4 border-green-500 p-4';
+        messageDiv.innerHTML = `
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-green-700">${message}</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(messageDiv);
+        
+        // Remove the message after 3 seconds
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 3000);
+    }
+});
