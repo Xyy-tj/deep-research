@@ -37,6 +37,7 @@
     "js-tiktoken": "^1.0.17",
     "jsonwebtoken": "^9.0.2",
     "lodash-es": "^4.17.21",
+    "nodemailer": "^6.10.0",
     "p-limit": "^6.2.0",
     "sql.js": "^1.10.2",
     "sqlite3": "^5.1.7",
