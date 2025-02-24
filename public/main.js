@@ -724,6 +724,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Add logout button click handler
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        auth.logout();
+    });
+
     // Check initial auth state
     auth.checkAuth();
 });
