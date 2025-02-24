@@ -59,102 +59,96 @@
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div id="app" class="container mx-auto px-4 py-8">
         <div class="absolute top-4 right-4 flex items-center space-x-4">
+            <!-- Language Selector -->
+            <select id="languageSelector" class="px-3 py-2 text-sm rounded-lg bg-white border border-gray-200 hover:border-gray-300 transition-colors">
+                <option value="en">English</option>
+                <option value="zh">简体中文</option>
+            </select>
+            
             <div id="userSection" class="hidden">
                 <span id="userGreeting" class="text-gray-700 mr-2"></span>
-                <button id="logoutBtn" class="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors">
-                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                <button id="logoutBtn" class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-1"></i> <span data-i18n="logout">Logout</span>
                 </button>
             </div>
             <div id="authSection">
-                <button id="loginBtn" class="px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
-                    <i class="fas fa-sign-in-alt mr-1"></i> Login
+                <button id="loginBtn" class="w-28 px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                    <i class="fas fa-sign-in-alt mr-1"></i> <span data-i18n="login">Login</span>
                 </button>
-                <button id="registerBtn" class="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors ml-2">
-                    <i class="fas fa-user-plus mr-1"></i> Register
+                <button id="registerBtn" class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors ml-2">
+                    <i class="fas fa-user-plus mr-1"></i> <span data-i18n="register">Register</span>
                 </button>
             </div>
         </div>
 
-        <div id="authModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div id="authModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 id="authModalTitle" class="text-2xl font-bold text-gray-800">Login</h2>
+                    <h2 id="authModalTitle" class="text-2xl font-bold text-gray-800" data-i18n="login">Login</h2>
                     <button id="closeAuthModal" class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <form id="authForm" class="space-y-4">
                     <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="username">Username</label>
                         <input type="text" id="username" name="username" required
                                class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-200">
                     </div>
                     <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="password">Password</label>
                         <input type="password" id="password" name="password" required
                                class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-200">
                     </div>
                     <button type="submit" id="authSubmitBtn"
                             class="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                        Login
+                        <span data-i18n="login">Login</span>
                     </button>
-                    <p id="authError" class="text-red-600 text-sm hidden"></p>
                 </form>
             </div>
         </div>
 
         <div id="mainContent" class="hidden">
             <div class="text-center mb-12">
-                <h1 class="text-5xl font-bold text-gray-800 mb-4">Deep Research Assistant</h1>
-                <p class="text-lg text-gray-600">Discover deeper insights with AI-powered research</p>
+                <h1 class="text-5xl font-bold text-gray-800 mb-4" data-i18n="appTitle">Deep Research Assistant</h1>
+                <p class="text-lg text-gray-600" data-i18n="appSubtitle">Discover deeper insights with AI-powered research</p>
             </div>
-            
+
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-xl p-8 mb-8 transform transition-all hover:shadow-2xl">
                     <form id="researchForm" method="post" onsubmit="return false;" class="space-y-8">
                         <div class="relative">
-                            <label for="query" class="block text-sm font-medium text-gray-700 mb-2">Research Topic</label>
-                            <div class="relative rounded-lg shadow-sm">
-                                <input type="text" id="query" name="query" 
-                                       class="block w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50 transition-colors"
-                                       placeholder="Enter your research topic...">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <i class="fas fa-search text-gray-400"></i>
-                                </div>
-                            </div>
+                            <label for="query" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="researchTopic">Research Topic</label>
+                            <textarea id="query" name="query" rows="3" required
+                                    class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-200"></textarea>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label for="breadth" class="block text-sm font-medium text-gray-700">
-                                    Research Breadth <span class="text-primary-600 font-semibold" id="breadthValue">4</span>
-                                </label>
-                                <div class="flex items-center space-x-4">
-                                    <i class="fas fa-compress-alt text-gray-400"></i>
-                                    <input type="range" id="breadth" name="breadth" min="2" max="10" value="4" 
-                                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-500">
-                                    <i class="fas fa-expand-alt text-gray-400"></i>
+                            <div>
+                                <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="breadth">Research Breadth</label>
+                                <input type="range" id="breadth" name="breadth" min="1" max="10" value="5"
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <div class="text-center mt-2">
+                                    <span id="breadthValue">5</span>
                                 </div>
                             </div>
-
-                            <div class="space-y-2">
-                                <label for="depth" class="block text-sm font-medium text-gray-700">
-                                    Research Depth <span class="text-primary-600 font-semibold" id="depthValue">2</span>
-                                </label>
-                                <div class="flex items-center space-x-4">
-                                    <i class="fas fa-layer-group text-gray-400"></i>
-                                    <input type="range" id="depth" name="depth" min="1" max="5" value="2" 
-                                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-500">
-                                    <i class="fas fa-layer-group text-gray-400 transform scale-125"></i>
+                            <div>
+                                <label for="depth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="depth">Research Depth</label>
+                                <input type="range" id="depth" name="depth" min="1" max="10" value="5"
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <div class="text-center mt-2">
+                                    <span id="depthValue">5</span>
                                 </div>
                             </div>
                         </div>
 
-                        <button type="button" id="startResearch" 
-                                class="w-full flex items-center justify-center py-3 px-6 rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform transition-all hover:scale-[1.02] active:scale-[0.98]">
-                            <i class="fas fa-brain mr-2"></i>
-                            Start Research
-                        </button>
+                        <div class="text-center">
+                            <button id="startResearch" type="submit"
+                                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <i class="fas fa-search mr-2"></i>
+                                <span data-i18n="startResearch">Start Research</span>
+                            </button>
+                        </div>
                     </form>
                 </div>
 
@@ -173,7 +167,7 @@
                                     <button id="submitAnswer" 
                                             class="inline-flex items-center px-6 py-2 rounded-lg text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
                                         <i class="fas fa-paper-plane mr-2"></i>
-                                        Submit Answer
+                                        <span data-i18n="submitAnswer">Submit Answer</span>
                                     </button>
                                 </div>
                             </div>
@@ -187,7 +181,7 @@
                             <div class="flex items-center">
                                 <i class="fas fa-spinner fa-spin text-primary-600 mr-2"></i>
                                 <span class="text-sm font-semibold text-primary-600">
-                                    Researching...
+                                    <span data-i18n="researching">Researching...</span>
                                 </span>
                             </div>
                             <div>
@@ -208,10 +202,125 @@
                 </div>
             </div>
         </div>
+
+        <!-- Welcome Page for Non-logged-in Users -->
+        <div id="welcomePage" class="max-w-4xl mx-auto mt-16">
+            <div class="text-center mb-12">
+                <h1 class="text-5xl font-bold text-gray-800 mb-4" data-i18n="appTitle">Deep Research Assistant</h1>
+                <p class="text-xl text-gray-600 mb-8" data-i18n="welcomeTitle">Your Intelligent Research Companion</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
+                    <div class="text-primary-600 text-4xl mb-4">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="aiResearch">AI-Powered Research</h3>
+                    <p class="text-gray-600" data-i18n="aiResearchDescription">
+                        Leverage advanced AI technology to conduct comprehensive research on any topic. Our system explores multiple perspectives and digs deep into the subject matter.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
+                    <div class="text-primary-600 text-4xl mb-4">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="interactiveResearch">Interactive Research Process</h3>
+                    <p class="text-gray-600" data-i18n="interactiveResearchDescription">
+                        Engage in an interactive research journey where you can guide the AI through your specific interests and requirements.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
+                    <div class="text-primary-600 text-4xl mb-4">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="customizableDepthBreadth">Customizable Depth & Breadth</h3>
+                    <p class="text-gray-600" data-i18n="customizableDepthBreadthDescription">
+                        Control your research scope with adjustable parameters for both breadth and depth, ensuring you get exactly the level of detail you need.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
+                    <div class="text-primary-600 text-4xl mb-4">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="comprehensiveResults">Comprehensive Results</h3>
+                    <p class="text-gray-600" data-i18n="comprehensiveResultsDescription">
+                        Receive well-structured research results with citations, summaries, and the ability to export your findings in various formats.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-8 border border-gray-200">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center" data-i18n="howItWorks">How It Works</h3>
+                <div class="space-y-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">1</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="signUpLogin">Sign Up & Login</h4>
+                            <p class="text-gray-600" data-i18n="signUpLoginDescription">
+                                Create your account to get started with AI-powered research
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">2</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="enterTopic">Enter Your Topic</h4>
+                            <p class="text-gray-600" data-i18n="enterTopicDescription">
+                                Input your research topic and customize the research parameters
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">3</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="guideResearch">Guide the Research</h4>
+                            <p class="text-gray-600" data-i18n="guideResearchDescription">
+                                Interact with the AI to refine and direct the research process
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">4</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="reviewResults">Review Results</h4>
+                            <p class="text-gray-600" data-i18n="reviewResultsDescription">
+                                Get comprehensive research results and export them in your preferred format
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="progress" class="hidden">
+            <div class="relative pt-1">
+                <div class="flex mb-3 items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-spinner fa-spin text-primary-600 mr-2"></i>
+                        <span class="text-sm font-semibold text-primary-600">
+                            <span data-i18n="researching">Researching...</span>
+                        </span>
+                    </div>
+                    <div>
+                        <span id="progressText" class="text-sm font-semibold text-primary-600">0%</span>
+                    </div>
+                </div>
+                <div class="overflow-hidden h-3 rounded-full bg-primary-100">
+                    <div id="progressBar" 
+                         class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
+                         style="width: 0%">
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <footer class="mt-12 py-6 text-center text-gray-600">
-        <p>Powered by Deep Research AI</p>
+        <p data-i18n="poweredBy">Powered by Deep Research AI</p>
     </footer>
 
     <script type="module">
@@ -227,13 +336,16 @@
         const authSubmitBtn = document.getElementById('authSubmitBtn');
         const authError = document.getElementById('authError');
         const mainContent = document.getElementById('mainContent');
+        const welcomePage = document.getElementById('welcomePage');
 
         // Check initial auth state
         if (auth.checkAuth()) {
             showUserSection();
             showMainContent();
+            hideWelcomePage();
         } else {
             hideMainContent();
+            showWelcomePage();
         }
 
         // Event Listeners
@@ -271,6 +383,7 @@
                     hideAuthModal();
                     showUserSection();
                     showMainContent();
+                    hideWelcomePage();
                 } else {
                     showError(type === 'login' ? 'Invalid credentials' : 'Registration failed');
                 }
@@ -283,6 +396,7 @@
             auth.logout();
             hideUserSection();
             hideMainContent();
+            showWelcomePage();
         }
 
         function showUserSection() {
@@ -303,6 +417,14 @@
 
         function hideMainContent() {
             mainContent.classList.add('hidden');
+        }
+
+        function showWelcomePage() {
+            welcomePage.classList.remove('hidden');
+        }
+
+        function hideWelcomePage() {
+            welcomePage.classList.add('hidden');
         }
 
         function showError(message) {

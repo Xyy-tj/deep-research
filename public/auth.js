@@ -3,6 +3,7 @@ export class Auth {
     #isAuthenticated = false;
     #currentUser = null;
     #userCredits = 0;
+    #authStateListeners = [];
 
     constructor() {
         if (Auth.#instance) {
@@ -36,6 +37,7 @@ export class Auth {
                 localStorage.setItem('user', username);
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('credits', data.user.credits);
+                this.#notifyAuthStateChange({ username });
                 return true;
             }
             return false;
@@ -72,6 +74,7 @@ export class Auth {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         localStorage.removeItem('credits');
+        this.#notifyAuthStateChange(null);
     }
 
     checkAuth() {
@@ -82,8 +85,10 @@ export class Auth {
             this.#isAuthenticated = true;
             this.#currentUser = user;
             this.#userCredits = Number(credits) || 0;
+            this.#notifyAuthStateChange({ username: user });
             return true;
         }
+        this.#notifyAuthStateChange(null);
         return false;
     }
 
@@ -97,5 +102,19 @@ export class Auth {
 
     getToken() {
         return localStorage.getItem('token');
+    }
+
+    onAuthStateChanged(callback) {
+        this.#authStateListeners.push(callback);
+        // 立即触发一次当前状态
+        if (this.#isAuthenticated) {
+            callback({ username: this.#currentUser });
+        } else {
+            callback(null);
+        }
+    }
+
+    #notifyAuthStateChange(user) {
+        this.#authStateListeners.forEach(callback => callback(user));
     }
 }

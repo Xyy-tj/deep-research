@@ -1,10 +1,23 @@
 import { Auth } from './auth.js';
+import { translations } from './i18n.js';
+
+// Global variables
+let currentLanguage = localStorage.getItem('language') || 'en';
 
 // Global helper functions
+const t = (key) => {
+    const translation = translations[currentLanguage]?.[key];
+    if (!translation) {
+        console.warn(`Missing translation for key: ${key} in language: ${currentLanguage}`);
+        return key;
+    }
+    return translation;
+};
+
 window.copyToClipboard = async (text, button) => {
     await navigator.clipboard.writeText(text);
     const originalText = button.innerHTML;
-    button.innerHTML = 'Copied!';
+    button.innerHTML = t('copied');
     setTimeout(() => button.innerHTML = originalText, 2000);
 };
 
@@ -39,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionText = document.getElementById('questionText');
     const answerInput = document.getElementById('answerInput');
     const submitAnswer = document.getElementById('submitAnswer');
+    const welcomePage = document.getElementById('welcomePage');
+    const mainContent = document.getElementById('mainContent');
+    const languageSelector = document.getElementById('languageSelector');
 
     let currentResearchId = null;
     let currentQuestionId = null;
@@ -230,18 +246,18 @@ document.addEventListener('DOMContentLoaded', () => {
         resultSection.className = 'mt-8';
         resultSection.innerHTML = `
             <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
-                <h3 class="text-xl font-semibold mb-4">Research Results</h3>
+                <h3 class="text-xl font-semibold mb-4">${t('researchResults')}</h3>
                 <div class="prose max-w-none">
                     ${marked.parse(content)}
                 </div>
                 <div class="mt-4 flex space-x-4">
                     <button onclick="window.downloadMarkdown('${filename}')" 
                             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        Download Report
+                        ${t('downloadReport')}
                     </button>
                     <button onclick="window.copyToClipboard(\`${content.replace(/`/g, '\\`')}\`, this)"
                             class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                        Copy to Clipboard
+                        ${t('copyToClipboard')}
                     </button>
                 </div>
             </div>
@@ -261,6 +277,35 @@ document.addEventListener('DOMContentLoaded', () => {
         logger.info('Research result displayed successfully');
     }
 
+    // Language switching function
+    const updateLanguage = (lang) => {
+        currentLanguage = lang;
+        localStorage.setItem('language', lang);
+        
+        // Update all text content
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = t(key);
+        });
+
+        // Update placeholders
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+            const key = element.getAttribute('data-i18n-placeholder');
+            element.placeholder = t(key);
+        });
+    };
+
+    // Initialize language selector
+    if (languageSelector) {
+        languageSelector.value = currentLanguage;
+        languageSelector.addEventListener('change', (e) => {
+            updateLanguage(e.target.value);
+        });
+    }
+
+    // Initial language update
+    updateLanguage(currentLanguage);
+
     // Handle research start
     async function startResearch() {
         const query = document.getElementById('query').value;
@@ -269,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!query) {
             logger.error('Missing query');
-            alert('Please enter a research topic');
+            alert(t('pleaseEnterResearchTopic'));
             return;
         }
 
@@ -277,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const auth = Auth.getInstance();
         if (!auth.checkAuth()) {
             logger.error('Not authenticated');
-            alert('Please log in first');
+            alert(t('pleaseLogInFirst'));
             return;
         }
         const token = auth.getToken();
@@ -293,21 +338,21 @@ document.addEventListener('DOMContentLoaded', () => {
         progressSection.className = 'mb-8';
         progressSection.innerHTML = `
             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h3 class="text-lg font-semibold mb-4">Research Progress</h3>
+                <h3 class="text-lg font-semibold mb-4">${t('researchProgress')}</h3>
                 <div id="progress-bar" class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
                     <div class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                 </div>
-                <p id="progress-status" class="text-sm text-gray-600">Starting research...</p>
+                <p id="progress-status" class="text-sm text-gray-600">${t('startingResearch')}...</p>
                 <div id="question-area" class="mt-4 hidden">
                     <p id="question-text" class="text-sm font-medium text-gray-900 mb-2"></p>
                     <div class="flex space-x-4">
                         <button id="yes-button"
                                 class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                            Yes
+                            ${t('yes')}
                         </button>
                         <button id="no-button"
                                 class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                            No
+                            ${t('no')}
                         </button>
                     </div>
                 </div>
@@ -343,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupEventSource(currentResearchId);
         } catch (error) {
             logger.error('Error starting research:', error);
-            alert('An error occurred while processing your request');
+            alert(t('anErrorOccurredWhileProcessingYourRequest'));
         }
     }
 
@@ -367,12 +412,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const percent = Math.round((progress.completedQueries / progress.totalQueries) * 100);
         progressBar.style.width = `${percent}%`;
 
-        let status = `Depth: ${progress.currentDepth}/${progress.totalDepth}, `;
-        status += `Breadth: ${progress.currentBreadth}/${progress.totalBreadth}, `;
-        status += `Queries: ${progress.completedQueries}/${progress.totalQueries}`;
+        let status = `${t('depth')}: ${progress.currentDepth}/${progress.totalDepth}, `;
+        status += `${t('breadth')}: ${progress.currentBreadth}/${progress.totalBreadth}, `;
+        status += `${t('queries')}: ${progress.completedQueries}/${progress.totalQueries}`;
 
         if (progress.currentQuery) {
-            status += `<br>Currently researching: ${progress.currentQuery}`;
+            status += `<br>${t('currentlyResearching')}: ${progress.currentQuery}`;
         }
 
         progressStatus.innerHTML = status;
@@ -413,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentQuestionId = null;
         } catch (error) {
             console.error('Error submitting answer:', error);
-            showError('Failed to submit answer. The research process may be affected.');
+            showError(t('failedToSubmitAnswer'));
 
             // Show the question area again in case of error
             questionArea.classList.remove('hidden');
@@ -466,14 +511,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M5 13l4 4L19 7"/>
                 </svg>
-                Copied!
+                ${t('copied')}
             `;
             setTimeout(() => {
                 button.innerHTML = originalText;
             }, 2000);
         }).catch(err => {
             console.error('Failed to copy:', err);
-            alert('Failed to copy to clipboard');
+            alert(t('failedToCopyToClipboard'));
         });
     }
 
@@ -510,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save research results
     async function saveResults() {
         if (!currentResearchId) {
-            showError('No active research session');
+            showError(t('noActiveResearchSession'));
             return;
         }
 
@@ -542,11 +587,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('download-report').onclick = () => downloadMarkdown(data.filename);
                 
                 // Show success message
-                showMessage('Research results saved successfully!');
+                showMessage(t('researchResultsSavedSuccessfully'));
             }
         } catch (error) {
             console.error('Error saving results:', error);
-            showError('Failed to save results. Please try again.');
+            showError(t('failedToSaveResults'));
         }
     }
 
@@ -555,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewContainer = document.getElementById('markdown-preview');
         if (!previewContainer) return;
 
-        previewContainer.innerHTML = '<p class="text-gray-500">Loading preview...</p>';
+        previewContainer.innerHTML = `<p class="text-gray-500">${t('loadingPreview')}...</p>`;
 
         try {
             const response = await fetch(`/api/markdown/${filename}`);
@@ -573,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const previewHtml = marked.parse(data.content);
                 previewContainer.innerHTML = previewHtml;
             } else {
-                previewContainer.innerHTML = '<p class="text-gray-500">No content available</p>';
+                previewContainer.innerHTML = `<p class="text-gray-500">${t('noContentAvailable')}</p>`;
             }
         } catch (error) {
             console.error('Error loading markdown preview:', error);
@@ -586,9 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-red-700">
-                                Error loading preview: ${error.message}
-                            </p>
+                            <p class="text-sm text-red-700">${t('errorLoadingPreview')}: ${error.message}</p>
                         </div>
                     </div>
                 </div>`;
@@ -621,10 +664,10 @@ document.addEventListener('DOMContentLoaded', () => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
             
-            showNotification('File downloaded successfully', 'success');
+            showNotification(t('fileDownloadedSuccessfully'), 'success');
         } catch (error) {
             console.error('Error downloading markdown:', error);
-            showError('Failed to download the report. Please try again.');
+            showError(t('failedToDownloadReport'));
         }
     }
 
@@ -651,4 +694,36 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(messageDiv);
         }, 3000);
     }
+
+    // Function to toggle between welcome page and main content
+    window.toggleMainContent = (show) => {
+        if (show) {
+            welcomePage.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+        } else {
+            welcomePage.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+        }
+    };
+
+    // Show welcome page by default for non-logged in users
+    toggleMainContent(false);
+
+    // Update auth display when user logs in/out
+    const auth = new Auth();
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            document.getElementById('userSection').classList.remove('hidden');
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('userGreeting').textContent = `${t('welcome')}, ${user.username}!`;
+            toggleMainContent(true);
+        } else {
+            document.getElementById('userSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            toggleMainContent(false);
+        }
+    });
+
+    // Check initial auth state
+    auth.checkAuth();
 });
