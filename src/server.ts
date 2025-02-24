@@ -4,9 +4,13 @@ import fs from 'fs';
 import { deepResearch, writeFinalReport } from './deep-research';
 import { generateFeedback } from './feedback';
 import { OutputManager } from './output-manager';
+import { CreditManager } from './user/credit-manager';
+import authRoutes from './user/auth-routes';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 const port = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Enable detailed logging
 const logger = {
@@ -14,6 +18,12 @@ const logger = {
     info: (...args: any[]) => console.info('[Server]', ...args),
     error: (...args: any[]) => console.error('[Server]', ...args)
 };
+
+// Parse JSON bodies
+app.use(express.json());
+
+// Mount authentication routes
+app.use('/api', authRoutes);
 
 // Enable detailed request logging middleware
 app.use((req, res, next) => {
@@ -25,7 +35,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.json());
 app.use(express.static('public'));
 
 // Store active research sessions
@@ -33,6 +42,7 @@ const activeSessions = new Map<string, {
     output: OutputManager;
     resolve: (answer: string) => void;
     report: string;
+    partialResults?: any[];
 }>();
 
 // Generate a unique research ID
@@ -119,6 +129,20 @@ class WebOutputManager extends OutputManager {
             }
         }
     }
+
+    closeAllConnections() {
+        logger.info(`Closing all connections (${this.eventClients.size} clients)`);
+        for (const client of this.eventClients) {
+            try {
+                client.end();
+                logger.debug('Successfully closed one client connection');
+            } catch (error) {
+                logger.error('Error closing client connection:', error);
+            }
+        }
+        this.eventClients.clear();
+        logger.info('All connections closed and cleared');
+    }
 }
 
 // Error handling middleware
@@ -201,108 +225,241 @@ app.post('/api/answer/:researchId', (req, res) => {
     }
 });
 
-// Main research endpoint
-app.post('/api/research', async (req, res) => {
-    const { query, breadth, depth } = req.body;
-    
-    if (!query || !breadth || !depth) {
-        logger.error('Missing required parameters:', { query, breadth, depth });
-        return res.status(400).json({ error: 'Missing required parameters' });
+// 用户管理API
+app.get('/api/user/:userId', async (req, res) => {
+    try {
+        const creditManager = await CreditManager.getInstance();
+        const user = await creditManager.getUser(req.params.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        return res.json(user);
+    } catch (error) {
+        console.error('Error getting user:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/user/:userId', async (req, res) => {
+    try {
+        const creditManager = await CreditManager.getInstance();
+        const { credits } = req.body;
+        if (credits) {
+            await creditManager.addCredits(req.params.userId, credits);
+        } else {
+            await creditManager.addUser(req.params.userId);
+        }
+        const user = await creditManager.getUser(req.params.userId);
+        return res.json(user);
+    } catch (error) {
+        console.error('Error creating/updating user:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Authentication middleware
+const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const researchId = generateResearchId();
-    logger.info('Starting new research:', { researchId, query, breadth, depth });
-    
-    const output = new WebOutputManager();
-    
-    // Store the research session
-    activeSessions.set(researchId, {
-        output,
-        resolve: () => {},
-        report: ''
-    });
-
-    // Send the research ID immediately
-    res.json({ researchId });
-
     try {
-        // Generate feedback and research
-        logger.info('Generating feedback for query:', query);
-        const followUpQuestions = await generateFeedback({
-            query,
+        const user = jwt.verify(token, JWT_SECRET) as { userId: number; username: string };
+        req.user = { id: user.userId, username: user.username }; // Map userId to id for consistency
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Invalid token' });
+    }
+};
+
+// Main research endpoint
+app.post('/api/research', authenticateToken, async (req, res) => {
+    try {
+        const { query, depth = 2, breadth = 4 } = req.body;
+        const userId = (req as any).user.id;
+        logger.info('Starting new research:', { userId, query, depth, breadth });
+
+        // Generate research ID
+        const researchId = generateResearchId();
+        logger.info('Generated research ID:', researchId);
+        
+        // Create output manager
+        const output = new WebOutputManager();
+        
+        // Create resolvable promise
+        const promise = createResolvablePromise();
+        
+        // Store session
+        activeSessions.set(researchId, {
             output,
+            resolve: promise.resolve,
+            report: '',
+            partialResults: []
         });
+        logger.debug('Created new research session:', researchId);
 
-        logger.info('Starting deep research');
-        const results = await deepResearch({
-            query,
-            breadth,
-            depth,
-            output,
-            onProgress: (progress) => {
-                // Send progress updates to client
-                (output as WebOutputManager).sendEventToAll({
-                    type: 'progress',
-                    progress
-                });
+        // Send initial response
+        res.json({ researchId });
+        logger.debug('Sent initial response to client');
 
-                // If there's a question, send it to the client
-                if (progress.currentQuery) {
+        try {
+            // Start research process
+            logger.info('Starting deep research process');
+            const results = await deepResearch({
+                query,
+                depth,
+                breadth,
+                output,
+                userId
+            });
+            logger.info('Deep research completed with results:', { 
+                learningsCount: results?.length || 0 
+            });
+
+            // Generate final report
+            logger.info('Generating final report');
+            const report = await writeFinalReport({
+                prompt: query,
+                learnings: results?.flatMap(r => r.learnings) || [],
+                visitedUrls: results?.flatMap(r => r.visitedUrls) || []
+            });
+            logger.debug('Final report generated, length:', report.length);
+
+            // Store report in session
+            const session = activeSessions.get(researchId);
+            if (session) {
+                session.report = report;
+                logger.debug('Stored report in session');
+                
+                // Save report to disk and get filename
+                try {
+                    const filepath = saveReportToDisk(researchId, report);
+                    const filename = path.basename(filepath);
+                    logger.info('Report saved successfully to:', filepath);
+                    
+                    // Send result to all clients with filename
+                    logger.info('Sending result event to clients');
                     (output as WebOutputManager).sendEventToAll({
-                        type: 'question',
-                        question: `Would you like to research more about: ${progress.currentQuery}?`
+                        type: 'result',
+                        result: {
+                            content: report,
+                            filename: filename
+                        }
+                    });
+                } catch (error) {
+                    logger.error('Failed to save report to disk:', error);
+                    // Still send the result even if saving failed
+                    (output as WebOutputManager).sendEventToAll({
+                        type: 'result',
+                        result: report
                     });
                 }
             }
-        });
 
-        // Generate markdown report
-        logger.info('Generating final report');
-        const markdownContent = await writeFinalReport({
-            prompt: query,
-            learnings: results.learnings,
-            visitedUrls: results.visitedUrls
-        });
+            // Send complete event
+            logger.info('Sending complete event to clients');
+            (output as WebOutputManager).sendEventToAll({
+                type: 'complete'
+            });
 
-        // Save markdown content to session
-        activeSessions.get(researchId)!.report = markdownContent;
+            // Clean up session after a short delay
+            logger.info('Scheduling session cleanup');
+            setTimeout(() => {
+                const session = activeSessions.get(researchId);
+                if (session) {
+                    try {
+                        logger.info('Cleaning up research session:', researchId);
+                        // Close all event streams
+                        (session.output as WebOutputManager).closeAllConnections();
+                    } catch (error) {
+                        logger.error('Error during session cleanup:', error);
+                    }
+                    // Remove session
+                    activeSessions.delete(researchId);
+                    logger.info('Research session removed:', researchId);
+                }
+            }, 1000);
 
-        // Create output directory if it doesn't exist
-        const outputDir = path.join(__dirname, '../output');
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
+        } catch (error) {
+            logger.error('Research process error:', error);
+            
+            // Send error to all clients
+            logger.info('Sending error event to clients');
+            (output as WebOutputManager).sendEventToAll({
+                type: 'error',
+                error: error.message || 'An error occurred during research'
+            });
+
+            // Clean up session
+            logger.info('Cleaning up session after error');
+            activeSessions.delete(researchId);
         }
+    } catch (error) {
+        logger.error('Error in research request handler:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
-        // Save markdown file
+// Save report to disk
+function saveReportToDisk(researchId: string, report: string) {
+    try {
+        const resultsDir = path.join(__dirname, '../output');
+        // Create results directory if it doesn't exist
+        if (!fs.existsSync(resultsDir)) {
+            fs.mkdirSync(resultsDir, { recursive: true });
+        }
+        
+        // Generate filename with timestamp and research ID
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const markdownPath = path.join(outputDir, `output-${timestamp}.md`);
-        fs.writeFileSync(markdownPath, markdownContent);
-        logger.info('Markdown file saved:', markdownPath);
+        const filename = `${timestamp}-${researchId}.md`;
+        const filepath = path.join(resultsDir, filename);
+        
+        // Write report to file
+        fs.writeFileSync(filepath, report, 'utf8');
+        logger.info('Saved report to file:', filepath);
+        
+        return filepath;
+    } catch (error) {
+        logger.error('Error saving report to disk:', error);
+        throw error;
+    }
+}
 
-        // Send the final results
-        logger.info('Research completed successfully');
-        (output as WebOutputManager).sendEventToAll({
-            type: 'result',
-            result: {
-                ...results,
-                filename: path.basename(markdownPath)
-            }
+// Handle partial results request
+app.post('/api/research/:id/partial', authenticateToken, async (req, res) => {
+    const researchId = req.params.id;
+    
+    const session = activeSessions.get(researchId);
+    if (!session) {
+        logger.error('Research session not found for partial results:', researchId);
+        res.status(404).json({ error: 'Research session not found' });
+        return;
+    }
+
+    try {
+        logger.info('Generating partial report for research:', researchId);
+        
+        // Generate partial report from current state
+        const partialReport = await writeFinalReport({
+            query: '',
+            results: session.partialResults || [],
+            status: 'interrupted',
+            error: 'Research interrupted due to connection loss'
         });
 
-        // Signal completion
-        (output as WebOutputManager).sendEventToAll({
-            type: 'complete'
+        // Clean up the session
+        activeSessions.delete(researchId);
+        
+        res.json({ 
+            success: true,
+            report: partialReport
         });
     } catch (error) {
-        logger.error('Research error:', error);
-        (output as WebOutputManager).sendEventToAll({
-            type: 'error',
-            error: 'An error occurred during research'
-        });
-    } finally {
-        // Clean up the session
-        logger.info('Cleaning up research session:', researchId);
-        activeSessions.delete(researchId);
+        logger.error('Error generating partial report:', error);
+        res.status(500).json({ error: 'Failed to generate partial report' });
     }
 });
 

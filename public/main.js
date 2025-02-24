@@ -1,3 +1,29 @@
+import { Auth } from './auth.js';
+
+// Global helper functions
+window.copyToClipboard = async (text, button) => {
+    await navigator.clipboard.writeText(text);
+    const originalText = button.innerHTML;
+    button.innerHTML = 'Copied!';
+    setTimeout(() => button.innerHTML = originalText, 2000);
+};
+
+window.downloadMarkdown = async (filename) => {
+    const response = await fetch(`/api/download/${filename}`);
+    if (!response.ok) throw new Error('Download failed');
+    const content = await response.text();
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+};
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('researchForm');
     const startButton = document.getElementById('startResearch');
@@ -17,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentResearchId = null;
     let currentQuestionId = null;
     let currentEventSource = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const RECONNECT_DELAY = 2000; // 2 seconds
 
     // Enable detailed console logging
     const logger = {
@@ -76,6 +105,162 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Function to save partial research results
+    async function savePartialResults() {
+        logger.info('Attempting to save partial research results');
+        try {
+            logger.debug('Making request to save partial results:', currentResearchId);
+            const response = await fetch(`/api/research/${currentResearchId}/partial`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.getInstance().getToken()}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save partial results');
+            }
+
+            const data = await response.json();
+            logger.info('Partial results saved successfully');
+            
+            if (data.report) {
+                logger.debug('Displaying partial results report');
+                displayResult(data.report);
+                showNotification('Research interrupted. Partial results have been saved.', 'warning');
+            }
+        } catch (error) {
+            logger.error('Error saving partial results:', error);
+            showNotification('Failed to save partial results.', 'error');
+        }
+    }
+
+    // Function to create and setup EventSource
+    function setupEventSource(researchId) {
+        logger.info('Setting up EventSource for research:', researchId);
+        
+        if (currentEventSource) {
+            logger.debug('Closing existing EventSource');
+            currentEventSource.close();
+        }
+
+        logger.debug('Creating new EventSource connection');
+        currentEventSource = new EventSource(`/api/events/${researchId}`);
+        
+        currentEventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            logger.debug('Received event data:', data);
+            reconnectAttempts = 0; // Reset reconnect attempts on successful message
+
+            switch (data.type) {
+                case 'progress':
+                    logger.debug('Updating progress:', data.progress);
+                    updateProgress(data.progress);
+                    break;
+                case 'question':
+                    logger.info('Received question:', data.question);
+                    currentQuestionId = data.questionId;
+                    showQuestion(data.question);
+                    break;
+                case 'result':
+                    logger.info('Received final result');
+                    logger.debug('Result content length:', data.result.length);
+                    displayResult(data.result);
+                    break;
+                case 'complete':
+                    logger.info('Research completed successfully');
+                    showNotification('Research completed successfully!', 'success');
+                    logger.debug('Closing EventSource connection');
+                    currentEventSource.close();
+                    currentEventSource = null;
+                    break;
+                case 'error':
+                    logger.error('Received error from server:', data.error);
+                    showNotification(data.error, 'error');
+                    logger.debug('Closing EventSource connection due to error');
+                    currentEventSource.close();
+                    currentEventSource = null;
+                    break;
+            }
+        };
+
+        currentEventSource.onerror = async (error) => {
+            logger.error('EventSource connection error:', error);
+            
+            // Only attempt reconnect if we still have an active EventSource
+            if (currentEventSource) {
+                logger.debug('Closing errored EventSource connection');
+                currentEventSource.close();
+                
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    reconnectAttempts++;
+                    logger.info(`Initiating reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+                    showNotification(`Connection lost. Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`, 'warning');
+                    
+                    setTimeout(() => {
+                        if (currentResearchId) {
+                            logger.debug('Attempting to reconnect EventSource');
+                            setupEventSource(currentResearchId);
+                        }
+                    }, RECONNECT_DELAY);
+                } else {
+                    logger.error('Maximum reconnection attempts reached');
+                    await savePartialResults();
+                    currentEventSource = null;
+                    showNotification('Connection lost. Partial results have been saved.', 'error');
+                }
+            }
+        };
+
+        logger.info('EventSource setup completed');
+        return currentEventSource;
+    }
+
+    // Function to display research result
+    function displayResult(result) {
+        logger.info('Displaying research result');
+        logger.debug('Creating result section in DOM');
+        
+        // Handle both new and old response formats
+        const content = result.content || result;
+        const filename = result.filename || 'report.md';
+        
+        const resultSection = document.createElement('div');
+        resultSection.className = 'mt-8';
+        resultSection.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+                <h3 class="text-xl font-semibold mb-4">Research Results</h3>
+                <div class="prose max-w-none">
+                    ${marked.parse(content)}
+                </div>
+                <div class="mt-4 flex space-x-4">
+                    <button onclick="window.downloadMarkdown('${filename}')" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Download Report
+                    </button>
+                    <button onclick="window.copyToClipboard(\`${content.replace(/`/g, '\\`')}\`, this)"
+                            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                        Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        const resultsContainer = document.getElementById('results');
+        const progressSection = document.getElementById('progress-section');
+        
+        if (progressSection) {
+            logger.debug('Removing progress section');
+            progressSection.remove();
+        }
+        
+        logger.debug('Appending result section to container');
+        resultsContainer.appendChild(resultSection);
+        resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        logger.info('Research result displayed successfully');
+    }
+
     // Handle research start
     async function startResearch() {
         const query = document.getElementById('query').value;
@@ -87,6 +272,15 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please enter a research topic');
             return;
         }
+
+        // Get authentication token
+        const auth = Auth.getInstance();
+        if (!auth.checkAuth()) {
+            logger.error('Not authenticated');
+            alert('Please log in first');
+            return;
+        }
+        const token = auth.getToken();
 
         // Clear previous results and state
         document.getElementById('results').innerHTML = '';
@@ -127,9 +321,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ query, breadth, depth })
             });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to start research');
+            }
 
             const data = await response.json();
             if (!data.researchId) {
@@ -140,41 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentResearchId = data.researchId;
 
             // Start listening for events
-            const eventSource = new EventSource(`/api/events/${data.researchId}`);
-
-            eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                logger.info('Received event:', data);
-
-                switch (data.type) {
-                    case 'progress':
-                        updateProgress(data.progress);
-                        break;
-                    case 'question':
-                        currentQuestionId = data.questionId;
-                        showQuestion(data.question);
-                        break;
-                    case 'result':
-                        logger.info('Displaying result:', data.result);
-                        displayResult(data.result);
-                        eventSource.close();
-                        break;
-                    case 'complete':
-                        eventSource.close();
-                        break;
-                    case 'error':
-                        logger.error('Research error:', data.error);
-                        alert(data.error);
-                        eventSource.close();
-                        break;
-                }
-            };
-
-            eventSource.onerror = (error) => {
-                logger.error('EventSource failed:', error);
-                eventSource.close();
-                alert('Connection lost. Please try again.');
-            };
+            setupEventSource(currentResearchId);
         } catch (error) {
             logger.error('Error starting research:', error);
             alert('An error occurred while processing your request');
@@ -290,101 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
             answerQuestion(false);
         }
     });
-
-    // Display result including markdown preview
-    function displayResult(result) {
-        logger.info('Displaying result with:', result);
-        const resultDiv = document.createElement('div');
-        resultDiv.className = 'bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8';
-        
-        // Add title
-        const title = document.createElement('h3');
-        title.className = 'text-lg font-semibold mb-4';
-        title.textContent = 'Research Results';
-        resultDiv.appendChild(title);
-
-        if (result.filename) {
-            // Create preview container
-            const previewContainer = document.createElement('div');
-            previewContainer.id = 'markdown-preview';
-            previewContainer.className = 'prose max-w-none mb-4 p-4 bg-gray-50 rounded';
-            previewContainer.innerHTML = '<p>Loading preview...</p>';
-            resultDiv.appendChild(previewContainer);
-
-            // Add download button
-            const downloadBtn = document.createElement('button');
-            downloadBtn.className = 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2';
-            downloadBtn.textContent = 'Download Report';
-            downloadBtn.onclick = () => downloadMarkdown(result.filename);
-            resultDiv.appendChild(downloadBtn);
-
-            // Load markdown preview
-            loadMarkdownPreview(result.filename)
-                .then(content => {
-                    if (!content) {
-                        throw new Error('No content received');
-                    }
-                    const html = marked.parse(content);
-                    previewContainer.innerHTML = html;
-                })
-                .catch(error => {
-                    previewContainer.innerHTML = `
-                        <div class="text-red-600 p-4">
-                            Failed to load preview: ${error.message}
-                        </div>
-                    `;
-                });
-        }
-
-        // Add to results
-        const results = document.getElementById('results');
-        results.innerHTML = ''; // Clear previous results
-        results.appendChild(resultDiv);
-        results.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Load markdown preview
-    async function loadMarkdownPreview(filename) {
-        try {
-            logger.info('Loading markdown preview:', filename);
-            const response = await fetch(`/output/${filename}`);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to load file: ${response.statusText}`);
-            }
-            
-            const content = await response.text();
-            if (!content) {
-                throw new Error('No content received from server');
-            }
-            logger.info('Loaded content length:', content.length);
-            return content;
-        } catch (error) {
-            logger.error('Error loading markdown preview:', error);
-            throw error;
-        }
-    }
-
-    // Handle markdown download
-    async function downloadMarkdown(filename) {
-        try {
-            logger.info('Downloading markdown file:', filename);
-            
-            // Create a link and trigger download
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = `/output/${filename}?download=true`;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            showNotification('File downloaded successfully', 'success');
-        } catch (error) {
-            logger.error('Error downloading markdown:', error);
-            showNotification('Failed to download file', 'error');
-        }
-    }
 
     // Helper function to copy text to clipboard
     function copyToClipboard(text, button) {

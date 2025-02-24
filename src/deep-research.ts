@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { o3MiniModel, trimPrompt } from './ai/providers';
 import { systemPrompt } from './prompt';
 import { OutputManager } from './output-manager';
+import { CreditManager } from './user/credit-manager';
 
 // Initialize output manager for coordinated console/progress output
 const output = new OutputManager();
@@ -24,6 +25,7 @@ export type ResearchProgress = {
   currentQuery?: string;
   totalQueries: number;
   completedQueries: number;
+  creditsUsed?: number;
 };
 
 type ResearchResult = {
@@ -31,8 +33,11 @@ type ResearchResult = {
   visitedUrls: string[];
 };
 
-// increase this if you have higher API rate limits
-const ConcurrencyLimit = 2;
+// Get concurrency limit from environment variable, default to 2 if not set
+const ConcurrencyLimit = Number(process.env.CONCURRENCY_LIMIT ?? 2);
+
+// Get question timeout from environment variable, default to 3000ms if not set
+const QuestionTimeoutMs = Number(process.env.QUESTION_TIMEOUT_MS ?? 3000);
 
 // Initialize Firecrawl with optional API key and optional base url
 
@@ -56,13 +61,12 @@ async function generateSerpQueries({
   const res = await generateObject({
     model: o3MiniModel,
     system: systemPrompt(),
-    prompt: `Given the following prompt from the user, generate a list of SERP queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is unique and not similar to each other: <prompt>${query}</prompt>\n\n${
-      learnings
-        ? `Here are some learnings from previous research, use them to generate more specific queries: ${learnings.join(
-            '\n',
-          )}`
-        : ''
-    }`,
+    prompt: `Given the following prompt from the user, generate a list of SERP queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is unique and not similar to each other: <prompt>${query}</prompt>\n\n${learnings
+      ? `Here are some learnings from previous research, use them to generate more specific queries: ${learnings.join(
+        '\n',
+      )}`
+      : ''
+      }`,
     schema: z.object({
       queries: z
         .array(
@@ -93,39 +97,47 @@ async function processSerpResult({
   numFollowUpQuestions = 3,
 }: {
   query: string;
-  result: SearchResponse;
+  result: any;
   numLearnings?: number;
   numFollowUpQuestions?: number;
 }) {
-  const contents = compact(result.data.map(item => item.markdown)).map(
-    content => trimPrompt(content, 25_000),
-  );
+  const contents = compact(result.data.map(item => item.description))
+    .map(content => trimPrompt(content, 25_000));
   log(`Ran ${query}, found ${contents.length} contents`);
 
-  const res = await generateObject({
-    model: o3MiniModel,
-    abortSignal: AbortSignal.timeout(60_000),
-    system: systemPrompt(),
-    prompt: `Given the following contents from a SERP search for the query <query>${query}</query>, generate a list of learnings from the contents. Return a maximum of ${numLearnings} learnings, but feel free to return less if the contents are clear. Make sure each learning is unique and not similar to each other. The learnings should be concise and to the point, as detailed and information dense as possible. Make sure to include any entities like people, places, companies, products, things, etc in the learnings, as well as any exact metrics, numbers, or dates. The learnings will be used to research the topic further.\n\n<contents>${contents
-      .map(content => `<content>\n${content}\n</content>`)
-      .join('\n')}</contents>`,
-    schema: z.object({
-      learnings: z
-        .array(z.string())
-        .describe(`List of learnings, max of ${numLearnings}`),
-      followUpQuestions: z
-        .array(z.string())
-        .describe(
-          `List of follow-up questions to research the topic further, max of ${numFollowUpQuestions}`,
-        ),
-    }),
-  });
-  log(
-    `Created ${res.object.learnings.length} learnings`,
-    res.object.learnings,
-  );
+if (contents.length === 0) {
+  log(`No results found for query: ${query}`);
+  return {
+    learnings: [],
+    visitedUrls: [],
+    followUpQuestions: []
+  };
+}
 
-  return res.object;
+const res = await generateObject({
+  model: o3MiniModel,
+  system: systemPrompt(),
+  prompt: `Given the search results for "${query}", extract ${numLearnings} detailed learnings. Each learning should be comprehensive and include specific examples, data points, or case studies when available. Focus on depth rather than breadth.
+
+Also generate ${numFollowUpQuestions} follow-up questions that could deepen our understanding of areas that need more research.
+
+The search results are:
+${contents.map(content => `<r>\n${content}\n</r>`).join('\n')}`,
+  schema: z.object({
+    learnings: z
+      .array(z.string())
+      .describe('Detailed learnings extracted from the search results. Each learning should be a comprehensive paragraph.'),
+    followUpQuestions: z
+      .array(z.string())
+      .describe('Follow-up questions for deeper research'),
+  }),
+});
+log(
+  `Created ${res.object.learnings.length} learnings`,
+  res.object.learnings,
+);
+
+return res.object;
 }
 
 export async function writeFinalReport({
@@ -147,17 +159,82 @@ export async function writeFinalReport({
   const res = await generateObject({
     model: o3MiniModel,
     system: systemPrompt(),
-    prompt: `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research:\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from previous research:\n\n<learnings>\n${learningsString}\n</learnings>`,
+    prompt: `Given the following prompt from the user, write a comprehensive and detailed report on the topic using the learnings from research. The report should be thorough, well-structured, and academically rigorous.
+
+Required sections:
+1. Executive Summary
+2. Introduction and Background
+3. Key Findings and Analysis
+4. Detailed Discussion
+   - Include specific examples and case studies
+   - Provide data and evidence where available
+   - Address different perspectives and approaches
+5. Implications and Impact Analysis
+6. Recommendations and Future Directions
+7. Conclusion
+
+Guidelines:
+- Aim for at least 5 pages of detailed content
+- Include ALL relevant learnings from the research
+- Support claims with specific examples and data points
+- IMPORTANT: When citing information from sources, use reference numbers in square brackets [X]
+- Each major claim or finding should be supported by at least one reference
+- Provide actionable insights and recommendations
+- Use clear section headings and subheadings
+- Maintain a professional and analytical tone
+
+<prompt>${prompt}</prompt>
+
+Here are all the learnings from previous research. Each learning includes reference numbers in square brackets that you should use in your report:
+
+<learnings>
+${learningsString}
+</learnings>
+
+Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources.`,
     schema: z.object({
       reportMarkdown: z
         .string()
-        .describe('Final report on the topic in Markdown'),
+        .describe('Comprehensive final report on the topic in Markdown'),
     }),
   });
 
   // Append the visited URLs section to the report
-  const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
-  return res.object.reportMarkdown + urlsSection;
+  const urlsSection = `\n\n## References\n\n${visitedUrls.map((url, index) => `[${index + 1}] ${url}`).join('\n')}`;
+  
+  // Add a note about references to the report
+  const reportWithReferences = res.object.reportMarkdown.replace(
+    '## Introduction',
+    'Note: References are indicated by numbers in square brackets [X].\n\n## Introduction'
+  );
+  
+  return reportWithReferences + urlsSection;
+}
+
+// Function to ask question with timeout
+async function askQuestionWithTimeout(output: any, question: string, timeoutMs: number): Promise<boolean> {
+  try {
+    const answer = await Promise.race([
+      output.askQuestion(question),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+      )
+    ]);
+    return answer.toLowerCase() === 'yes';
+  } catch (error) {
+    if (error instanceof Error && error.message === 'TIMEOUT') {
+      console.log(`Question timed out after ${timeoutMs}ms, proceeding with default 'yes'`);
+      return true;
+    }
+    throw error;
+  }
+}
+
+export interface ResearchSession {
+  output: OutputManager;
+  resolve: (answer: string) => void;
+  report: string;
+  partialResults: ResearchResult[];
 }
 
 export async function deepResearch({
@@ -165,6 +242,7 @@ export async function deepResearch({
   breadth,
   depth,
   output,
+  userId,
   learnings = [],
   visitedUrls = [],
   onProgress,
@@ -173,17 +251,41 @@ export async function deepResearch({
   breadth: number;
   depth: number;
   output: any;
+  userId: string;
   learnings?: string[];
   visitedUrls?: string[];
   onProgress?: (progress: ResearchProgress) => void;
-}): Promise<ResearchResult> {
+}): Promise<ResearchResult[]> {
+  const results: ResearchResult[] = [];
+  const session: ResearchSession = {
+    output,
+    resolve: () => {},
+    report: '',
+    partialResults: [],
+  };
+
+  const creditManager = await CreditManager.getInstance();
+
+  // 检查用户额度是否足够
+  const hasEnoughCredits = await creditManager.checkUserCredits(userId, depth, breadth);
+  if (!hasEnoughCredits) {
+    throw new Error('Insufficient credits to perform this research');
+  }
+
+  // 开始研究前扣除额度
+  const creditsUsed = await creditManager.deductCredits(userId, query, depth, breadth);
+
+  log(`Starting deep research with depth ${depth} and breadth ${breadth}`);
+  log(`Credits used: ${creditsUsed}`);
+
   const progress: ResearchProgress = {
-    currentDepth: 1,
+    currentDepth: 0,
     totalDepth: depth,
     currentBreadth: 0,
     totalBreadth: breadth,
     totalQueries: 0,
     completedQueries: 0,
+    creditsUsed,
   };
 
   const reportProgress = (update: Partial<ResearchProgress>) => {
@@ -220,8 +322,13 @@ export async function deepResearch({
 
       // Ask user if they want to research this query
       try {
-        const answer = await output.askQuestion(`Would you like to research more about: ${serpQuery.query}?`);
-        if (answer.toLowerCase() !== 'yes') {
+        const shouldResearch = await askQuestionWithTimeout(
+          output,
+          `Would you like to research more about: ${serpQuery.query}?`,
+          QuestionTimeoutMs
+        );
+
+        if (!shouldResearch) {
           reportProgress({ completedQueries: progress.completedQueries + 1 });
           continue;
         }
@@ -231,7 +338,11 @@ export async function deepResearch({
       }
 
       try {
-        const result = await limit(() => firecrawl.search(serpQuery.query));
+        const result = await limit(() => firecrawl.search(serpQuery.query, {
+          scrapeOptions: {
+            formats: ["markdown"]
+          }
+        }));
         const processed = await processSerpResult({
           query: serpQuery.query,
           result,
@@ -267,10 +378,13 @@ export async function deepResearch({
         currentQuery: followUpQueries[0]?.query,
       });
     }
+
+    // 保存部分结果到会话
+    session.partialResults = [...results, {
+      learnings: [...new Set(newLearnings)],
+      visitedUrls: [...new Set(newVisitedUrls)],
+    }];
   }
 
-  return {
-    learnings: [...new Set(newLearnings)],
-    visitedUrls: [...new Set(newVisitedUrls)],
-  };
+  return session.partialResults;
 }
