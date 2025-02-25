@@ -200,15 +200,15 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
   });
 
   // Append the visited URLs section to the report
-  const urlsSection = `\n\n## References\n\n${visitedUrls.map((url, index) => `[${index + 1}] ${url}`).join('\n')}`;
+  const urlsSection = `\n\n## References\n${visitedUrls.map((url, index) => `[${index + 1}] ${url}`).join('\n')}\n`;
   
-  // Add a note about references to the report
-  const reportWithReferences = res.object.reportMarkdown.replace(
-    '## Introduction',
-    'Note: References are indicated by numbers in square brackets [X].\n\n## Introduction'
-  );
+  // Add a note about references to the report and ensure it ends with references
+  let reportWithReferences = res.object.reportMarkdown;
+  if (!reportWithReferences.includes('## References')) {
+    reportWithReferences = reportWithReferences.trim() + urlsSection;
+  }
   
-  return reportWithReferences + urlsSection;
+  return reportWithReferences;
 }
 
 // Function to ask question with timeout

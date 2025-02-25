@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomePage = document.getElementById('welcomePage');
     const mainContent = document.getElementById('mainContent');
     const languageSelector = document.getElementById('languageSelector');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     let currentResearchId = null;
     let currentQuestionId = null;
@@ -759,9 +760,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Add logout button click handler
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        Auth.getInstance().logout();
-    });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            const auth = Auth.getInstance();
+            auth.logout();
+            toggleMainContent(false);
+        });
+    }
 
     // Check initial auth state
     Auth.getInstance().checkAuth();
