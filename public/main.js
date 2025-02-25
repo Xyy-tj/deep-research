@@ -3,6 +3,7 @@ import { translations } from './i18n.js';
 
 // Global variables
 let currentLanguage = localStorage.getItem('language') || 'en';
+let balanceUpdateInterval = null;
 
 // Global helper functions
 const t = (key) => {
@@ -36,6 +37,33 @@ window.downloadMarkdown = async (filename) => {
     document.body.removeChild(a);
 };
 
+// Function to update user balance
+async function updateBalance() {
+    try {
+        const response = await fetch('/api/user/balance', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const balanceDisplay = document.getElementById('balanceDisplay');
+            const userBalance = document.getElementById('userBalance');
+            
+            if (balanceDisplay && userBalance) {
+                userBalance.textContent = data.balance;
+                balanceDisplay.classList.remove('hidden');
+            }
+        } else {
+            console.error('Failed to fetch balance');
+            clearInterval(balanceUpdateInterval);
+        }
+    } catch (error) {
+        console.error('Error fetching balance:', error);
+        clearInterval(balanceUpdateInterval);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('researchForm');
@@ -710,25 +738,31 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleMainContent(false);
 
     // Update auth display when user logs in/out
-    const auth = new Auth();
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            document.getElementById('userSection').classList.remove('hidden');
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('userGreeting').textContent = `${t('welcome')}, ${user.username}!`;
-            toggleMainContent(true);
+    document.addEventListener('authStateChanged', (event) => {
+        const { isLoggedIn } = event.detail;
+        if (isLoggedIn) {
+            welcomePage.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            // Start balance update interval
+            updateBalance();
+            balanceUpdateInterval = setInterval(updateBalance, 30000); // Update every 30 seconds
         } else {
-            document.getElementById('userSection').classList.add('hidden');
-            document.getElementById('authSection').classList.remove('hidden');
-            toggleMainContent(false);
+            welcomePage.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            document.getElementById('balanceDisplay').classList.add('hidden');
+            // Clear balance update interval
+            if (balanceUpdateInterval) {
+                clearInterval(balanceUpdateInterval);
+                balanceUpdateInterval = null;
+            }
         }
     });
 
     // Add logout button click handler
     document.getElementById('logoutBtn').addEventListener('click', () => {
-        auth.logout();
+        Auth.getInstance().logout();
     });
 
     // Check initial auth state
-    auth.checkAuth();
+    Auth.getInstance().checkAuth();
 });

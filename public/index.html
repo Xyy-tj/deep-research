@@ -122,6 +122,11 @@
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div id="app" class="container mx-auto px-4 py-8">
         <div class="absolute top-4 right-4 flex items-center space-x-4">
+            <!-- Balance Display -->
+            <div id="balanceDisplay" class="hidden px-4 py-2 bg-white rounded-lg shadow text-gray-800">
+                <span data-i18n="balance">Balance</span>: <span id="userBalance" class="font-semibold">0</span>
+            </div>
+            
             <!-- Language Selector -->
             <select id="languageSelector" class="px-3 py-2 text-sm rounded-lg bg-white border border-gray-200 hover:border-gray-300 transition-colors">
                 <option value="en">English</option>
@@ -487,6 +492,7 @@
 
         // Handle verification code sending
         document.getElementById('sendVerificationBtn').addEventListener('click', async () => {
+            const sendBtn = document.getElementById('sendVerificationBtn');
             const email = document.getElementById('email');
             if (!email.value || !email.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                 email.classList.add('border-red-500');
@@ -494,11 +500,30 @@
                 return;
             }
             
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            let countdown = 60;
+            const originalText = sendBtn.textContent;
+            
             const success = await auth.sendVerificationCode(email.value);
             if (success) {
+                const timer = setInterval(() => {
+                    sendBtn.textContent = `${countdown}s`;
+                    countdown--;
+                    if (countdown < 0) {
+                        clearInterval(timer);
+                        sendBtn.disabled = false;
+                        sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        sendBtn.textContent = originalText;
+                    }
+                }, 1000);
+                
                 alert('Verification code sent successfully');
             } else {
                 alert('Failed to send verification code');
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                sendBtn.textContent = originalText;
             }
         });
 

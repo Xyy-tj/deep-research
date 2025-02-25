@@ -19,11 +19,42 @@ const logger = {
     error: (...args: any[]) => console.error('[Server]', ...args)
 };
 
+// Authentication middleware
+function authenticateToken(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        (req as any).user = user;
+        next();
+    });
+}
+
 // Parse JSON bodies
 app.use(express.json());
 
 // Mount authentication routes
 app.use('/api', authRoutes);
+
+// Get user balance endpoint
+app.get('/api/user/balance', authenticateToken, async (req, res) => {
+    try {
+        const userId = (req as any).user.id;
+        const creditManager = await CreditManager.getInstance();
+        const balance = await creditManager.getBalance(userId);
+        res.json({ balance });
+    } catch (error) {
+        logger.error('Error fetching balance:', error);
+        res.status(500).json({ error: 'Failed to fetch balance' });
+    }
+});
 
 // Enable detailed request logging middleware
 app.use((req, res, next) => {
@@ -256,24 +287,6 @@ app.post('/api/user/:userId', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-// Authentication middleware
-const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    try {
-        const user = jwt.verify(token, JWT_SECRET) as { userId: number; username: string };
-        req.user = { id: user.userId, username: user.username }; // Map userId to id for consistency
-        next();
-    } catch (err) {
-        return res.status(403).json({ error: 'Invalid token' });
-    }
-};
 
 // Main research endpoint
 app.post('/api/research', authenticateToken, async (req, res) => {
