@@ -266,39 +266,32 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayResult(result) {
         logger.info('Displaying research result');
         logger.debug('Creating result section in DOM');
-        
-        // Handle both new and old response formats
+
         const content = result.content || result;
         const filename = result.filename || 'report.md';
-        
+
         const resultSection = document.createElement('div');
         resultSection.className = 'mt-8';
         resultSection.innerHTML = `
-            <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-xl font-semibold mb-4">${t('researchResults')}</h3>
-                <div class="prose max-w-none">
-                    ${marked.parse(content)}
-                </div>
-                <div class="mt-4 flex space-x-4">
-                    <button onclick="window.downloadMarkdown('${filename}')" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        ${t('downloadReport')}
+                <div class="markdown-content">${marked.parse(content)}</div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button onclick="saveResults()" class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors">
+                        ${t('saveResults')}
                     </button>
-                    <button onclick="window.copyToClipboard(\`${content.replace(/`/g, '\\`')}\`, this)"
-                            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                        ${t('copyToClipboard')}
-                    </button>
+                    <a href="data:text/markdown;charset=utf-8,${encodeURIComponent(content)}" 
+                       download="${filename}" 
+                       class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
+                        ${t('downloadMarkdown')}
+                    </a>
                 </div>
             </div>
         `;
-        
+
         const resultsContainer = document.getElementById('results');
-        const progressSection = document.getElementById('progress-section');
-        
-        if (progressSection) {
-            logger.debug('Removing progress section');
-            progressSection.remove();
-        }
+        // Clear previous results
+        resultsContainer.innerHTML = '';
         
         logger.debug('Appending result section to container');
         resultsContainer.appendChild(resultSection);
@@ -770,4 +763,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check initial auth state
     Auth.getInstance().checkAuth();
+
+    // Test function to display local markdown file
+    async function testMarkdownDisplay() {
+        try {
+            logger.info('Testing markdown display');
+            const response = await fetch('/test/test.md');
+            if (!response.ok) {
+                throw new Error('Failed to load test markdown file');
+            }
+            const content = await response.text();
+            displayResult(content);
+            logger.info('Test markdown loaded and displayed successfully');
+        } catch (error) {
+            logger.error('Error testing markdown display:', error);
+            showError('Failed to load test markdown file');
+        }
+    }
+
+    // Add test button to the page when in development mode
+    if (process.env.NODE_ENV === 'development') {
+        const testButton = document.createElement('button');
+        testButton.textContent = 'Test Markdown Display';
+        testButton.className = 'fixed bottom-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700';
+        testButton.onclick = testMarkdownDisplay;
+        document.body.appendChild(testButton);
+    }
 });
