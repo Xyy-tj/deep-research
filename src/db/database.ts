@@ -8,7 +8,8 @@ export class DB {
     private dbPath: string;
 
     private constructor() {
-        this.dbPath = 'research.db';
+        // Use absolute path for database file
+        this.dbPath = path.join(process.cwd(), 'research.db');
     }
 
     private async initializeDatabase() {
@@ -25,10 +26,29 @@ export class DB {
         
         this.db = new SQL.Database(data);
 
-        // Initialize schema if new database or run migrations if database already exists
+        // Initialize schema if new database
         if (!data) {
-            const schema = readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
-            this.db.exec(schema);
+            // Use absolute path for schema file, looking in both source and compiled locations
+            const possibleSchemaLocations = [
+                path.join(process.cwd(), 'src', 'db', 'schema.sql'),
+                path.join(process.cwd(), 'dist', 'db', 'schema.sql'),
+                path.join(__dirname, 'schema.sql')
+            ];
+            
+            let schemaContent: string | null = null;
+            for (const schemaPath of possibleSchemaLocations) {
+                if (existsSync(schemaPath)) {
+                    console.log('Found schema at:', schemaPath);
+                    schemaContent = readFileSync(schemaPath, 'utf-8');
+                    break;
+                }
+            }
+            
+            if (!schemaContent) {
+                throw new Error('Could not find schema.sql file in any expected location');
+            }
+
+            this.db.exec(schemaContent);
             this.saveDatabase();
         } else {
             // Check if 'updated_at' column exists in users table
@@ -89,23 +109,32 @@ export class DB {
         return DB.instance;
     }
 
-    run(sql: string, params: any[] = []): void {
+    async run(sql: string, params: any[] = []): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
+        console.log('Executing SQL:', sql, 'with params:', params);
         this.db.run(sql, params);
         this.saveDatabase();
     }
 
-    get<T = any>(sql: string, params: any[] = []): T | undefined {
+    async get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
         if (!this.db) throw new Error('Database not initialized');
+        console.log('Executing SQL:', sql, 'with params:', params);
         const stmt = this.db.prepare(sql);
         stmt.bind(params);
-        const result = stmt.step() ? stmt.getAsObject() as T : undefined;
+        const result = stmt.step();
+        if (!result) {
+            stmt.free();
+            return undefined;
+        }
+        const row = stmt.getAsObject();
         stmt.free();
-        return result;
+        console.log('SQL result:', row);
+        return row as T;
     }
 
-    all<T = any>(sql: string, params: any[] = []): T[] {
+    async all<T = any>(sql: string, params: any[] = []): Promise<T[]> {
         if (!this.db) throw new Error('Database not initialized');
+        console.log('Executing SQL:', sql, 'with params:', params);
         const stmt = this.db.prepare(sql);
         stmt.bind(params);
         const results: T[] = [];
@@ -113,18 +142,55 @@ export class DB {
             results.push(stmt.getAsObject() as T);
         }
         stmt.free();
+        console.log('SQL results:', results);
         return results;
     }
 
-    transaction<T>(fn: () => T): T {
+    async exec(sql: string): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+        console.log('Executing SQL:', sql);
+        this.db.run(sql);
+        this.saveDatabase();
+    }
+
+    runSync(sql: string, params: any[] = []): void {
+        if (!this.db) throw new Error('Database not initialized');
+        console.log('Executing SQL:', sql, 'with params:', params);
+        this.db.run(sql, params);
+    }
+
+    getSync<T = any>(sql: string, params: any[] = []): T | undefined {
+        if (!this.db) throw new Error('Database not initialized');
+        console.log('Executing SQL:', sql, 'with params:', params);
+        const stmt = this.db.prepare(sql);
+        stmt.bind(params);
+        const result = stmt.step();
+        if (!result) {
+            stmt.free();
+            return undefined;
+        }
+        const row = stmt.getAsObject();
+        stmt.free();
+        console.log('SQL result:', row);
+        return row as T;
+    }
+
+    async transaction<T>(fn: () => T): Promise<T> {
+        if (!this.db) throw new Error('Database not initialized');
+        
+        this.runSync('BEGIN TRANSACTION');
         try {
-            this.db.exec('BEGIN TRANSACTION');
-            const result = fn();
-            this.db.exec('COMMIT');
+            const result = fn(); // Synchronous execution
+            this.runSync('COMMIT');
             this.saveDatabase();
             return result;
         } catch (error) {
-            this.db.exec('ROLLBACK');
+            console.error('Transaction error:', error);
+            try {
+                this.runSync('ROLLBACK');
+            } catch (rollbackError) {
+                console.error('Rollback error:', rollbackError);
+            }
             throw error;
         }
     }

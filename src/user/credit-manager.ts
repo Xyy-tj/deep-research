@@ -30,66 +30,87 @@ export class CreditManager {
     );
   }
 
-  async checkUserCredits(userId: string, depth: number, breadth: number): Promise<boolean> {
+  async checkUserCredits(userId: string | number, depth: number, breadth: number): Promise<boolean> {
     if (!this.db) throw new Error('Database not initialized');
     
     const cost = this.calculateQueryCost(depth, breadth);
+    console.log('Checking credits for user:', { userId, cost });
     const user = await this.db.get<{ credits: number }>(
       'SELECT credits FROM users WHERE id = ?',
-      [userId]
+      [Number(userId)] // Convert userId to number since our DB uses INTEGER PRIMARY KEY
     );
     
     if (!user) {
+      console.error('User not found:', userId);
       throw new Error('User not found');
     }
 
+    console.log('Found user credits:', user.credits);
     return user.credits >= cost;
   }
 
-  async deductCredits(userId: string, query: string, depth: number, breadth: number): Promise<number> {
+  async deductCredits(userId: string | number, query: string, depth: number, breadth: number): Promise<number> {
     if (!this.db) throw new Error('Database not initialized');
     
-    const creditsUsed = this.calculateQueryCost(depth, breadth);
-    
-    return this.db.transaction(async () => {
-      const user = await this.db.get<{ credits: number }>(
-        'SELECT credits FROM users WHERE id = ?',
-        [userId]
-      );
+    const cost = this.calculateQueryCost(depth, breadth);
+    const numericUserId = Number(userId);
+    console.log('Deducting credits:', { userId: numericUserId, cost });
 
-      if (!user || user.credits < creditsUsed) {
+    return await this.db.transaction(() => {
+      // Get current credits
+      const user = this.db.getSync<{ credits: number }>(
+        'SELECT credits FROM users WHERE id = ?',
+        [numericUserId]
+      );
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      if (user.credits < cost) {
         throw new Error('Insufficient credits');
       }
 
-      await this.db.run(
-        'UPDATE users SET credits = credits - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [creditsUsed, userId]
+      // Update user credits
+      this.db.runSync(
+        'UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?',
+        [cost, numericUserId, cost]
       );
 
-      await this.db.run(
+      // Verify the update was successful
+      const updated = this.db.getSync<{ changes: number }>(
+        'SELECT changes() as changes'
+      );
+
+      if (!updated || updated.changes === 0) {
+        throw new Error('Insufficient credits');
+      }
+
+      // Record usage
+      this.db.runSync(
         'INSERT INTO usage_records (user_id, query, query_depth, query_breadth, credits_used) VALUES (?, ?, ?, ?, ?)',
-        [userId, query, depth, breadth, creditsUsed]
+        [numericUserId, query, depth, breadth, cost]
       );
 
-      return creditsUsed;
+      return cost;
     });
   }
 
-  async addUser(userId: string, initialCredits: number = 100): Promise<void> {
+  async addUser(userId: string | number, initialCredits: number = 100): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     
     await this.db.run(
       'INSERT INTO users (id, credits) VALUES (?, ?)',
-      [userId, initialCredits]
+      [Number(userId), initialCredits]
     );
   }
 
-  async getUser(userId: string): Promise<User | undefined> {
+  async getUser(userId: string | number): Promise<User | undefined> {
     if (!this.db) throw new Error('Database not initialized');
     
-    const user = await this.db.get<{ id: string; credits: number }>(
+    const user = await this.db.get<{ id: number; credits: number }>(
       'SELECT id, credits FROM users WHERE id = ?',
-      [userId]
+      [Number(userId)]
     );
     
     if (!user) {
@@ -98,7 +119,7 @@ export class CreditManager {
 
     const usageHistory = await this.db.all<UsageRecord>(
       'SELECT query, query_depth as queryDepth, query_breadth as queryBreadth, credits_used as creditsUsed, timestamp FROM usage_records WHERE user_id = ? ORDER BY timestamp DESC',
-      [userId]
+      [Number(userId)]
     );
 
     return {
@@ -108,12 +129,12 @@ export class CreditManager {
     };
   }
 
-  async addCredits(userId: string, credits: number): Promise<void> {
+  async addCredits(userId: string | number, credits: number): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     
     await this.db.run(
-      'UPDATE users SET credits = credits + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [credits, userId]
+      'UPDATE users SET credits = credits + ? WHERE id = ?',
+      [credits, Number(userId)]
     );
   }
 

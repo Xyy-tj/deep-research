@@ -7,6 +7,7 @@ import { OutputManager } from './output-manager';
 import { CreditManager } from './user/credit-manager';
 import authRoutes from './user/auth-routes';
 import jwt from 'jsonwebtoken';
+import { DB } from './db/database';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -32,6 +33,7 @@ function authenticateToken(req: express.Request, res: express.Response, next: ex
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
+        logger.debug('Authenticated user:', user);
         (req as any).user = user;
         next();
     });
@@ -623,6 +625,21 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
-});
+// Initialize database and start server
+async function startServer() {
+    try {
+        // Initialize database
+        await DB.getInstance();
+        logger.info('Database initialized successfully');
+
+        const port = process.env.PORT || 3000;
+        app.listen(port, () => {
+            logger.info(`Server is running on port ${port}`);
+        });
+    } catch (err) {
+        logger.error('Failed to start server:', err);
+        process.exit(1);
+    }
+}
+
+startServer();
