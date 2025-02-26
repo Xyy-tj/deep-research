@@ -2,6 +2,7 @@ export class Auth {
     private static instance: Auth;
     private isAuthenticated: boolean = false;
     private currentUser: string | null = null;
+    private listeners: Array<(authenticated: boolean, user: string | null) => void> = [];
 
     private constructor() {}
 
@@ -10,6 +11,17 @@ export class Auth {
             Auth.instance = new Auth();
         }
         return Auth.instance;
+    }
+
+    public subscribe(listener: (authenticated: boolean, user: string | null) => void) {
+        this.listeners.push(listener);
+        return () => {
+            this.listeners = this.listeners.filter(l => l !== listener);
+        };
+    }
+
+    private notifyListeners() {
+        this.listeners.forEach(listener => listener(this.isAuthenticated, this.currentUser));
     }
 
     public async login(username: string, password: string): Promise<boolean> {
@@ -27,6 +39,7 @@ export class Auth {
                 this.isAuthenticated = true;
                 this.currentUser = username;
                 localStorage.setItem('user', username);
+                this.notifyListeners();
                 return true;
             }
             return false;
@@ -60,6 +73,7 @@ export class Auth {
         this.isAuthenticated = false;
         this.currentUser = null;
         localStorage.removeItem('user');
+        this.notifyListeners();
     }
 
     public checkAuth(): boolean {

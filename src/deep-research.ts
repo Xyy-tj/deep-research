@@ -101,43 +101,53 @@ async function processSerpResult({
   numLearnings?: number;
   numFollowUpQuestions?: number;
 }) {
-  const contents = compact(result.data.map(item => item.description))
-    .map(content => trimPrompt(content, 25_000));
+  const contents = compact(result.data.map((item, index) => ({
+    content: trimPrompt(item.description, 25_000),
+    url: item.url,
+    index: index + 1
+  })).filter(item => item.content));
+  
   log(`Ran ${query}, found ${contents.length} contents`);
 
-if (contents.length === 0) {
-  log(`No results found for query: ${query}`);
-  return {
-    learnings: [],
-    visitedUrls: [],
-    followUpQuestions: []
-  };
-}
+  if (contents.length === 0) {
+    log(`No results found for query: ${query}`);
+    return {
+      learnings: [],
+      visitedUrls: [],
+      followUpQuestions: []
+    };
+  }
 
-const res = await generateObject({
-  model: o3MiniModel,
-  system: systemPrompt(),
-  prompt: `Given the search results for "${query}", extract ${numLearnings} detailed learnings. Each learning should be comprehensive and include specific examples, data points, or case studies when available. Focus on depth rather than breadth.
+  const res = await generateObject({
+    model: o3MiniModel,
+    system: systemPrompt(),
+    prompt: `Given the search results for "${query}", extract ${numLearnings} detailed learnings. Each learning should be comprehensive and include specific examples, data points, or case studies when available. Focus on depth rather than breadth.
 
 Also generate ${numFollowUpQuestions} follow-up questions that could deepen our understanding of areas that need more research.
 
 The search results are:
-${contents.map(content => `<r>\n${content}\n</r>`).join('\n')}`,
-  schema: z.object({
-    learnings: z
-      .array(z.string())
-      .describe('Detailed learnings extracted from the search results. Each learning should be a comprehensive paragraph.'),
-    followUpQuestions: z
-      .array(z.string())
-      .describe('Follow-up questions for deeper research'),
-  }),
-});
-log(
-  `Created ${res.object.learnings.length} learnings`,
-  res.object.learnings,
-);
+${contents.map(item => `<r index="${item.index}">\n${item.content}\n</r>`).join('\n')}
 
-return res.object;
+IMPORTANT: For each learning, make sure to cite the source using the index number provided in the search results, using the format [X].`,
+    schema: z.object({
+      learnings: z
+        .array(z.string())
+        .describe('Detailed learnings extracted from the search results. Each learning should be a comprehensive paragraph with source citations.'),
+      followUpQuestions: z
+        .array(z.string())
+        .describe('Follow-up questions for deeper research'),
+    }),
+  });
+  
+  log(
+    `Created ${res.object.learnings.length} learnings`,
+    res.object.learnings,
+  );
+
+  return {
+    ...res.object,
+    visitedUrls: contents.map(item => item.url)
+  };
 }
 
 export async function writeFinalReport({
@@ -155,6 +165,11 @@ export async function writeFinalReport({
       .join('\n'),
     150_000,
   );
+
+  // Create a reference mapping to provide to the model
+  const referencesMapping = visitedUrls
+    .map((url, index) => `[${index + 1}] ${url}`)
+    .join('\n');
 
   const res = await generateObject({
     model: o3MiniModel,
@@ -177,7 +192,7 @@ Guidelines:
 - Aim for at least 5 pages of detailed content
 - Include ALL relevant learnings from the research
 - Support claims with specific examples and data points
-- IMPORTANT: When citing information from sources, use reference numbers in square brackets [X]
+- IMPORTANT: When citing information from sources, use reference numbers in square brackets [X] that correspond to the references provided below
 - Each major claim or finding should be supported by at least one reference
 - Provide actionable insights and recommendations
 - Use clear section headings and subheadings
@@ -191,7 +206,10 @@ Here are all the learnings from previous research. Each learning includes refere
 ${learningsString}
 </learnings>
 
-Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources.`,
+Here are the references to use in your citations:
+${referencesMapping}
+
+Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources. Each citation should correspond to the reference numbers provided above.`,
     schema: z.object({
       reportMarkdown: z
         .string()

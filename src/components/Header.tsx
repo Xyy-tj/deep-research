@@ -1,22 +1,27 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import { UserStatus } from './UserStatus';
+import { Auth } from './Auth';
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const [userId, setUserId] = React.useState<string | null>(null);
+  const auth = Auth.getInstance();
 
   React.useEffect(() => {
-    const storedUserId = localStorage.getItem('userId');
-    if (!storedUserId && router.pathname !== '/login') {
+    const isAuthenticated = auth.checkAuth();
+    const currentUser = auth.getCurrentUser();
+    
+    if (!isAuthenticated && router.pathname !== '/login') {
       router.push('/login');
     } else {
-      setUserId(storedUserId);
+      setUserId(currentUser);
     }
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('userId');
+    auth.logout();
+    setUserId(null);
     router.push('/login');
   };
 
