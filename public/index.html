@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/tabs.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -228,10 +229,10 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="breadth">Research Breadth</label>
-                                <input type="range" id="breadth" name="breadth" min="2" max="10" value="4"
+                                <input type="range" id="breadth" name="breadth" min="2" max="5" value="3"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <div class="text-center mt-2">
-                                    <span id="breadthValue">4</span>
+                                    <span id="breadthValue">3</span>
                                 </div>
                                 <p class="text-xs text-gray-500 mt-2">
                                     <i class="fas fa-info-circle mr-1"></i> <span data-i18n="breadthExplanation">Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.</span>
@@ -239,7 +240,7 @@
                             </div>
                             <div>
                                 <label for="depth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="depth">Research Depth</label>
-                                <input type="range" id="depth" name="depth" min="1" max="5" value="2"
+                                <input type="range" id="depth" name="depth" min="1" max="3" value="2"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <div class="text-center mt-2">
                                     <span id="depthValue">2</span>
@@ -321,7 +322,7 @@
                 </div>
 
                 <!-- Case Demonstration Section -->
-                <div class="bg-white rounded-xl shadow-xl p-8 mt-8 mb-8">
+                <div class="bg-white rounded-xl shadow-xl p-8 mb-8">
                     <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center" data-i18n="caseStudies">Case Studies</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
@@ -725,6 +726,7 @@
     background-color: #1C64F2 !important;
   }
 </style>
+    <script src="/tabs.js" type="module"></script>
     <script src="/main.js" type="module"></script>
 </body>
 </html>
