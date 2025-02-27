@@ -320,9 +320,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize language selector
     if (languageSelector) {
         languageSelector.value = currentLanguage;
-        languageSelector.addEventListener('change', (e) => {
-            updateLanguage(e.target.value);
-        });
+        
+        // Create a custom styled dropdown for better appearance
+        const enhanceLanguageSelector = () => {
+            // Add a subtle transition effect when changing languages
+            languageSelector.style.transition = 'all 0.2s ease';
+            
+            // Highlight the selector briefly when language changes
+            languageSelector.addEventListener('change', (e) => {
+                languageSelector.classList.add('border-primary-400');
+                setTimeout(() => {
+                    languageSelector.classList.remove('border-primary-400');
+                }, 500);
+                updateLanguage(e.target.value);
+            });
+        };
+        
+        enhanceLanguageSelector();
     }
 
     // Initial language update
