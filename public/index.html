@@ -228,19 +228,25 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="breadth">Research Breadth</label>
-                                <input type="range" id="breadth" name="breadth" min="1" max="10" value="5"
+                                <input type="range" id="breadth" name="breadth" min="2" max="10" value="4"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <div class="text-center mt-2">
-                                    <span id="breadthValue">5</span>
+                                    <span id="breadthValue">4</span>
                                 </div>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="fas fa-info-circle mr-1"></i> <span data-i18n="breadthExplanation">Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.</span>
+                                </p>
                             </div>
                             <div>
                                 <label for="depth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="depth">Research Depth</label>
-                                <input type="range" id="depth" name="depth" min="1" max="10" value="5"
+                                <input type="range" id="depth" name="depth" min="1" max="5" value="2"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <div class="text-center mt-2">
-                                    <span id="depthValue">5</span>
+                                    <span id="depthValue">2</span>
                                 </div>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="fas fa-info-circle mr-1"></i> <span data-i18n="depthExplanation">Controls how detailed your research is. Higher values provide more in-depth analysis and specific information.</span>
+                                </p>
                             </div>
                         </div>
 
@@ -301,6 +307,53 @@
 
                 <div id="results" class="mt-8 space-y-6">
                     <!-- Results will be dynamically inserted here -->
+                </div>
+
+                <!-- Case Demonstration Section -->
+                <div class="bg-white rounded-xl shadow-xl p-8 mt-8 mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center" data-i18n="caseStudies">Case Studies</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy1Title">Climate Change Research</h4>
+                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy1Description">
+                                A comprehensive analysis of climate change impacts, using breadth 8 and depth 7 to explore both global patterns and specific regional effects.
+                            </p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 15 min</div>
+                                <div><i class="fas fa-file-alt mr-1"></i> 12 sources</div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy2Title">Quantum Computing Overview</h4>
+                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy2Description">
+                                An exploration of quantum computing principles and applications, using breadth 5 and depth 9 to focus deeply on core concepts.
+                            </p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 20 min</div>
+                                <div><i class="fas fa-file-alt mr-1"></i> 8 sources</div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy3Title">Market Analysis</h4>
+                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy3Description">
+                                A broad market analysis of emerging technologies, using breadth 10 and depth 4 to capture a wide range of trends without excessive detail.
+                            </p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 12 min</div>
+                                <div><i class="fas fa-file-alt mr-1"></i> 15 sources</div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy4Title">Historical Event Analysis</h4>
+                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy4Description">
+                                A detailed examination of a historical event, using breadth 3 and depth 10 to focus on specific aspects with maximum detail.
+                            </p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 18 min</div>
+                                <div><i class="fas fa-file-alt mr-1"></i> 7 sources</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -568,6 +621,24 @@
             });
         });
     </script>
+    
+    <!-- Dify Chatbot Integration -->
+    <script>
+     window.difyChatbotConfig = {
+      token: 'O0yL43ld1ZFReTVH',
+      baseUrl: 'https://dify.zyfan.zone'
+     }
+    </script>
+    <script
+     src="https://dify.zyfan.zone/embed.min.js"
+     id="O0yL43ld1ZFReTVH"
+     defer>
+    </script>
+    <style>
+      #dify-chatbot-bubble-button {
+        background-color: #1C64F2 !important;
+      }
+    </style>
     <script src="/main.js" type="module"></script>
 </body>
 </html>

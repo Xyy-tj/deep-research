@@ -54,7 +54,9 @@ export const translations = {
         guideResearchDescription: 'Interact with the AI to refine and direct the research process',
         reviewResults: 'Review Results',
         reviewResultsDescription: 'Get comprehensive research results and export them in your preferred format',
-        welcome: 'Welcome'
+        welcome: 'Welcome',
+        breadthExplanation: 'Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.',
+        depthExplanation: 'Controls how deep your research goes. Higher values explore more in-depth information and insights.',
     },
     zh: {
         appTitle: '深度报告助手',
@@ -74,7 +76,7 @@ export const translations = {
         depth: '研究深度',
         startResearch: '开始研究',
         howItWorks: '使用方法',
-        poweredBy: '由 SSTech@DeepResearch 提供支持',
+        poweredBy: '由 SSTech@DeepResearch 提供技术服务支持',
         copied: '已复制！',
         downloadMarkdown: '下载Markdown',
         saveResults: '保存结果',
@@ -111,6 +113,8 @@ export const translations = {
         guideResearchDescription: '与AI互动以完善和指导研究过程',
         reviewResults: '查看结果',
         reviewResultsDescription: '获取全面的研究结果，并以您喜欢的格式导出',
-        welcome: '欢迎'
+        welcome: '欢迎',
+        breadthExplanation: '控制研究范围的广度。高值探索多种来源和观点。',
+        depthExplanation: '控制研究深度的深度。高值探索更多的详细信息和见解。',
     }
 };
