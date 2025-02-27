@@ -10,6 +10,20 @@ export class Auth {
             return Auth.#instance;
         }
         Auth.#instance = this;
+        
+        // Initialize from localStorage (for backward compatibility)
+        const user = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        const credits = localStorage.getItem('credits');
+        
+        if (user && token) {
+            this.#isAuthenticated = true;
+            this.#currentUser = user;
+            this.#userCredits = Number(credits) || 0;
+        }
+        
+        // Check for authentication when the class is instantiated (async)
+        setTimeout(() => this.checkAuth(), 0);
     }
 
     static getInstance() {
@@ -165,20 +179,12 @@ export class Auth {
         return isValid;
     }
 
-    logout() {
-        this.#isAuthenticated = false;
-        this.#currentUser = null;
-        this.#userCredits = 0;
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        localStorage.removeItem('credits');
-        this.#notifyAuthStateChange(null);
-    }
-
-    checkAuth() {
+    async checkAuth() {
+        // First check localStorage for token (backward compatibility)
         const user = localStorage.getItem('user');
         const token = localStorage.getItem('token');
         const credits = localStorage.getItem('credits');
+        
         if (user && token) {
             this.#isAuthenticated = true;
             this.#currentUser = user;
@@ -186,8 +192,65 @@ export class Auth {
             this.#notifyAuthStateChange({ username: user });
             return true;
         }
+        
+        // If no token in localStorage, check with the server for cookie authentication
+        try {
+            const response = await fetch('/api/verify-token', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.authenticated && data.user) {
+                    // User is authenticated via cookie
+                    this.#isAuthenticated = true;
+                    this.#currentUser = data.user.username;
+                    this.#userCredits = data.user.credits || 0;
+                    
+                    // Store in localStorage for backward compatibility
+                    localStorage.setItem('user', data.user.username);
+                    localStorage.setItem('token', token || 'cookie-auth');
+                    localStorage.setItem('credits', String(this.#userCredits));
+                    
+                    this.#notifyAuthStateChange({ username: data.user.username });
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('Auth verification error:', error);
+        }
+        
+        // Not authenticated
+        this.#isAuthenticated = false;
+        this.#currentUser = null;
+        this.#userCredits = 0;
         this.#notifyAuthStateChange(null);
         return false;
+    }
+
+    logout() {
+        // Call the logout API to clear the cookie
+        fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).catch(error => {
+            console.error('Logout error:', error);
+        }).finally(() => {
+            // Clear local storage and update state regardless of API response
+            this.#isAuthenticated = false;
+            this.#currentUser = null;
+            this.#userCredits = 0;
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('credits');
+            this.#notifyAuthStateChange(null);
+        });
     }
 
     getCurrentUser() {
@@ -211,8 +274,18 @@ export class Auth {
         // 立即触发一次当前状态
         if (this.#isAuthenticated) {
             callback({ username: this.#currentUser });
+            
+            // If we have a toggleMainContent function in the global scope, use it
+            if (typeof window.toggleMainContent === 'function') {
+                window.toggleMainContent(true);
+            }
         } else {
             callback(null);
+            
+            // If we have a toggleMainContent function in the global scope, use it
+            if (typeof window.toggleMainContent === 'function') {
+                window.toggleMainContent(false);
+            }
         }
     }
 

@@ -7,6 +7,7 @@ import { OutputManager } from './output-manager';
 import { CreditManager } from './user/credit-manager';
 import authRoutes from './user/auth-routes';
 import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 import { DB } from './db/database';
 
 const app = express();
@@ -20,10 +21,22 @@ const logger = {
     error: (...args: any[]) => console.error('[Server]', ...args)
 };
 
+// Parse JSON bodies
+app.use(express.json());
+
+// Parse cookies
+app.use(cookieParser());
+
 // Authentication middleware
 function authenticateToken(req: express.Request, res: express.Response, next: express.NextFunction) {
+    // First try to get token from Authorization header
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = authHeader && authHeader.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token && req.cookies) {
+        token = req.cookies.auth_token;
+    }
 
     if (!token) {
         return res.status(401).json({ error: 'Authentication required' });
@@ -38,9 +51,6 @@ function authenticateToken(req: express.Request, res: express.Response, next: ex
         next();
     });
 }
-
-// Parse JSON bodies
-app.use(express.json());
 
 // Mount authentication routes
 app.use('/api', authRoutes);

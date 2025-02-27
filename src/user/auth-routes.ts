@@ -35,6 +35,9 @@ async function initAdminUser(db: DB) {
     }
 })();
 
+// Cookie settings
+const COOKIE_MAX_AGE = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+
 // 发送验证码
 router.post('/send-verification', async (req, res) => {
     const { email } = req.body;
@@ -161,8 +164,16 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, username: user.username, email: user.email, isAdmin: user.is_admin },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '3d' }  // Changed from 24h to 3d to match cookie expiration
         );
+
+        // Set the token as an HTTP-only cookie that expires in 3 days
+        res.cookie('auth_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: COOKIE_MAX_AGE,
+            sameSite: 'strict'
+        });
 
         res.json({
             token,
@@ -178,6 +189,66 @@ router.post('/login', async (req, res) => {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+// Verify token endpoint
+router.get('/verify-token', async (req, res) => {
+    // Get the token from the cookie
+    const token = req.cookies.auth_token;
+    
+    if (!token) {
+        return res.status(401).json({ authenticated: false });
+    }
+    
+    // Verify the token
+    jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
+        if (err) {
+            return res.status(401).json({ authenticated: false });
+        }
+        
+        try {
+            // Get user credits from database
+            const db = await DB.getInstance();
+            const userData = await db.get('SELECT credits FROM users WHERE id = ?', [user.id]);
+            const credits = userData ? userData.credits : 0;
+            
+            // Token is valid, return user info
+            return res.json({
+                authenticated: true,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    isAdmin: user.isAdmin,
+                    credits: credits
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching user credits:', error);
+            // Still return user info without credits
+            return res.json({
+                authenticated: true,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    isAdmin: user.isAdmin
+                }
+            });
+        }
+    });
+});
+
+// Logout route to clear the cookie
+router.post('/logout', (req, res) => {
+    // Clear the auth token cookie
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
+    
+    res.json({ message: 'Logged out successfully' });
 });
 
 export default router;

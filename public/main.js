@@ -330,19 +330,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle research start
     async function startResearch() {
-        const query = document.getElementById('query').value;
-        const breadth = parseInt(document.getElementById('breadth').value) || 4;
-        const depth = parseInt(document.getElementById('depth').value) || 2;
-
+        const query = document.getElementById('query').value.trim();
         if (!query) {
-            logger.error('Missing query');
             alert(t('pleaseEnterResearchTopic'));
             return;
         }
 
         // Get authentication token
         const auth = Auth.getInstance();
-        if (!auth.checkAuth()) {
+        const isAuthenticated = await auth.checkAuth();
+        if (!isAuthenticated) {
             logger.error('Not authenticated');
             alert(t('pleaseLogInFirst'));
             return;
@@ -390,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ query, breadth, depth })
+                body: JSON.stringify({ query, breadth: parseInt(document.getElementById('breadth').value) || 4, depth: parseInt(document.getElementById('depth').value) || 2 })
             });
 
             if (!response.ok) {
@@ -718,15 +715,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to toggle between welcome page and main content
-    window.toggleMainContent = (show) => {
-        if (show) {
-            welcomePage.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-        } else {
-            welcomePage.classList.remove('hidden');
-            mainContent.classList.add('hidden');
+    function toggleMainContent(show) {
+        const welcomeSection = document.getElementById('welcomeSection');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (welcomeSection && mainContent) {
+            welcomeSection.style.display = show ? 'none' : 'block';
+            mainContent.style.display = show ? 'block' : 'none';
         }
-    };
+    }
+    
+    // Make toggleMainContent globally accessible
+    window.toggleMainContent = toggleMainContent;
 
     // Show welcome page by default for non-logged in users
     toggleMainContent(false);
@@ -757,12 +757,21 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', () => {
             const auth = Auth.getInstance();
             auth.logout();
-            toggleMainContent(false);
+            // Force page reload after logout to ensure all state is reset
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
         });
     }
 
     // Check initial auth state
-    Auth.getInstance().checkAuth();
+    (async function checkInitialAuth() {
+        const isAuthenticated = await Auth.getInstance().checkAuth();
+        // If authenticated, show main content instead of welcome page
+        if (isAuthenticated) {
+            toggleMainContent(true);
+        }
+    })();
 
     // Test function to display local markdown file
     async function testMarkdownDisplay() {
