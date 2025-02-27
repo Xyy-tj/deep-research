@@ -154,10 +154,12 @@ export async function writeFinalReport({
   prompt,
   learnings,
   visitedUrls,
+  language = 'zh-CN',
 }: {
   prompt: string;
   learnings: string[];
   visitedUrls: string[];
+  language?: string;
 }) {
   const learningsString = trimPrompt(
     learnings
@@ -197,6 +199,7 @@ Guidelines:
 - Provide actionable insights and recommendations
 - Use clear section headings and subheadings
 - Maintain a professional and analytical tone
+- IMPORTANT: Write the entire report in ${language === 'zh-CN' ? 'Chinese (Simplified)' : language} language
 
 <prompt>${prompt}</prompt>
 
@@ -261,6 +264,7 @@ export async function deepResearch({
   depth,
   output,
   userId,
+  language = 'zh-CN',
   learnings = [],
   visitedUrls = [],
   onProgress,
@@ -270,6 +274,7 @@ export async function deepResearch({
   depth: number;
   output: any;
   userId: string;
+  language?: string;
   learnings?: string[];
   visitedUrls?: string[];
   onProgress?: (progress: ResearchProgress) => void;

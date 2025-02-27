@@ -303,10 +303,10 @@ app.post('/api/user/:userId', async (req, res) => {
 // Main research endpoint
 app.post('/api/research', authenticateToken, async (req, res) => {
     try {
-        const { query, depth = 2, breadth = 4 } = req.body;
+        const { query, depth = 2, breadth = 4, language = 'zh-CN' } = req.body;
         const userId = (req as any).user.id;
-        logger.info('Starting new research:', { userId, query, depth, breadth });
-
+        logger.info('Starting new research:', { userId, query, depth, breadth, language });
+        
         // Generate research ID
         const researchId = generateResearchId();
         logger.info('Generated research ID:', researchId);
@@ -338,7 +338,8 @@ app.post('/api/research', authenticateToken, async (req, res) => {
                 depth,
                 breadth,
                 output,
-                userId
+                userId,
+                language
             });
             logger.info('Deep research completed with results:', { 
                 learningsCount: results?.length || 0 
@@ -349,7 +350,8 @@ app.post('/api/research', authenticateToken, async (req, res) => {
             const report = await writeFinalReport({
                 prompt: query,
                 learnings: results?.flatMap(r => r.learnings) || [],
-                visitedUrls: results?.flatMap(r => r.visitedUrls) || []
+                visitedUrls: results?.flatMap(r => r.visitedUrls) || [],
+                language: language
             });
             logger.debug('Final report generated, length:', report.length);
 

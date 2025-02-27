@@ -387,7 +387,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ query, breadth: parseInt(document.getElementById('breadth').value) || 4, depth: parseInt(document.getElementById('depth').value) || 2 })
+                body: JSON.stringify({ 
+                    query, 
+                    breadth: parseInt(document.getElementById('breadth').value) || 4, 
+                    depth: parseInt(document.getElementById('depth').value) || 2,
+                    language: document.getElementById('reportLanguage').value || 'zh-CN'
+                })
             });
 
             if (!response.ok) {
