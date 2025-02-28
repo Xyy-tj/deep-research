@@ -14,7 +14,7 @@
     <script src="/js/tailwind-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+<body class="min-h-screen" style="background-image: url('/images/chinese-landscape.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-blend-mode: overlay; background-color: rgba(248, 249, 250, 0.95);">
     <div id="app" class="container mx-auto px-4 py-8">
         <div class="absolute top-4 right-4 flex items-center space-x-4">
             <!-- Balance Display -->
@@ -98,165 +98,168 @@
         </div>
 
         <div id="mainContent" class="hidden">
-            <div class="title-area mb-16">
-                <div class="flex flex-col items-center py-8">
-                    <div class="relative mb-8 flex flex-col items-center">
-                        <img src="/images/logo.png" alt="Logo" class="h-16 opacity-90 mx-auto">
-                        <div class="mt-6 text-center">
-                            <h1 class="text-5xl font-normal tracking-wide" style="font-family: 'Ma Shan Zheng', cursive;" data-i18n="appTitle">砚 · 海</h1>
+            <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl p-8 mb-8">
+                <div class="title-area mb-16">
+                    <div class="flex flex-col items-center py-8">
+                        <div class="relative mb-8 flex flex-col items-center">
+                            <img src="/images/logo.png" alt="Logo" class="h-16 opacity-90 mx-auto">
+                            <div class="mt-6 text-center">
+                                <h1 class="text-5xl font-normal tracking-wide" style="font-family: 'Ma Shan Zheng', cursive;" data-i18n="appTitle">砚 · 海</h1>
+                            </div>
                         </div>
+                        <div class="w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent my-4"></div>
+                        <p class="text-lg font-light tracking-wider" style="font-family: 'Noto Serif SC', serif;" data-i18n="appSubtitle">墨海数舟，千卷瞬祈</p>
                     </div>
-                    <div class="w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent my-4"></div>
-                    <p class="text-lg font-light tracking-wider" style="font-family: 'Noto Serif SC', serif;" data-i18n="appSubtitle">墨海数舟，千卷瞬祈</p>
                 </div>
-            </div>
 
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-white rounded-xl shadow-xl p-8 mb-8 transform transition-all hover:shadow-2xl">
-                    <form id="researchForm" method="post" onsubmit="return false;" class="space-y-8">
-                        <div class="relative">
-                            <label for="query" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="researchTopic">Research Topic</label>
-                            <textarea id="query" name="query" rows="3" required
-                                    class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-200"></textarea>
-                        </div>
+                <div class="max-w-4xl mx-auto">
+                    <div class="ink-card p-8 mb-8 transform transition-all hover:shadow-2xl ink-fade-in">
+                        <form id="researchForm" method="post" onsubmit="return false;" class="space-y-8">
+                            <div class="relative">
+                                <label for="query" class="block text-sm font-medium text-gray-700 mb-1 ink-title" data-i18n="researchTopic">Research Topic</label>
+                                <textarea id="query" name="query" rows="3" required
+                                        class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200"></textarea>
+                            </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="breadth">Research Breadth</label>
-                                <input type="range" id="breadth" name="breadth" min="2" max="5" value="3"
-                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                <div class="text-center mt-2">
-                                    <span id="breadthValue">3</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2 ink-title" data-i18n="breadth">Research Breadth</label>
+                                    <input type="range" id="breadth" name="breadth" min="2" max="5" value="3"
+                                           class="w-full ink-slider">
+                                    <div class="text-center mt-2">
+                                        <span id="breadthValue" class="text-primary-700">3</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i> <span data-i18n="breadthExplanation">Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.</span>
+                                    </p>
                                 </div>
+                                <div>
+                                    <label for="depth" class="block text-sm font-medium text-gray-700 mb-2 ink-title" data-i18n="depth">Research Depth</label>
+                                    <input type="range" id="depth" name="depth" min="1" max="3" value="2"
+                                           class="w-full ink-slider">
+                                    <div class="text-center mt-2">
+                                        <span id="depthValue" class="text-primary-700">2</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i> <span data-i18n="depthExplanation">Controls how detailed your research is. Higher values provide more in-depth analysis and specific information.</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="ink-divider"></div>
+
+                            <div>
+                                <label for="reportLanguage" class="block text-sm font-medium text-gray-700 mb-2 ink-title" data-i18n="reportLanguage">Report Language</label>
+                                <select id="reportLanguage" name="reportLanguage" class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200">
+                                    <option value="zh-CN" selected data-i18n="chineseSimplified">Chinese (Simplified)</option>
+                                    <option value="en" data-i18n="english">English</option>
+                                </select>
                                 <p class="text-xs text-gray-500 mt-2">
-                                    <i class="fas fa-info-circle mr-1"></i> <span data-i18n="breadthExplanation">Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.</span>
+                                    <i class="fas fa-info-circle mr-1"></i> <span data-i18n="reportLanguageExplanation">Choose the language for your final research report.</span>
                                 </p>
                             </div>
-                            <div>
-                                <label for="depth" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="depth">Research Depth</label>
-                                <input type="range" id="depth" name="depth" min="1" max="3" value="2"
-                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                <div class="text-center mt-2">
-                                    <span id="depthValue">2</span>
+
+                            <div class="flex justify-center mt-6">
+                                <button type="submit" id="submitBtn" class="ink-button px-8 py-3 rounded-lg font-medium transition-all flex items-center">
+                                    <i class="fas fa-search mr-2"></i>
+                                    <span data-i18n="startResearch">Start Research</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="interactiveDialog" class="hidden">
+                        <div class="ink-card p-6 animate-pulse-slow">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-robot text-2xl text-primary-400"></i>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-2">
-                                    <i class="fas fa-info-circle mr-1"></i> <span data-i18n="depthExplanation">Controls how detailed your research is. Higher values provide more in-depth analysis and specific information.</span>
+                                <div class="ml-4 flex-1">
+                                    <p id="questionText" class="text-lg font-medium text-primary-900 mb-4 ink-title"></p>
+                                    <div class="space-y-3">
+                                        <input type="text" id="answerInput" 
+                                               class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                                               placeholder="Type your answer here...">
+                                        <button id="submitAnswer" 
+                                                class="inline-flex items-center px-6 py-2 rounded-lg ink-button transition-colors">
+                                            <i class="fas fa-paper-plane mr-2"></i>
+                                            <span data-i18n="submitAnswer">Submit Answer</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="progress" class="hidden mt-8 ink-fade-in">
+                        <div class="relative pt-1">
+                            <div class="flex mb-3 items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-spinner fa-spin text-primary-600 mr-2"></i>
+                                    <span class="text-sm font-semibold text-primary-600 ink-title">
+                                        <span data-i18n="researching">Researching...</span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span id="progressText" class="text-sm font-semibold text-primary-600">0%</span>
+                                </div>
+                            </div>
+                            <div class="overflow-hidden h-3 rounded-full bg-primary-100">
+                                <div id="progressBar" 
+                                     class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
+                                     style="width: 0%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="results" class="mt-8 space-y-6">
+                        <!-- Results will be dynamically inserted here -->
+                    </div>
+
+                    <!-- Case Demonstration Section -->
+                    <div class="ink-card p-8 mb-8">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center ink-title" data-i18n="caseStudies">Case Studies</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy1Title">Climate Change Research</h4>
+                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy1Description">
+                                    A comprehensive analysis of climate change impacts, using breadth 8 and depth 7 to explore both global patterns and specific regional effects.
                                 </p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label for="reportLanguage" class="block text-sm font-medium text-gray-700 mb-2" data-i18n="reportLanguage">Report Language</label>
-                            <select id="reportLanguage" name="reportLanguage" class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-200">
-                                <option value="zh-CN" selected data-i18n="chineseSimplified">Chinese (Simplified)</option>
-                                <option value="en" data-i18n="english">English</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-2">
-                                <i class="fas fa-info-circle mr-1"></i> <span data-i18n="reportLanguageExplanation">Choose the language for your final research report.</span>
-                            </p>
-                        </div>
-
-                        <div class="text-center">
-                            <button id="startResearch" type="submit"
-                                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                <i class="fas fa-search mr-2"></i>
-                                <span data-i18n="startResearch">Start Research</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="interactiveDialog" class="hidden">
-                    <div class="bg-primary-50 border-l-4 border-primary-400 rounded-lg p-6 animate-pulse-slow">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-robot text-2xl text-primary-400"></i>
-                            </div>
-                            <div class="ml-4 flex-1">
-                                <p id="questionText" class="text-lg font-medium text-primary-900 mb-4"></p>
-                                <div class="space-y-3">
-                                    <input type="text" id="answerInput" 
-                                           class="w-full px-4 py-2 rounded-lg border-2 border-primary-200 focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
-                                           placeholder="Type your answer here...">
-                                    <button id="submitAnswer" 
-                                            class="inline-flex items-center px-6 py-2 rounded-lg text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
-                                        <i class="fas fa-paper-plane mr-2"></i>
-                                        <span data-i18n="submitAnswer">Submit Answer</span>
-                                    </button>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 15 min</div>
+                                    <div><i class="fas fa-file-alt mr-1"></i> 12 sources</div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="progress" class="hidden mt-8">
-                    <div class="relative pt-1">
-                        <div class="flex mb-3 items-center justify-between">
-                            <div class="flex items-center">
-                                <i class="fas fa-spinner fa-spin text-primary-600 mr-2"></i>
-                                <span class="text-sm font-semibold text-primary-600">
-                                    <span data-i18n="researching">Researching...</span>
-                                </span>
+                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy2Title">Quantum Computing Overview</h4>
+                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy2Description">
+                                    An exploration of quantum computing principles and applications, using breadth 5 and depth 9 to focus deeply on core concepts.
+                                </p>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 20 min</div>
+                                    <div><i class="fas fa-file-alt mr-1"></i> 8 sources</div>
+                                </div>
                             </div>
-                            <div>
-                                <span id="progressText" class="text-sm font-semibold text-primary-600">0%</span>
+                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy3Title">Market Analysis</h4>
+                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy3Description">
+                                    A broad market analysis of emerging technologies, using breadth 10 and depth 4 to capture a wide range of trends without excessive detail.
+                                </p>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 12 min</div>
+                                    <div><i class="fas fa-file-alt mr-1"></i> 15 sources</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="overflow-hidden h-3 rounded-full bg-primary-100">
-                            <div id="progressBar" 
-                                 class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
-                                 style="width: 0%">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="results" class="mt-8 space-y-6">
-                    <!-- Results will be dynamically inserted here -->
-                </div>
-
-                <!-- Case Demonstration Section -->
-                <div class="bg-white rounded-xl shadow-xl p-8 mb-8">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center" data-i18n="caseStudies">Case Studies</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy1Title">Climate Change Research</h4>
-                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy1Description">
-                                A comprehensive analysis of climate change impacts, using breadth 8 and depth 7 to explore both global patterns and specific regional effects.
-                            </p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 15 min</div>
-                                <div><i class="fas fa-file-alt mr-1"></i> 12 sources</div>
-                            </div>
-                        </div>
-                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy2Title">Quantum Computing Overview</h4>
-                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy2Description">
-                                An exploration of quantum computing principles and applications, using breadth 5 and depth 9 to focus deeply on core concepts.
-                            </p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 20 min</div>
-                                <div><i class="fas fa-file-alt mr-1"></i> 8 sources</div>
-                            </div>
-                        </div>
-                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy3Title">Market Analysis</h4>
-                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy3Description">
-                                A broad market analysis of emerging technologies, using breadth 10 and depth 4 to capture a wide range of trends without excessive detail.
-                            </p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 12 min</div>
-                                <div><i class="fas fa-file-alt mr-1"></i> 15 sources</div>
-                            </div>
-                        </div>
-                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                            <h4 class="text-lg font-semibold text-primary-600 mb-3" data-i18n="caseStudy4Title">Historical Event Analysis</h4>
-                            <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy4Description">
-                                A detailed examination of a historical event, using breadth 3 and depth 10 to focus on specific aspects with maximum detail.
-                            </p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <div class="mr-4"><i class="fas fa-clock mr-1"></i> 18 min</div>
-                                <div><i class="fas fa-file-alt mr-1"></i> 7 sources</div>
+                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy4Title">Historical Event Analysis</h4>
+                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy4Description">
+                                    A detailed examination of a historical event, using breadth 3 and depth 10 to focus on specific aspects with maximum detail.
+                                </p>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 18 min</div>
+                                    <div><i class="fas fa-file-alt mr-1"></i> 7 sources</div>
+                                </div>
                             </div>
                         </div>
                     </div>
