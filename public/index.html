@@ -12,8 +12,14 @@
     <link href="/css/auth-styles.css" rel="stylesheet">
     <link href="/css/chatbot-styles.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="/css/case-library.css" rel="stylesheet">
     <script src="/js/tailwind-config.js"></script>
+    <script src="/js/pdf-viewer.js"></script>
+    <script src="/js/image-placeholder.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+    
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 </head>
 <body class="min-h-screen" style="background-image: url('/images/chinese-landscape.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-blend-mode: overlay; background-color: rgba(248, 249, 250, 0.95);">
     <!-- Sidebar -->
@@ -38,6 +44,10 @@
                 <div class="sidebar-item" data-tab="settings">
                     <i class="fas fa-cog mr-2"></i>
                     <span data-i18n="settings">Settings</span>
+                </div>
+                <div class="sidebar-item" data-tab="caseLibrary">
+                    <i class="fas fa-book mr-2"></i>
+                    <span data-i18n="caseLibrary">Case Library</span>
                 </div>
                 <div class="sidebar-item" data-tab="help">
                     <i class="fas fa-question-circle mr-2"></i>
@@ -71,6 +81,7 @@
                     <span data-i18n="logout">Logout</span>
                 </button>
             </div>
+            
             <div id="authSection">
                 <button id="loginBtn" class="w-28 px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
                     <i class="fas fa-sign-in-alt mr-1"></i> <span data-i18n="login">Login</span>
@@ -205,6 +216,10 @@
                         </form>
                     </div>
 
+                    <div id="results" class="mt-8 space-y-6">
+                        <!-- Results will be dynamically inserted here -->
+                    </div>
+
                     <div id="interactiveDialog" class="hidden">
                         <div class="ink-card p-6 animate-pulse-slow">
                             <div class="flex items-start">
@@ -248,10 +263,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div id="results" class="mt-8 space-y-6">
-                        <!-- Results will be dynamically inserted here -->
                     </div>
 
                     <!-- Case Demonstration Section -->
@@ -303,7 +314,196 @@
                 </div>
             </div>
         </div>
-
+        
+        <!-- Case Library Tab -->
+        <div id="caseLibraryTab" class="hidden max-w-4xl mx-auto">
+            <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl p-8 mb-8 relative z-10">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center ink-title" data-i18n="caseLibraryTitle">案例库</h2>
+                
+                <!-- Research Categories Tabs -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-center mb-4 case-category-tabs">
+                        <button class="category-tab active" data-category="academic">学术研究</button>
+                        <button class="category-tab" data-category="business">商业分析</button>
+                        <button class="category-tab" data-category="technology">技术调研</button>
+                        <button class="category-tab" data-category="social">社会调查</button>
+                    </div>
+                </div>
+                
+                <!-- Research Examples Container -->
+                <div id="researchExamplesContainer">
+                    <!-- Academic Research Examples -->
+                    <div class="category-content active" data-category="academic">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Example 1 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/academic-example1.jpg" alt="Academic Research Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">长江流域水质变化趋势研究</h3>
+                                    <p class="example-theme">环境科学 | 水质分析</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="longjiang-water-quality">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/longjiang-water-quality.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Example 2 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/academic-example2.jpg" alt="Academic Research Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">中国古代哲学思想演变</h3>
+                                    <p class="example-theme">哲学 | 思想史</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="chinese-philosophy">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/chinese-philosophy.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Business Analysis Examples -->
+                    <div class="category-content" data-category="business">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Example 1 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/business-example1.jpg" alt="Business Analysis Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">中国电子商务发展趋势</h3>
+                                    <p class="example-theme">市场分析 | 电商</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="ecommerce-trends">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/ecommerce-trends.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Example 2 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/business-example2.jpg" alt="Business Analysis Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">共享经济商业模式分析</h3>
+                                    <p class="example-theme">商业模式 | 共享经济</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="sharing-economy">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/sharing-economy.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Technology Research Examples -->
+                    <div class="category-content" data-category="technology">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Example 1 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/tech-example1.jpg" alt="Technology Research Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">人工智能在医疗领域的应用</h3>
+                                    <p class="example-theme">AI | 医疗科技</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="ai-healthcare">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/ai-healthcare.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Example 2 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/tech-example2.jpg" alt="Technology Research Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">区块链技术发展与应用</h3>
+                                    <p class="example-theme">区块链 | 金融科技</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="blockchain-fintech">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/blockchain-fintech.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Social Research Examples -->
+                    <div class="category-content" data-category="social">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Example 1 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/social-example1.jpg" alt="Social Research Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">城市老龄化社会问题研究</h3>
+                                    <p class="example-theme">社会学 | 人口老龄化</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="aging-society">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/aging-society.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Example 2 -->
+                            <div class="research-example-card">
+                                <div class="preview-image">
+                                    <img src="/images/examples/social-example2.jpg" alt="Social Research Example">
+                                </div>
+                                <div class="example-content">
+                                    <h3 class="example-title">中国农村教育发展调查</h3>
+                                    <p class="example-theme">教育 | 农村发展</p>
+                                    <div class="example-actions">
+                                        <button class="view-template-btn" data-template="rural-education">查看提问模板</button>
+                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/rural-education.pdf">预览PDF</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PDF Preview Modal -->
+                <div id="pdfPreviewModal" class="pdf-preview-modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="pdfPreviewTitle">PDF预览</h3>
+                            <button id="closePdfModal" class="close-modal-btn">&times;</button>
+                        </div>
+                        <div id="pdfPreviewContainer" class="modal-body">
+                            <div id="pdfViewer"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Template Preview Modal -->
+                <div id="templatePreviewModal" class="template-preview-modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="templatePreviewTitle">提问模板</h3>
+                            <button id="closeTemplateModal" class="close-modal-btn">&times;</button>
+                        </div>
+                        <div id="templatePreviewContainer" class="modal-body">
+                            <!-- Template content will be loaded here -->
+                        </div>
+                        <div class="modal-footer">
+                            <button id="useTemplateBtn" class="use-template-btn">使用此模板</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Welcome Page for Non-logged-in Users -->
         <div id="welcomePage" class="max-w-4xl mx-auto mt-16">
             <div class="text-center mb-12">
@@ -396,28 +596,6 @@
             </div>
         </div>
 
-        <div id="progress" class="hidden">
-            <div class="relative pt-1">
-                <div class="flex mb-3 items-center justify-between">
-                    <div class="flex items-center">
-                        <i class="fas fa-spinner fa-spin text-primary-600 mr-2"></i>
-                        <span class="text-sm font-semibold text-primary-600">
-                            <span data-i18n="researching">Researching...</span>
-                        </span>
-                    </div>
-                    <div>
-                        <span id="progressText" class="text-sm font-semibold text-primary-600">0%</span>
-                    </div>
-                </div>
-                <div class="overflow-hidden h-3 rounded-full bg-primary-100">
-                    <div id="progressBar" 
-                         class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
-                         style="width: 0%">
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <footer class="mt-12 py-6 text-center text-gray-600">
@@ -429,6 +607,7 @@
     <script src="/js/main.js" type="module"></script>
     <script src="/js/auth-ui.js" type="module"></script>
     <script src="/js/chatbot-config.js" type="module"></script>
-    <script src="/js/sidebar.js"></script>
+    <script src="/js/sidebar.js" type="module"></script>
+    <script src="/js/case-library.js" type="module"></script>
 </body>
 </html>

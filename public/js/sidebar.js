@@ -32,13 +32,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const tab = this.getAttribute('data-tab');
             
             // 这里可以添加切换内容的逻辑
-            // 暂时只处理research tab，其他tab的内容将在后续实现
             if (tab === 'research') {
                 // 显示研究内容
                 document.querySelector('#researchForm').closest('.max-w-4xl').style.display = 'block';
-            } else {
+                // 隐藏其他内容
+                if (document.querySelector('#caseLibraryTab')) {
+                    document.querySelector('#caseLibraryTab').style.display = 'none';
+                }
+            } else if (tab === 'caseLibrary') {
+                // 显示案例库内容
+                if (document.querySelector('#caseLibraryTab')) {
+                    document.querySelector('#caseLibraryTab').classList.remove('hidden');
+                    document.querySelector('#caseLibraryTab').style.display = 'block';
+                }
                 // 隐藏研究内容
                 document.querySelector('#researchForm').closest('.max-w-4xl').style.display = 'none';
+            } else {
+                // 隐藏研究内容和案例库内容
+                document.querySelector('#researchForm').closest('.max-w-4xl').style.display = 'none';
+                if (document.querySelector('#caseLibraryTab')) {
+                    document.querySelector('#caseLibraryTab').style.display = 'none';
+                }
             }
         });
     });

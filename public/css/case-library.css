@@ -1,0 +1,223 @@
+/* Case Library Styles */
+
+/* Category Tabs */
+.case-category-tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.category-tab {
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    color: #6b7280;
+    border-radius: 0.375rem 0.375rem 0 0;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.category-tab:hover {
+    color: #4f46e5;
+    background-color: #f3f4f6;
+}
+
+.category-tab.active {
+    color: #4f46e5;
+    border-bottom: 2px solid #4f46e5;
+    font-weight: 600;
+}
+
+/* Category Content */
+.category-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.category-content.active {
+    display: block;
+}
+
+/* Research Example Cards */
+.research-example-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.research-example-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.preview-image {
+    height: 160px;
+    overflow: hidden;
+}
+
+.preview-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.research-example-card:hover .preview-image img {
+    transform: scale(1.05);
+}
+
+.example-content {
+    padding: 1rem;
+}
+
+.example-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.example-theme {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.example-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.view-template-btn, .view-pdf-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.view-template-btn {
+    color: #4f46e5;
+    background-color: #eef2ff;
+}
+
+.view-template-btn:hover {
+    background-color: #e0e7ff;
+}
+
+.view-pdf-btn {
+    color: #b91c1c;
+    background-color: #fee2e2;
+}
+
+.view-pdf-btn:hover {
+    background-color: #fecaca;
+}
+
+/* Modal Styles */
+.pdf-preview-modal, .template-preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-preview-modal.active, .template-preview-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.close-modal-btn {
+    color: #6b7280;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    color: #ef4444;
+}
+
+.modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+#pdfViewer {
+    width: 100%;
+    height: 600px;
+    max-height: calc(90vh - 120px);
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.use-template-btn {
+    padding: 0.5rem 1rem;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.use-template-btn:hover {
+    background-color: #4338ca;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Hide any element with the hidden class */
+.hidden {
+    display: none !important;
+}
