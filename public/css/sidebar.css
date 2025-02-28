@@ -1,0 +1,121 @@
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    background-color: rgba(255, 255, 255, 0.92);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.08);
+    transform: translateX(-280px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 40;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar.expanded {
+    transform: translateX(0);
+}
+
+.sidebar-toggle {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255, 255, 255, 0.92);
+    padding: 12px 8px;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    z-index: 41;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-left: none;
+    transition: all 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 1);
+    padding-right: 12px;
+}
+
+.sidebar-content {
+    padding: 20px 0;
+    height: calc(100% - 80px);
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    margin-bottom: 16px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+}
+
+.sidebar-header h2 {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.75rem;
+    background: linear-gradient(120deg, #2c3e50, #34495e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+}
+
+.sidebar-item {
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #4a5568;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: #2d3748;
+}
+
+.sidebar-item.active {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #2d3748;
+    border-right: 3px solid #2d3748;
+}
+
+.sidebar-item i {
+    width: 24px;
+    text-align: center;
+    margin-right: 12px;
+    font-size: 1.1em;
+}
+
+.sidebar-item span {
+    font-family: 'Noto Serif SC', serif;
+    font-weight: 400;
+}
+
+.main-content {
+    margin-left: 0;
+    transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content.sidebar-expanded {
+    margin-left: 280px;
+}
+
+/* 自定义滚动条样式 */
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.15);
+}

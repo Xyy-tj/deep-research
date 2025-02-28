@@ -11,11 +11,47 @@
     <link href="/css/styles.css" rel="stylesheet">
     <link href="/css/auth-styles.css" rel="stylesheet">
     <link href="/css/chatbot-styles.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
     <script src="/js/tailwind-config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen" style="background-image: url('/images/chinese-landscape.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-blend-mode: overlay; background-color: rgba(248, 249, 250, 0.95);">
-    <div id="app" class="container mx-auto px-4 py-8">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2 class="text-xl font-bold text-gray-800">Deep Research</h2>
+        </div>
+        <div class="sidebar-content">
+            <div class="space-y-4">
+                <div class="sidebar-item active" data-tab="research">
+                    <i class="fas fa-search mr-2"></i>
+                    <span data-i18n="research">Research</span>
+                </div>
+                <div class="sidebar-item" data-tab="history">
+                    <i class="fas fa-history mr-2"></i>
+                    <span data-i18n="history">History</span>
+                </div>
+                <div class="sidebar-item" data-tab="favorites">
+                    <i class="fas fa-star mr-2"></i>
+                    <span data-i18n="favorites">Favorites</span>
+                </div>
+                <div class="sidebar-item" data-tab="settings">
+                    <i class="fas fa-cog mr-2"></i>
+                    <span data-i18n="settings">Settings</span>
+                </div>
+                <div class="sidebar-item" data-tab="help">
+                    <i class="fas fa-question-circle mr-2"></i>
+                    <span data-i18n="help">Help</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="sidebar-toggle">
+        <i class="fas fa-chevron-right"></i>
+    </div>
+    
+    <!-- Main Content -->
+    <div id="app" class="main-content container mx-auto px-4 py-8">
         <div class="absolute top-4 right-4 flex items-center space-x-4">
             <!-- Balance Display -->
             <div id="balanceDisplay" class="hidden px-4 py-2 bg-white rounded-lg shadow text-gray-800">
@@ -393,5 +429,6 @@
     <script src="/js/main.js" type="module"></script>
     <script src="/js/auth-ui.js" type="module"></script>
     <script src="/js/chatbot-config.js" type="module"></script>
+    <script src="/js/sidebar.js"></script>
 </body>
 </html>
