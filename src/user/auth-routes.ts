@@ -8,6 +8,8 @@ const router = Router();
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const emailService = new EmailService();
+const INVITATION_CODE_REQUIRED = process.env.INVITATION_CODE_REQUIRED === 'true';
+const VALID_INVITATION_CODE = process.env.VALID_INVITATION_CODE || 'default-invitation-code';
 
 // Store verification codes in memory
 const verificationCodes = new Map<string, { code: string, timestamp: number }>();
@@ -75,11 +77,22 @@ router.post('/send-verification', async (req, res) => {
 
 // 注册路由
 router.post('/register', async (req, res) => {
-    const { username, email, password, verificationCode } = req.body;
+    const { username, email, password, verificationCode, invitationCode } = req.body;
     
     try {
         console.log('Registration attempt:', { username, email });
         const db = await DB.getInstance();
+        
+        // Check invitation code if required
+        if (INVITATION_CODE_REQUIRED) {
+            if (!invitationCode) {
+                return res.status(400).json({ error: 'Invitation code is required' });
+            }
+            
+            if (invitationCode !== VALID_INVITATION_CODE) {
+                return res.status(400).json({ error: 'Invalid invitation code' });
+            }
+        }
 
         // 验证验证码
         const storedVerification = verificationCodes.get(email);
