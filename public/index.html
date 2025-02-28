@@ -12,6 +12,7 @@
     <link href="/css/auth-styles.css" rel="stylesheet">
     <link href="/css/chatbot-styles.css" rel="stylesheet">
     <script src="/js/tailwind-config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div id="app" class="container mx-auto px-4 py-8">
@@ -97,9 +98,17 @@
         </div>
 
         <div id="mainContent" class="hidden">
-            <div class="text-center mb-12">
-                <h1 class="text-5xl font-bold text-gray-800 mb-4" data-i18n="appTitle">Deep Research Assistant</h1>
-                <p class="text-lg text-gray-600" data-i18n="appSubtitle">Discover deeper insights with AI-powered research</p>
+            <div class="title-area mb-16">
+                <div class="flex flex-col items-center py-8">
+                    <div class="relative mb-8 flex flex-col items-center">
+                        <img src="/images/logo.png" alt="Logo" class="h-16 opacity-90 mx-auto">
+                        <div class="mt-6 text-center">
+                            <h1 class="text-5xl font-normal tracking-wide" style="font-family: 'Ma Shan Zheng', cursive;" data-i18n="appTitle">砚 · 海</h1>
+                        </div>
+                    </div>
+                    <div class="w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent my-4"></div>
+                    <p class="text-lg font-light tracking-wider" style="font-family: 'Noto Serif SC', serif;" data-i18n="appSubtitle">墨海数舟，千卷瞬祈</p>
+                </div>
             </div>
 
             <div class="max-w-4xl mx-auto">

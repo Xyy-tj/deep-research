@@ -1,4 +1,4 @@
-import { Auth } from '/auth.js';
+import { Auth } from './auth.js';
 
 // Initialize auth module
 const auth = Auth.getInstance();

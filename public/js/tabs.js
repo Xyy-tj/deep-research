@@ -1,4 +1,6 @@
 // Tab and Sidebar Navigation System
+import { Auth } from './auth.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize tabs
     initTabs();
@@ -8,9 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged((user) => {
         if (user) {
             initSidebar();
-            document.getElementById('sidebar').classList.remove('hidden');
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('hidden');
+            }
         } else {
-            document.getElementById('sidebar').classList.add('hidden');
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.add('hidden');
+            }
         }
     });
 });
@@ -50,6 +58,12 @@ function initTabs() {
 // Initialize sidebar functionality
 function initSidebar() {
     const sidebarItems = document.querySelectorAll('.sidebar-nav-item');
+    
+    // If there are no sidebar items, return early
+    if (sidebarItems.length === 0) {
+        console.log('No sidebar navigation items found');
+        return;
+    }
     
     sidebarItems.forEach(item => {
         item.addEventListener('click', () => {
@@ -91,7 +105,9 @@ function initSidebar() {
 // Toggle sidebar visibility (for mobile)
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('hidden');
+    if (sidebar) {
+        sidebar.classList.toggle('hidden');
+    }
 }
 
 // Make functions available globally

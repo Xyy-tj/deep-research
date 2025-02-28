@@ -88,8 +88,8 @@ export const translations = {
         contactDescription: 'For support or inquiries, please reach out to our team at support@deepresearch.ai'
     },
     zh: {
-        appTitle: '深度报告助手',
-        appSubtitle: '通过AI驱动的系统性研究获得更深入的见解',
+        appTitle: '砚 · 海',
+        appSubtitle: '墨海数舟，千卷瞬祈',
         welcomeTitle: '您的智能研究伙伴',
         login: '登录',
         logout: '退出',

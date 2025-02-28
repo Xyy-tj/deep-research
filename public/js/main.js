@@ -810,7 +810,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add test button to the page when in development mode
-    if (process.env.NODE_ENV === 'development') {
+    const isDevelopmentMode = false; // Set to true for development, false for production
+    if (isDevelopmentMode) {
         const testButton = document.createElement('button');
         testButton.textContent = 'Test Markdown Display';
         testButton.className = 'fixed bottom-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700';
