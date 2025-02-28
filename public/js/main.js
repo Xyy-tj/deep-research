@@ -66,6 +66,18 @@ async function updateBalance() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize auth and handle logout
+    const auth = Auth.getInstance();
+    
+    // Handle logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            auth.logout();
+            window.location.reload(); // 添加页面刷新以确保UI状态更新
+        });
+    }
+
     const form = document.getElementById('researchForm');
     const startButton = document.getElementById('startResearch');
     const breadthInput = document.getElementById('breadth');
@@ -83,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomePage = document.getElementById('welcomePage');
     const mainContent = document.getElementById('mainContent');
     const languageSelector = document.getElementById('languageSelector');
-    const logoutBtn = document.getElementById('logoutBtn');
 
     let currentResearchId = null;
     let currentQuestionId = null;
@@ -431,13 +442,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Bind start button click
-    startButton.addEventListener('click', startResearch);
+    if (startButton) {
+        startButton.addEventListener('click', startResearch);
+    }
 
     // Handle form submission (prevent default and use our custom handler)
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        startResearch();
-    });
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            startResearch();
+        });
+    }
 
     // Clean up when leaving the page
     window.addEventListener('beforeunload', cleanupEventSource);
@@ -771,17 +786,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add logout button click handler
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            const auth = Auth.getInstance();
-            auth.logout();
-            // Force page reload after logout to ensure all state is reset
-            setTimeout(() => {
-                window.location.reload();
-            }, 100);
-        });
-    }
 
     // Check initial auth state
     (async function checkInitialAuth() {

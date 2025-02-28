@@ -199,6 +199,7 @@ export class Auth {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
@@ -220,16 +221,26 @@ export class Auth {
                     return true;
                 }
             }
+            // 401 or other errors mean user is not authenticated
+            this.#isAuthenticated = false;
+            this.#currentUser = null;
+            this.#userCredits = 0;
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('credits');
+            this.#notifyAuthStateChange(null);
+            return false;
         } catch (error) {
-            console.error('Auth verification error:', error);
+            // Network or other errors - don't log to console
+            this.#isAuthenticated = false;
+            this.#currentUser = null;
+            this.#userCredits = 0;
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('credits');
+            this.#notifyAuthStateChange(null);
+            return false;
         }
-        
-        // Not authenticated
-        this.#isAuthenticated = false;
-        this.#currentUser = null;
-        this.#userCredits = 0;
-        this.#notifyAuthStateChange(null);
-        return false;
     }
 
     logout() {
