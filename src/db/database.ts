@@ -6,6 +6,8 @@ export class DB {
     private static instance: DB;
     private db: Database;
     private dbPath: string;
+    private transactionActive: boolean = false;
+    private transactionQueue: Promise<any> = Promise.resolve();
 
     private constructor() {
         // Use absolute path for database file
@@ -208,23 +210,45 @@ export class DB {
         return row as T;
     }
 
-    async transaction<T>(fn: () => T): Promise<T> {
+    public getLastChanges(): number {
+        return this.db.getRowsModified();
+    }
+
+    async transaction<T>(fn: () => Promise<T>): Promise<T> {
         if (!this.db) throw new Error('Database not initialized');
         
-        this.runSync('BEGIN TRANSACTION');
-        try {
-            const result = fn(); // Synchronous execution
-            this.runSync('COMMIT');
-            this.saveDatabase();
-            return result;
-        } catch (error) {
-            console.error('Transaction error:', error);
-            try {
-                this.runSync('ROLLBACK');
-            } catch (rollbackError) {
-                console.error('Rollback error:', rollbackError);
-            }
-            throw error;
-        }
+        // Use a queue to ensure transactions run sequentially
+        return new Promise((resolve, reject) => {
+            this.transactionQueue = this.transactionQueue.then(async () => {
+                try {
+                    // Manual transaction handling without relying on SQL.js transactions
+                    let result: T;
+                    
+                    try {
+                        // Start transaction manually
+                        this.transactionActive = true;
+                        
+                        // Execute function
+                        result = await fn();
+                        
+                        // Commit by saving database
+                        this.saveDatabase();
+                        this.transactionActive = false;
+                        
+                        resolve(result);
+                        return result;
+                    } catch (error) {
+                        console.error('Transaction error:', error);
+                        this.transactionActive = false;
+                        reject(error);
+                        throw error;
+                    }
+                } catch (error) {
+                    // This catch is for errors in the transaction queue itself
+                    console.error('Transaction queue error:', error);
+                    return null; // Allow queue to continue
+                }
+            });
+        });
     }
 }

@@ -55,10 +55,11 @@ export class CreditManager {
     const cost = this.calculateQueryCost(depth, breadth);
     const numericUserId = Number(userId);
     console.log('Deducting credits:', { userId: numericUserId, cost });
-
-    return await this.db.transaction(() => {
-      // Get current credits
-      const user = this.db.getSync<{ credits: number }>(
+    
+    // Run all operations inside a transaction
+    await this.db.transaction(async () => {
+      // Get the original credits within the transaction
+      const user = await this.db.get<{ credits: number }>(
         'SELECT credits FROM users WHERE id = ?',
         [numericUserId]
       );
@@ -66,34 +67,26 @@ export class CreditManager {
       if (!user) {
         throw new Error('User not found');
       }
-      
+
       if (user.credits < cost) {
         throw new Error('Insufficient credits');
       }
-
-      // Update user credits
-      this.db.runSync(
-        'UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?',
-        [cost, numericUserId, cost]
+      
+      // Update credits
+      await this.db.run(
+        'UPDATE users SET credits = credits - ? WHERE id = ?',
+        [cost, numericUserId]
       );
-
-      // Verify the update was successful
-      const updated = this.db.getSync<{ changes: number }>(
-        'SELECT changes() as changes'
-      );
-
-      if (!updated || updated.changes === 0) {
-        throw new Error('Insufficient credits');
-      }
-
+      
       // Record usage
-      this.db.runSync(
+      await this.db.run(
         'INSERT INTO usage_records (user_id, query, query_depth, query_breadth, credits_used) VALUES (?, ?, ?, ?, ?)',
         [numericUserId, query, depth, breadth, cost]
       );
-
-      return cost;
     });
+
+    console.log('Credits deducted successfully');
+    return cost;
   }
 
   async addUser(userId: string | number, initialCredits: number = 12): Promise<void> {
