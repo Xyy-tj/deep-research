@@ -46,6 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             emailVerification.style.display = 'block';
         }
+
+        // Show invitation code section for registration
+        const invitationCodeSection = document.getElementById('invitationCodeSection');
+        if (invitationCodeSection) {
+            invitationCodeSection.classList.toggle('hidden', type === 'login');
+        }
     }
 
     function hideAuthModal() {
