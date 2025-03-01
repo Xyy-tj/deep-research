@@ -21,7 +21,7 @@ export const translations = {
         reportLanguageExplanation: 'Choose the language for your final research report.',
         startResearch: 'Start Research',
         howItWorks: 'How It Works',
-        poweredBy: 'Powered by Deep Research AI',
+        poweredBy: 'Powered by SSTech@DeepResearch',
         copied: 'Copied!',
         downloadMarkdown: 'Download Markdown',
         saveResults: 'Save Results',

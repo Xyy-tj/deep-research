@@ -130,23 +130,23 @@ async function processSerpResult({
   // Assign unique indexes to the URLs
   uniqueUrls.forEach((url, idx) => {
     if (globalReferenceMapping && globalReferenceMapping.mapping[url]) {
-      // 如果URL已经有全局引用编号，则使用它
+      // If URL already has a global reference number, use it
       uniqueIndexes[url] = globalReferenceMapping.mapping[url];
     } else {
-      // 否则分配一个新的索引
+      // Otherwise assign a new index
       const newIndex = globalReferenceMapping 
         ? (globalReferenceMapping.nextIndex + idx) 
         : (idx + 1);
       uniqueIndexes[url] = newIndex;
       
-      // 更新全局引用映射（如果存在）
+      // Update global reference mapping if it exists
       if (globalReferenceMapping) {
         globalReferenceMapping.mapping[url] = newIndex;
       }
     }
   });
   
-  // 更新下一个可用的全局索引（如果存在全局引用映射）
+  // Update next available global index if global reference mapping exists
   if (globalReferenceMapping) {
     globalReferenceMapping.nextIndex = Math.max(
       globalReferenceMapping.nextIndex,
@@ -170,7 +170,7 @@ Also generate ${numFollowUpQuestions} follow-up questions that could deepen our 
 The search results are:
 ${uniqueContents.map(item => `<r index="${item.index}">\n${item.content}\n</r>`).join('\n')}
 
-IMPORTANT: For each learning, make sure to cite the source using the index number provided in the search results, using the format [X].`,
+IMPORTANT: For each learning, make sure to cite the source using the EXACT index number provided in the search results, using the format [X]. These reference numbers are GLOBAL across the entire research project - do not modify them or create your own numbering system.`,
     schema: z.object({
       learnings: z
         .array(z.string())
@@ -186,20 +186,20 @@ IMPORTANT: For each learning, make sure to cite the source using the index numbe
     res.object.learnings,
   );
 
-  // 处理生成的learnings中的引用编号，将局部引用编号替换为全局引用编号
+  // Process generated learnings to ensure reference numbers are consistent
   const processedLearnings = res.object.learnings.map(learning => {
     let processedLearning = learning;
     
-    // 查找所有引用编号 [X] 并替换
+    // Find all reference numbers [X] and replace them
     const referenceRegex = /\[(\d+)\]/g;
     processedLearning = processedLearning.replace(referenceRegex, (match, localIndex) => {
-      // 找到对应这个局部引用编号的URL
+      // Find the URL corresponding to this local reference number
       const url = uniqueUrls.find(url => uniqueIndexes[url] === Number(localIndex));
       if (url) {
-        // 使用uniqueIndexes中的引用编号（已经是全局的）
+        // Use the reference number from uniqueIndexes (which is already global)
         return `[${uniqueIndexes[url]}]`;
       }
-      return match; // 如果找不到匹配的URL，保持原样
+      return match; // If no matching URL is found, keep the original
     });
     
     return processedLearning;
@@ -208,7 +208,7 @@ IMPORTANT: For each learning, make sure to cite the source using the index numbe
   // Return the reference indexes mapping using the unique indexes
   return {
     ...res.object,
-    learnings: processedLearnings, // 返回处理后的learnings
+    learnings: processedLearnings, // Return processed learnings
     visitedUrls: uniqueUrls,
     referenceIndexes: uniqueIndexes
   };
@@ -234,38 +234,14 @@ export async function writeFinalReport({
     200_000,
   );
 
-  // Create a unique reference mapping
+  // Use the global reference mapping directly without renumbering
+  // Create a references mapping string for the prompt
   const uniqueUrls = [...new Set(visitedUrls)];
-  const uniqueReferenceMapping = {};
-  
-  // First, try to use original reference numbers from the mapping if available
-  const usedNumbers = new Set<number>();
-  
-  // First pass - preserve original numbers where possible
-  uniqueUrls.forEach(url => {
-    const originalNumber = referenceMapping[url];
-    if (originalNumber && !usedNumbers.has(originalNumber)) {
-      uniqueReferenceMapping[url] = originalNumber;
-      usedNumbers.add(originalNumber);
-    }
-  });
-  
-  // Second pass - assign new unique numbers to remaining URLs
-  let nextNumber = 1;
-  uniqueUrls.forEach(url => {
-    if (!uniqueReferenceMapping[url]) {
-      // Find the next available number
-      while (usedNumbers.has(nextNumber)) {
-        nextNumber++;
-      }
-      uniqueReferenceMapping[url] = nextNumber;
-      usedNumbers.add(nextNumber);
-    }
-  });
-  
-  // Create the references mapping string for the prompt
   const referencesMapping = uniqueUrls
-    .map(url => `[${uniqueReferenceMapping[url]}] ${url}`)
+    .map(url => {
+      const refNumber = referenceMapping[url] || 0;
+      return `[${refNumber}] ${url}`;
+    })
     .sort((a, b) => {
       const indexA = parseInt(a.match(/\[(\d+)\]/)?.[1] || '0');
       const indexB = parseInt(b.match(/\[(\d+)\]/)?.[1] || '0');
@@ -295,6 +271,7 @@ Guidelines:
 - Include ALL relevant learnings from the research
 - Support claims with specific examples and data points
 - IMPORTANT: When citing information from sources, use reference numbers in square brackets [X] that correspond to the references provided below
+- CRITICAL: Maintain CONSISTENT global reference numbers throughout the entire document. DO NOT restart numbering in each section.
 - Each major claim or finding should be supported by at least one reference
 - Provide actionable insights and recommendations
 - Use clear section headings and subheadings
@@ -312,7 +289,7 @@ ${learningsString}
 Here are the references to use in your citations:
 ${referencesMapping}
 
-Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources. Each citation should correspond to the reference numbers provided above.`,
+Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources. Each citation should correspond to the reference numbers provided above. DO NOT restart numbering in each section - use the exact same reference numbers throughout the entire document.`,
     schema: z.object({
       reportMarkdown: z
         .string()
@@ -320,9 +297,12 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
     }),
   });
 
-  // Generate a references section that maintains unique reference numbers
+  // Generate a references section using the same global reference mapping
   const urlsSection = `\n\n## References\n${uniqueUrls
-    .map(url => `[${uniqueReferenceMapping[url]}] ${url}`)
+    .map(url => {
+      const refNumber = referenceMapping[url] || 0;
+      return `[${refNumber}] ${url}`;
+    })
     .sort((a, b) => {
       const indexA = parseInt(a.match(/\[(\d+)\]/)?.[1] || '0');
       const indexB = parseInt(b.match(/\[(\d+)\]/)?.[1] || '0');
@@ -413,10 +393,14 @@ export async function deepResearch({
   const limit = pLimit(ConcurrencyLimit);
   const newLearnings = [...learnings];
   const newVisitedUrls = [...visitedUrls];
-  // Track consistent reference indexes across all search results
+  
+  // Initialize global reference mapping to track consistent reference numbers
   const referenceMapping = {};
-  // 跟踪下一个可用的全局索引编号
   let nextGlobalIndex = 1;
+  const globalReferenceMapping = { 
+    mapping: referenceMapping, 
+    nextIndex: nextGlobalIndex 
+  };
 
   for (let currentDepth = 1; currentDepth <= depth; currentDepth++) {
     reportProgress({ currentDepth });
@@ -454,7 +438,7 @@ export async function deepResearch({
         const processed = await processSerpResult({
           query: serpQuery.query,
           result,
-          globalReferenceMapping: { mapping: referenceMapping, nextIndex: nextGlobalIndex }
+          globalReferenceMapping
         });
 
         if (processed.learnings) {
@@ -492,7 +476,10 @@ export async function deepResearch({
       });
     }
 
-    // 保存部分结果到会话
+    // Log the current state of the reference mapping
+    log(`Current reference mapping has ${Object.keys(referenceMapping).length} entries`);
+
+    // Save partial results to session
     session.partialResults = [...results, {
       learnings: [...new Set(newLearnings)],
       visitedUrls: [...new Set(newVisitedUrls)],
