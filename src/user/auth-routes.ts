@@ -12,7 +12,17 @@ const INVITATION_CODE_REQUIRED = process.env.INVITATION_CODE_REQUIRED === 'true'
 const VALID_INVITATION_CODE = process.env.VALID_INVITATION_CODE || 'default-invitation-code';
 
 // Store verification codes in memory
-const verificationCodes = new Map<string, { code: string, timestamp: number }>();
+const verificationCodes = new Map<string, { code: string, timestamp: number, invitationCode: string }>();
+
+// Generate a random invitation code
+function generateInvitationCode() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return code;
+}
 
 // Initialize admin user if not exists
 async function initAdminUser(db: DB) {
@@ -26,14 +36,29 @@ async function initAdminUser(db: DB) {
     }
 }
 
-// Initialize admin user when the module loads
+// Initialize admin user and default invitation codes when the module loads
 (async () => {
     try {
-        console.log('Initializing admin user...');
+        console.log('Initializing admin user and invitation codes...');
         const db = await DB.getInstance();
         await initAdminUser(db);
+        
+        // Check if there are any invitation codes
+        const existingCodes = await db.all('SELECT * FROM invitation_codes');
+        if (existingCodes.length === 0) {
+            console.log('No invitation codes found, creating default ones...');
+            // Create some default invitation codes
+            for (let i = 0; i < 5; i++) {
+                const code = generateInvitationCode();
+                await db.run(
+                    'INSERT INTO invitation_codes (code) VALUES (?)',
+                    [code]
+                );
+                console.log(`Created invitation code: ${code}`);
+            }
+        }
     } catch (error) {
-        console.error('Failed to initialize admin user:', error);
+        console.error('Failed to initialize admin user or invitation codes:', error);
     }
 })();
 
@@ -42,10 +67,25 @@ const COOKIE_MAX_AGE = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
 
 // 发送验证码
 router.post('/send-verification', async (req, res) => {
-    const { email } = req.body;
+    const { email, invitationCode } = req.body;
     
     try {
         const db = await DB.getInstance();
+
+        // 检查邀请码是否有效
+        if (!invitationCode) {
+            return res.status(400).json({ error: 'Invitation code is required' });
+        }
+
+        // 查询数据库中是否存在该邀请码且未被使用
+        const validInvitation = await db.get(
+            'SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0',
+            [invitationCode]
+        );
+
+        if (!validInvitation) {
+            return res.status(400).json({ error: 'Invalid or already used invitation code' });
+        }
 
         // 检查邮箱是否已被使用
         const existingUser = await db.get('SELECT * FROM users WHERE email = ?', [email]);
@@ -59,7 +99,8 @@ router.post('/send-verification', async (req, res) => {
         // 存储验证码（10分钟有效期）
         verificationCodes.set(email, {
             code: verificationCode,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            invitationCode // 存储邀请码与验证码的关联
         });
 
         // 发送验证码邮件
@@ -83,17 +124,6 @@ router.post('/register', async (req, res) => {
         console.log('Registration attempt:', { username, email });
         const db = await DB.getInstance();
         
-        // Check invitation code if required
-        if (INVITATION_CODE_REQUIRED) {
-            if (!invitationCode) {
-                return res.status(400).json({ error: 'Invitation code is required' });
-            }
-            
-            if (invitationCode !== VALID_INVITATION_CODE) {
-                return res.status(400).json({ error: 'Invalid invitation code' });
-            }
-        }
-
         // 验证验证码
         const storedVerification = verificationCodes.get(email);
         if (!storedVerification) {
@@ -111,6 +141,21 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Invalid verification code' });
         }
 
+        // 检查邀请码是否匹配
+        if (storedVerification.invitationCode !== invitationCode) {
+            return res.status(400).json({ error: 'Invitation code does not match the one used for verification' });
+        }
+
+        // 检查邀请码是否有效
+        const validInvitation = await db.get(
+            'SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0',
+            [invitationCode]
+        );
+
+        if (!validInvitation) {
+            return res.status(400).json({ error: 'Invalid or already used invitation code' });
+        }
+
         // 检查用户名是否已存在
         const existingUser = await db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
         if (existingUser) {
@@ -122,9 +167,15 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         // 创建新用户
-        db.run(
+        const result = await db.run(
             'INSERT INTO users (username, email, password, credits, is_verified) VALUES (?, ?, ?, ?, ?)',
             [username, email, hashedPassword, 100, true]
+        );
+
+        // 标记邀请码为已使用
+        await db.run(
+            'UPDATE invitation_codes SET is_used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ?',
+            [result.lastID, invitationCode]
         );
 
         // 清除验证码
@@ -288,6 +339,93 @@ router.post('/logout', (req, res) => {
     });
     
     res.json({ message: 'Logged out successfully' });
+});
+
+// Admin route to generate invitation codes
+router.post('/admin/generate-invitation-codes', async (req, res) => {
+    try {
+        // Verify admin token
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        
+        let decodedToken;
+        try {
+            decodedToken = jwt.verify(token, JWT_SECRET);
+        } catch (error) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        
+        // Check if user is admin
+        const db = await DB.getInstance();
+        const user = await db.get('SELECT is_admin FROM users WHERE id = ?', [decodedToken.id]);
+        
+        if (!user || !user.is_admin) {
+            return res.status(403).json({ error: 'Admin privileges required' });
+        }
+        
+        // Generate requested number of codes
+        const { count = 1 } = req.body;
+        const codes = [];
+        
+        for (let i = 0; i < count; i++) {
+            const code = generateInvitationCode();
+            await db.run(
+                'INSERT INTO invitation_codes (code) VALUES (?)',
+                [code]
+            );
+            codes.push(code);
+        }
+        
+        res.json({ codes });
+    } catch (error) {
+        console.error('Generate invitation codes error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route to list invitation codes
+router.get('/admin/invitation-codes', async (req, res) => {
+    try {
+        // Verify admin token
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        
+        let decodedToken;
+        try {
+            decodedToken = jwt.verify(token, JWT_SECRET);
+        } catch (error) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        
+        // Check if user is admin
+        const db = await DB.getInstance();
+        const user = await db.get('SELECT is_admin FROM users WHERE id = ?', [decodedToken.id]);
+        
+        if (!user || !user.is_admin) {
+            return res.status(403).json({ error: 'Admin privileges required' });
+        }
+        
+        // Get all invitation codes
+        const codes = await db.all(`
+            SELECT ic.*, u.username as used_by_username 
+            FROM invitation_codes ic
+            LEFT JOIN users u ON ic.used_by = u.id
+            ORDER BY ic.created_at DESC
+        `);
+        
+        res.json({ codes });
+    } catch (error) {
+        console.error('List invitation codes error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 export default router;

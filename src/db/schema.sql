@@ -23,7 +23,19 @@ CREATE TABLE IF NOT EXISTS usage_records (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Invitation codes table
+CREATE TABLE IF NOT EXISTS invitation_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE NOT NULL,
+    is_used BOOLEAN DEFAULT 0,
+    used_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    used_at DATETIME,
+    FOREIGN KEY (used_by) REFERENCES users(id)
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_usage_records_user_id ON usage_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_invitation_codes_code ON invitation_codes(code);

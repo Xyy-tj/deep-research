@@ -77,7 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const email = document.getElementById('email').value;
             const verificationCode = document.getElementById('verificationCode').value;
-            success = await auth.registerWithVerificationCode(username, email, password, verificationCode);
+            const invitationCode = document.getElementById('invitationCode').value;
+            success = await auth.registerWithVerificationCode(username, email, password, verificationCode, invitationCode);
         }
 
         if (success) {
@@ -99,9 +100,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sendVerificationBtn').addEventListener('click', async () => {
         const sendBtn = document.getElementById('sendVerificationBtn');
         const email = document.getElementById('email');
+        const invitationCode = document.getElementById('invitationCode');
+        
+        // Validate email
         if (!email.value || !email.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
             email.classList.add('border-red-500');
             alert('Please enter a valid email address');
+            return;
+        }
+        
+        // Validate invitation code
+        if (!invitationCode.value) {
+            invitationCode.classList.add('border-red-500');
+            alert('Please enter a valid invitation code');
             return;
         }
         
@@ -110,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let countdown = 60;
         const originalText = sendBtn.textContent;
         
-        const success = await auth.sendVerificationCode(email.value);
+        const success = await auth.sendVerificationCode(email.value, invitationCode.value);
         if (success) {
             const timer = setInterval(() => {
                 sendBtn.textContent = `${countdown}s`;

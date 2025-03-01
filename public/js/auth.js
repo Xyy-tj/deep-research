@@ -95,14 +95,14 @@ export class Auth {
         }
     }
 
-    async sendVerificationCode(email) {
+    async sendVerificationCode(email, invitationCode) {
         try {
             const response = await fetch('/api/send-verification', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, invitationCode }),
             });
 
             if (response.ok) {
@@ -115,7 +115,7 @@ export class Auth {
         }
     }
 
-    async registerWithVerificationCode(username, email, password, verificationCode) {
+    async registerWithVerificationCode(username, email, password, verificationCode, invitationCode) {
         if (!this.validateForm('register')) {
             return false;
         }
@@ -125,7 +125,7 @@ export class Auth {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, email, password, verificationCode }),
+                body: JSON.stringify({ username, email, password, verificationCode, invitationCode }),
             });
 
             if (response.ok) {
@@ -143,11 +143,12 @@ export class Auth {
         const password = document.getElementById('password');
         const email = document.getElementById('email');
         const verificationCode = document.getElementById('verificationCode');
+        const invitationCode = document.getElementById('invitationCode');
 
         let isValid = true;
 
         // Reset validation state
-        [username, password, email, verificationCode].forEach(field => {
+        [username, password, email, verificationCode, invitationCode].forEach(field => {
             if (field) {
                 field.classList.remove('border-red-500');
             }
@@ -170,6 +171,7 @@ export class Auth {
             // Enable email and verification code fields
             email.required = true;
             verificationCode.required = true;
+            invitationCode.required = true;
 
             // Validate email
             if (!email.value || !email.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
@@ -180,6 +182,12 @@ export class Auth {
             // Validate verification code
             if (!verificationCode.value || verificationCode.value.length !== 6) {
                 verificationCode.classList.add('border-red-500');
+                isValid = false;
+            }
+            
+            // Validate invitation code
+            if (!invitationCode.value || invitationCode.value.length < 3) {
+                invitationCode.classList.add('border-red-500');
                 isValid = false;
             }
         }

@@ -6,7 +6,7 @@ import { before, beforeEach, describe, it } from 'mocha';
 describe('CreditManager', () => {
     let creditManager: CreditManager;
     let testUserId = 999;
-    const initialCredits = 100;
+    const initialCredits = 12;
 
     before(async () => {
         // Get instance and ensure test user exists

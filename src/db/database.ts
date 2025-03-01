@@ -109,11 +109,18 @@ export class DB {
         return DB.instance;
     }
 
-    async run(sql: string, params: any[] = []): Promise<void> {
+    async run(sql: string, params: any[] = []): Promise<{ lastID?: number }> {
         if (!this.db) throw new Error('Database not initialized');
         console.log('Executing SQL:', sql, 'with params:', params);
-        this.db.run(sql, params);
+        const result = this.db.run(sql, params);
         this.saveDatabase();
+        
+        // Return an object with lastID if it's an INSERT statement
+        if (sql.trim().toUpperCase().startsWith('INSERT')) {
+            return { lastID: this.db.exec('SELECT last_insert_rowid()')[0].values[0][0] };
+        }
+        
+        return {};
     }
 
     async get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
@@ -153,10 +160,17 @@ export class DB {
         this.saveDatabase();
     }
 
-    runSync(sql: string, params: any[] = []): void {
+    runSync(sql: string, params: any[] = []): { lastID?: number } {
         if (!this.db) throw new Error('Database not initialized');
         console.log('Executing SQL:', sql, 'with params:', params);
-        this.db.run(sql, params);
+        const result = this.db.run(sql, params);
+        
+        // Return an object with lastID if it's an INSERT statement
+        if (sql.trim().toUpperCase().startsWith('INSERT')) {
+            return { lastID: this.db.exec('SELECT last_insert_rowid()')[0].values[0][0] };
+        }
+        
+        return {};
     }
 
     getSync<T = any>(sql: string, params: any[] = []): T | undefined {
