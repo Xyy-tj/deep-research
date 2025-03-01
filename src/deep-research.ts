@@ -96,11 +96,13 @@ async function processSerpResult({
   result,
   numLearnings = 3,
   numFollowUpQuestions = 3,
+  globalReferenceMapping,
 }: {
   query: string;
   result: any;
   numLearnings?: number;
   numFollowUpQuestions?: number;
+  globalReferenceMapping?: { mapping: Record<string, number>, nextIndex: number };
 }) {
   const contents = compact(result.data.map((item, index) => ({
     content: trimPrompt(item.description, 25_000),
@@ -127,9 +129,31 @@ async function processSerpResult({
   
   // Assign unique indexes to the URLs
   uniqueUrls.forEach((url, idx) => {
-    uniqueIndexes[url] = idx + 1;
+    if (globalReferenceMapping && globalReferenceMapping.mapping[url]) {
+      // 如果URL已经有全局引用编号，则使用它
+      uniqueIndexes[url] = globalReferenceMapping.mapping[url];
+    } else {
+      // 否则分配一个新的索引
+      const newIndex = globalReferenceMapping 
+        ? (globalReferenceMapping.nextIndex + idx) 
+        : (idx + 1);
+      uniqueIndexes[url] = newIndex;
+      
+      // 更新全局引用映射（如果存在）
+      if (globalReferenceMapping) {
+        globalReferenceMapping.mapping[url] = newIndex;
+      }
+    }
   });
   
+  // 更新下一个可用的全局索引（如果存在全局引用映射）
+  if (globalReferenceMapping) {
+    globalReferenceMapping.nextIndex = Math.max(
+      globalReferenceMapping.nextIndex,
+      ...Object.values(uniqueIndexes)
+    ) + 1;
+  }
+
   // Update contents with unique indexes
   const uniqueContents = contents.map(item => ({
     ...item,
@@ -162,9 +186,29 @@ IMPORTANT: For each learning, make sure to cite the source using the index numbe
     res.object.learnings,
   );
 
+  // 处理生成的learnings中的引用编号，将局部引用编号替换为全局引用编号
+  const processedLearnings = res.object.learnings.map(learning => {
+    let processedLearning = learning;
+    
+    // 查找所有引用编号 [X] 并替换
+    const referenceRegex = /\[(\d+)\]/g;
+    processedLearning = processedLearning.replace(referenceRegex, (match, localIndex) => {
+      // 找到对应这个局部引用编号的URL
+      const url = uniqueUrls.find(url => uniqueIndexes[url] === Number(localIndex));
+      if (url) {
+        // 使用uniqueIndexes中的引用编号（已经是全局的）
+        return `[${uniqueIndexes[url]}]`;
+      }
+      return match; // 如果找不到匹配的URL，保持原样
+    });
+    
+    return processedLearning;
+  });
+
   // Return the reference indexes mapping using the unique indexes
   return {
     ...res.object,
+    learnings: processedLearnings, // 返回处理后的learnings
     visitedUrls: uniqueUrls,
     referenceIndexes: uniqueIndexes
   };
@@ -371,6 +415,8 @@ export async function deepResearch({
   const newVisitedUrls = [...visitedUrls];
   // Track consistent reference indexes across all search results
   const referenceMapping = {};
+  // 跟踪下一个可用的全局索引编号
+  let nextGlobalIndex = 1;
 
   for (let currentDepth = 1; currentDepth <= depth; currentDepth++) {
     reportProgress({ currentDepth });
@@ -408,6 +454,7 @@ export async function deepResearch({
         const processed = await processSerpResult({
           query: serpQuery.query,
           result,
+          globalReferenceMapping: { mapping: referenceMapping, nextIndex: nextGlobalIndex }
         });
 
         if (processed.learnings) {
