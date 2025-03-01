@@ -113,13 +113,22 @@ export class DB {
         if (!this.db) throw new Error('Database not initialized');
         console.log('Executing SQL:', sql, 'with params:', params);
         const result = this.db.run(sql, params);
-        this.saveDatabase();
         
         // Return an object with lastID if it's an INSERT statement
+        let lastID;
         if (sql.trim().toUpperCase().startsWith('INSERT')) {
-            return { lastID: this.db.exec('SELECT last_insert_rowid()')[0].values[0][0] };
+            const lastIdResult = this.db.exec('SELECT last_insert_rowid()');
+            lastID = lastIdResult[0].values[0][0];
+            console.log('Generated last insert ID:', lastID);
         }
         
+        // Save database after any modification
+        this.saveDatabase();
+        console.log('Database saved after operation');
+        
+        if (lastID !== undefined) {
+            return { lastID };
+        }
         return {};
     }
 
@@ -166,10 +175,20 @@ export class DB {
         const result = this.db.run(sql, params);
         
         // Return an object with lastID if it's an INSERT statement
+        let lastID;
         if (sql.trim().toUpperCase().startsWith('INSERT')) {
-            return { lastID: this.db.exec('SELECT last_insert_rowid()')[0].values[0][0] };
+            const lastIdResult = this.db.exec('SELECT last_insert_rowid()');
+            lastID = lastIdResult[0].values[0][0];
+            console.log('Generated last insert ID (sync):', lastID);
         }
         
+        // Save database after any modification
+        this.saveDatabase();
+        console.log('Database saved after sync operation');
+        
+        if (lastID !== undefined) {
+            return { lastID };
+        }
         return {};
     }
 

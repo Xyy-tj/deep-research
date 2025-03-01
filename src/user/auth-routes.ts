@@ -172,11 +172,26 @@ router.post('/register', async (req, res) => {
             [username, email, hashedPassword, 100, true]
         );
 
+        // 确保我们有有效的用户ID
+        if (!result.lastID) {
+            console.error('Failed to get lastID after user insertion');
+            return res.status(500).json({ error: 'Failed to create user' });
+        }
+
+        console.log('User created with ID:', result.lastID);
+
         // 标记邀请码为已使用
-        await db.run(
-            'UPDATE invitation_codes SET is_used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ?',
-            [result.lastID, invitationCode]
-        );
+        try {
+            const updateResult = await db.run(
+                'UPDATE invitation_codes SET is_used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ?',
+                [result.lastID, invitationCode]
+            );
+            console.log('Invitation code updated successfully for user ID:', result.lastID);
+        } catch (error) {
+            console.error('Error updating invitation code:', error);
+            // We don't want to fail the registration if the invitation code update fails
+            // The user is already created, so we'll just log the error
+        }
 
         // 清除验证码
         verificationCodes.delete(email);

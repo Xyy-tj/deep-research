@@ -102,7 +102,7 @@ export const translations = {
         // Title and introduction
         appTitle: '砚 · 海',
         appSubtitle: '墨海数舟，千卷瞬祈',
-        welcomeTitle: '您的智能研究伙伴',
+        welcomeTitle: '墨海数舟，千卷瞬祈',
 
         // Login and registration
         login: '登录',
