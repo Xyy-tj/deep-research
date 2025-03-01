@@ -339,10 +339,34 @@ app.post('/api/research', authenticateToken, async (req, res) => {
                 breadth,
                 output,
                 userId,
-                language
+                language,
+                onProgress: (progress) => {
+                    // Send progress update to clients
+                    logger.debug('Sending progress update:', progress);
+                    (output as WebOutputManager).sendEventToAll({
+                        type: 'progress',
+                        progress
+                    });
+                }
             });
             logger.info('Deep research completed with results:', { 
                 learningsCount: results?.length || 0 
+            });
+
+            // Send notification that we're generating the final report
+            logger.info('Sending report generation notification to clients');
+            (output as WebOutputManager).sendEventToAll({
+                type: 'progress',
+                progress: {
+                    currentDepth: depth,
+                    totalDepth: depth,
+                    currentBreadth: breadth,
+                    totalBreadth: breadth,
+                    completedQueries: results?.length || breadth * depth,
+                    totalQueries: results?.length || breadth * depth,
+                    currentQuery: 'Generating final report... Please wait',
+                    isGeneratingReport: true
+                }
             });
 
             // Generate final report

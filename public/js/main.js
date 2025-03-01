@@ -459,21 +459,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update progress bar and status
     function updateProgress(progress) {
-        const progressBar = document.querySelector('#progress-bar div');
-        const progressStatus = document.getElementById('progress-status');
+        // First handle the dynamically created progress-bar if it exists
+        const dynamicProgressBar = document.querySelector('#progress-bar div');
+        const dynamicProgressStatus = document.getElementById('progress-status');
 
-        const percent = Math.round((progress.completedQueries / progress.totalQueries) * 100);
-        progressBar.style.width = `${percent}%`;
-
-        let status = `${t('depth')}: ${progress.currentDepth}/${progress.totalDepth}, `;
-        status += `${t('breadth')}: ${progress.currentBreadth}/${progress.totalBreadth}, `;
-        status += `${t('queries')}: ${progress.completedQueries}/${progress.totalQueries}`;
-
-        if (progress.currentQuery) {
-            status += `<br>${t('currentlyResearching')}: ${progress.currentQuery}`;
+        // Make sure the progress section is visible
+        if (progress) {
+            document.getElementById('progress').classList.remove('hidden');
         }
 
-        progressStatus.innerHTML = status;
+        // Calculate percent 
+        const percent = Math.round((progress.completedQueries / progress.totalQueries) * 100);
+        
+        // Set status text
+        let status = '';
+        
+        // Special handling for report generation
+        if (progress.isGeneratingReport) {
+            status = `<span class="font-semibold text-primary-600">${t('generatingReport')}</span>`;
+        } else {
+            status = `${t('depth')}: ${progress.currentDepth}/${progress.totalDepth}, `;
+            status += `${t('breadth')}: ${progress.currentBreadth}/${progress.totalBreadth}, `;
+            status += `${t('queries')}: ${progress.completedQueries}/${progress.totalQueries}`;
+
+            if (progress.currentQuery) {
+                status += `<br>${t('currentlyResearching')}: ${progress.currentQuery}`;
+            }
+        }
+
+        // Update dynamic elements if they exist
+        if (dynamicProgressBar) {
+            dynamicProgressBar.style.width = `${percent}%`;
+        }
+        
+        if (dynamicProgressStatus) {
+            dynamicProgressStatus.innerHTML = status;
+        }
+        
+        // Also update the main progress bar and text in the UI
+        if (progressBar && progressText) {
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `${percent}%`;
+        }
+        
+        // Log progress update for debugging
+        logger.debug(`Progress updated: ${percent}% complete`);
     }
 
     // Handle user's answer to question
@@ -487,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
         questionArea.classList.add('hidden');
 
         try {
+            logger.info('Submitting answer:', { researchId: currentResearchId, answer });
             const response = await fetch(`/api/answer/${currentResearchId}`, {
                 method: 'POST',
                 headers: {
