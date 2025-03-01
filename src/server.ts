@@ -394,7 +394,8 @@ app.post('/api/research', authenticateToken, async (req, res) => {
                 prompt: query,
                 learnings: results?.flatMap(r => r.learnings) || [],
                 visitedUrls: results?.flatMap(r => r.visitedUrls) || [],
-                language: language
+                language: language,
+                referenceMapping: results?.[results.length - 1]?.referenceMapping || {}
             });
             logger.debug('Final report generated, length:', report.length);
 
@@ -513,11 +514,13 @@ app.post('/api/research/:id/partial', authenticateToken, async (req, res) => {
         logger.info('Generating partial report for research:', researchId);
         
         // Generate partial report from current state
+        const partialResults = session.partialResults?.[session.partialResults.length - 1];
         const partialReport = await writeFinalReport({
-            query: '',
-            results: session.partialResults || [],
-            status: 'interrupted',
-            error: 'Research interrupted due to connection loss'
+            prompt: req.body.query || 'Research interrupted',
+            learnings: partialResults?.learnings || [],
+            visitedUrls: partialResults?.visitedUrls || [], 
+            language: req.body.language || 'zh-CN',
+            referenceMapping: partialResults?.referenceMapping || {}
         });
 
         // Clean up the session

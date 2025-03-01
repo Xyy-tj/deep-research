@@ -31,6 +31,7 @@ export type ResearchProgress = {
 type ResearchResult = {
   learnings: string[];
   visitedUrls: string[];
+  referenceMapping?: Record<string, number>;
 };
 
 // Get concurrency limit from environment variable, default to 2 if not set
@@ -114,9 +115,26 @@ async function processSerpResult({
     return {
       learnings: [],
       visitedUrls: [],
-      followUpQuestions: []
+      followUpQuestions: [],
+      referenceIndexes: {}
     };
   }
+
+  // Ensure unique indexes for this batch of search results
+  const urls = contents.map(item => item.url);
+  const uniqueUrls = [...new Set(urls)];
+  const uniqueIndexes = {};
+  
+  // Assign unique indexes to the URLs
+  uniqueUrls.forEach((url, idx) => {
+    uniqueIndexes[url] = idx + 1;
+  });
+  
+  // Update contents with unique indexes
+  const uniqueContents = contents.map(item => ({
+    ...item,
+    index: uniqueIndexes[item.url]
+  }));
 
   const res = await generateObject({
     model: o3MiniModel,
@@ -126,7 +144,7 @@ async function processSerpResult({
 Also generate ${numFollowUpQuestions} follow-up questions that could deepen our understanding of areas that need more research.
 
 The search results are:
-${contents.map(item => `<r index="${item.index}">\n${item.content}\n</r>`).join('\n')}
+${uniqueContents.map(item => `<r index="${item.index}">\n${item.content}\n</r>`).join('\n')}
 
 IMPORTANT: For each learning, make sure to cite the source using the index number provided in the search results, using the format [X].`,
     schema: z.object({
@@ -144,9 +162,11 @@ IMPORTANT: For each learning, make sure to cite the source using the index numbe
     res.object.learnings,
   );
 
+  // Return the reference indexes mapping using the unique indexes
   return {
     ...res.object,
-    visitedUrls: contents.map(item => item.url)
+    visitedUrls: uniqueUrls,
+    referenceIndexes: uniqueIndexes
   };
 }
 
@@ -155,11 +175,13 @@ export async function writeFinalReport({
   learnings,
   visitedUrls,
   language = 'zh-CN',
+  referenceMapping = {}
 }: {
   prompt: string;
   learnings: string[];
   visitedUrls: string[];
   language?: string;
+  referenceMapping?: Record<string, number>;
 }) {
   const learningsString = trimPrompt(
     learnings
@@ -168,9 +190,43 @@ export async function writeFinalReport({
     200_000,
   );
 
-  // Create a reference mapping to provide to the model
-  const referencesMapping = visitedUrls
-    .map((url, index) => `[${index + 1}] ${url}`)
+  // Create a unique reference mapping
+  const uniqueUrls = [...new Set(visitedUrls)];
+  const uniqueReferenceMapping = {};
+  
+  // First, try to use original reference numbers from the mapping if available
+  const usedNumbers = new Set<number>();
+  
+  // First pass - preserve original numbers where possible
+  uniqueUrls.forEach(url => {
+    const originalNumber = referenceMapping[url];
+    if (originalNumber && !usedNumbers.has(originalNumber)) {
+      uniqueReferenceMapping[url] = originalNumber;
+      usedNumbers.add(originalNumber);
+    }
+  });
+  
+  // Second pass - assign new unique numbers to remaining URLs
+  let nextNumber = 1;
+  uniqueUrls.forEach(url => {
+    if (!uniqueReferenceMapping[url]) {
+      // Find the next available number
+      while (usedNumbers.has(nextNumber)) {
+        nextNumber++;
+      }
+      uniqueReferenceMapping[url] = nextNumber;
+      usedNumbers.add(nextNumber);
+    }
+  });
+  
+  // Create the references mapping string for the prompt
+  const referencesMapping = uniqueUrls
+    .map(url => `[${uniqueReferenceMapping[url]}] ${url}`)
+    .sort((a, b) => {
+      const indexA = parseInt(a.match(/\[(\d+)\]/)?.[1] || '0');
+      const indexB = parseInt(b.match(/\[(\d+)\]/)?.[1] || '0');
+      return indexA - indexB;
+    })
     .join('\n');
 
   const res = await generateObject({
@@ -220,8 +276,15 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
     }),
   });
 
-  // Append the visited URLs section to the report
-  const urlsSection = `\n\n## References\n${visitedUrls.map((url, index) => `[${index + 1}] ${url}`).join('\n')}\n`;
+  // Generate a references section that maintains unique reference numbers
+  const urlsSection = `\n\n## References\n${uniqueUrls
+    .map(url => `[${uniqueReferenceMapping[url]}] ${url}`)
+    .sort((a, b) => {
+      const indexA = parseInt(a.match(/\[(\d+)\]/)?.[1] || '0');
+      const indexB = parseInt(b.match(/\[(\d+)\]/)?.[1] || '0');
+      return indexA - indexB;
+    })
+    .join('\n')}\n`;
   
   // Add a note about references to the report and ensure it ends with references
   let reportWithReferences = res.object.reportMarkdown;
@@ -230,32 +293,6 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
   }
   
   return reportWithReferences;
-}
-
-// Function to ask question with timeout
-async function askQuestionWithTimeout(output: any, question: string, timeoutMs: number): Promise<boolean> {
-  try {
-    const answer = await Promise.race([
-      output.askQuestion(question),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
-      )
-    ]);
-    return answer.toLowerCase() === 'yes';
-  } catch (error) {
-    if (error instanceof Error && error.message === 'TIMEOUT') {
-      console.log(`Question timed out after ${timeoutMs}ms, proceeding with default 'yes'`);
-      return true;
-    }
-    throw error;
-  }
-}
-
-export interface ResearchSession {
-  output: OutputManager;
-  resolve: (answer: string) => void;
-  report: string;
-  partialResults: ResearchResult[];
 }
 
 export async function deepResearch({
@@ -332,6 +369,8 @@ export async function deepResearch({
   const limit = pLimit(ConcurrencyLimit);
   const newLearnings = [...learnings];
   const newVisitedUrls = [...visitedUrls];
+  // Track consistent reference indexes across all search results
+  const referenceMapping = {};
 
   for (let currentDepth = 1; currentDepth <= depth; currentDepth++) {
     reportProgress({ currentDepth });
@@ -377,6 +416,10 @@ export async function deepResearch({
         if (processed.visitedUrls) {
           newVisitedUrls.push(...processed.visitedUrls);
         }
+        // Store the reference index mapping from this search result
+        if (processed.referenceIndexes) {
+          Object.assign(referenceMapping, processed.referenceIndexes);
+        }
 
         reportProgress({ completedQueries: progress.completedQueries + 1 });
       } catch (error) {
@@ -406,8 +449,35 @@ export async function deepResearch({
     session.partialResults = [...results, {
       learnings: [...new Set(newLearnings)],
       visitedUrls: [...new Set(newVisitedUrls)],
+      referenceMapping
     }];
   }
 
   return session.partialResults;
+}
+
+// Function to ask question with timeout
+async function askQuestionWithTimeout(output: any, question: string, timeoutMs: number): Promise<boolean> {
+  try {
+    const answer = await Promise.race([
+      output.askQuestion(question),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+      )
+    ]);
+    return answer.toLowerCase() === 'yes';
+  } catch (error) {
+    if (error instanceof Error && error.message === 'TIMEOUT') {
+      console.log(`Question timed out after ${timeoutMs}ms, proceeding with default 'yes'`);
+      return true;
+    }
+    throw error;
+  }
+}
+
+export interface ResearchSession {
+  output: OutputManager;
+  resolve: (answer: string) => void;
+  report: string;
+  partialResults: ResearchResult[];
 }

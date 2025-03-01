@@ -74,7 +74,7 @@ ${followUpQuestions.map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`).j
 
   log('\nStarting research with progress tracking...\n');
   
-  const { learnings, visitedUrls } = await deepResearch({
+  const { learnings, visitedUrls, results } = await deepResearch({
     query: combinedQuery,
     breadth,
     depth,
@@ -93,6 +93,7 @@ ${followUpQuestions.map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`).j
     prompt: combinedQuery,
     learnings,
     visitedUrls,
+    referenceMapping: results[results.length - 1]?.referenceMapping || {}
   });
 
   // Save report to file

@@ -96,7 +96,7 @@ export class CreditManager {
     });
   }
 
-  async addUser(userId: string | number, initialCredits: number = 100): Promise<void> {
+  async addUser(userId: string | number, initialCredits: number = 12): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
     
     await this.db.run(
