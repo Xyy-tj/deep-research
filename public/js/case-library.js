@@ -180,15 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (response.ok) {
                                 return response.text();
                             } else {
-                                throw new Error(`Failed to load template: ${response.status}`);
+                                throw new Error(`Template not found: ${response.status}`);
                             }
                         })
                         .then(html => {
+                            // Check if the returned HTML is likely to be the index.html page
+                            // by looking for tell-tale signs of the main page
+                            if (html.includes('<title>深度研究助手') || 
+                                html.includes('id="app"') || 
+                                html.includes('navbar-container')) {
+                                // This is likely the index.html page, not a template
+                                throw new Error('Template not available');
+                            }
                             templatePreviewContainer.innerHTML = html;
                         })
                         .catch(error => {
                             console.error('Error loading template:', error);
-                            templatePreviewContainer.innerHTML = `<p>Error loading template for: ${templateId}</p>`;
+                            templatePreviewContainer.innerHTML = `<p class="text-center py-8 text-gray-600">暂无提问模板</p>`;
                         });
                 }
             });
@@ -202,26 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 templatePreviewModal.style.display = 'none';
             });
         }
-        
-        // Add a new debug button to test modal visibility
-        const debugBtn = document.createElement('button');
-        debugBtn.textContent = 'Debug Modal';
-        debugBtn.className = 'view-pdf-btn';
-        debugBtn.style.position = 'fixed';
-        debugBtn.style.bottom = '10px';
-        debugBtn.style.right = '10px';
-        debugBtn.style.zIndex = '9999';
-        
-        debugBtn.addEventListener('click', () => {
-            console.log('Debug button clicked');
-            if (pdfPreviewModal) {
-                pdfPreviewModal.classList.toggle('active');
-                pdfPreviewModal.style.display = pdfPreviewModal.classList.contains('active') ? 'flex' : 'none';
-                console.log('Toggled modal visibility');
-            }
-        });
-        
-        document.body.appendChild(debugBtn);
     };
 
     // Load case library content when the page loads
