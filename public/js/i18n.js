@@ -48,22 +48,12 @@ export const translations = {
         interactiveResearch: 'Interactive Research Process',
         interactiveResearchDescription: 'Engage in an interactive research journey where you can guide the AI through your specific interests and requirements.',
         customizableDepthBreadth: 'Customizable Depth & Breadth',
-        customizableDepthBreadthDescription: 'Control your research scope with adjustable parameters for both breadth and depth, ensuring you get exactly the level of detail you need.',
-        comprehensiveResults: 'Comprehensive Results',
-        comprehensiveResultsDescription: 'Receive well-structured research results with citations, summaries, and the ability to export your findings in various formats.',
-        signUpLogin: 'Sign Up & Login',
-        signUpLoginDescription: 'Create your account to get started with AI-powered research',
-        enterTopic: 'Enter Your Topic',
-        enterTopicDescription: 'Input your research topic and customize the research parameters',
-        guideResearch: 'Guide the Research',
-        guideResearchDescription: 'Interact with the AI to refine and direct the research process',
-        reviewResults: 'Review Results',
-        reviewResultsDescription: 'Get comprehensive research results and export them in your preferred format',
-        welcome: 'Welcome',
-        breadthExplanation: 'Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.',
-        depthExplanation: 'Controls how deep your research goes. Higher values explore more in-depth information and insights.',
-        
-        // New translations for sidebar and tabs
+        customizableDepthBreadthDescription: 'Adjust the depth and breadth of your research to get exactly the level of detail you need.',
+        balance: 'Balance',
+        credits: 'credits',
+        insufficientCredits: 'You don\'t have enough credits for this operation. Please add more credits to continue.',
+        thisResearchWillCost: 'This research will cost',
+        doYouWantToProceed: 'Do you want to proceed',
         navigation: 'Navigation',
         research: 'Research',
         history: 'History',
@@ -93,7 +83,20 @@ export const translations = {
         featureCustomizable: 'Customizable Depth & Breadth',
         featureComprehensive: 'Comprehensive Results',
         contactUs: 'Contact Us',
-        contactDescription: 'For support or inquiries, please reach out to our team at support@deepresearch.ai'
+        contactDescription: 'For support or inquiries, please reach out to our team at support@deepresearch.ai',
+        welcome: 'Welcome',
+        breadthExplanation: 'Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.',
+        depthExplanation: 'Controls how deep your research goes. Higher values explore more in-depth information and insights.',
+        
+        // New translations for sidebar and tabs
+        signUpLogin: 'Sign Up & Login',
+        signUpLoginDescription: 'Create your account to get started with AI-powered research',
+        enterTopic: 'Enter Your Topic',
+        enterTopicDescription: 'Input your research topic and customize the research parameters',
+        guideResearch: 'Guide the Research',
+        guideResearchDescription: 'Interact with the AI to refine and direct the research process',
+        reviewResults: 'Review Results',
+        reviewResultsDescription: 'Get comprehensive research results and export them in your preferred format',
     },
     zh: {
         // Title and introduction
@@ -171,8 +174,6 @@ export const translations = {
         help: '帮助',
         caseLibrary: '案例库',
         about: '关于',
-
-
         researchHistory: '研究历史',
         noHistoryYet: '暂无研究历史',
         defaultLanguage: '默认语言',
@@ -196,6 +197,11 @@ export const translations = {
         featureCustomizable: '可定制的广度和深度',
         featureComprehensive: '全面的结果',
         contactUs: '联系我们',
-        contactDescription: '如需支持或咨询，请联系我们的团队：support@deepresearch.ai'
+        contactDescription: '如需支持或咨询，请联系我们的团队：support@deepresearch.ai',
+        balance: '余额',
+        credits: '积分',
+        insufficientCredits: '您的积分不足以进行此操作。请添加更多积分以继续。',
+        thisResearchWillCost: '此研究将花费',
+        doYouWantToProceed: '您是否要继续',
     }
 };

@@ -174,8 +174,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     templatePreviewModal.classList.remove('hidden');
                     templatePreviewModal.style.display = 'flex'; // Force display flex
                     
-                    // Here you would typically load the template content
-                    templatePreviewContainer.innerHTML = `<p>Template content for: ${templateId}</p>`;
+                    // Load the actual template content from the templates directory
+                    fetch(`/templates/${templateId}.html`)
+                        .then(response => {
+                            if (response.ok) {
+                                return response.text();
+                            } else {
+                                throw new Error(`Failed to load template: ${response.status}`);
+                            }
+                        })
+                        .then(html => {
+                            templatePreviewContainer.innerHTML = html;
+                        })
+                        .catch(error => {
+                            console.error('Error loading template:', error);
+                            templatePreviewContainer.innerHTML = `<p>Error loading template for: ${templateId}</p>`;
+                        });
                 }
             });
         });

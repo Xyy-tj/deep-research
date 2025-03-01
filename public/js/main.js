@@ -387,6 +387,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const token = auth.getToken();
 
+        // Get research parameters
+        const breadth = parseInt(document.getElementById('breadth').value) || 4;
+        const depth = parseInt(document.getElementById('depth').value) || 2;
+        const language = document.getElementById('reportLanguage').value || 'zh-CN';
+
+        // Calculate and display estimated cost before proceeding
+        try {
+            const costResponse = await fetch('/api/research/cost', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ depth, breadth })
+            });
+
+            if (!costResponse.ok) {
+                const error = await costResponse.json();
+                if (error.error && error.error.includes('Insufficient credits')) {
+                    showError(t('insufficientCredits'));
+                } else {
+                    throw new Error(error.error || 'Failed to calculate cost');
+                }
+                return;
+            }
+
+            const costData = await costResponse.json();
+            
+            if (!confirm(`${t('thisResearchWillCost')} ${costData.cost} ${t('credits')}. ${t('doYouWantToProceed')}?`)) {
+                return; // User canceled
+            }
+        } catch (error) {
+            logger.error('Error calculating cost:', error);
+            // Continue anyway if cost calculation fails
+        }
+
         // Clear previous results and state
         document.getElementById('results').innerHTML = '';
         currentResearchId = null;
@@ -430,15 +466,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ 
                     query, 
-                    breadth: parseInt(document.getElementById('breadth').value) || 4, 
-                    depth: parseInt(document.getElementById('depth').value) || 2,
+                    breadth, 
+                    depth,
                     language: document.getElementById('reportLanguage').value || 'zh-CN'
                 })
             });
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Failed to start research');
+                if (error.error && error.error.includes('Insufficient credits')) {
+                    showError(t('insufficientCredits'));
+                } else {
+                    throw new Error(error.error || 'Failed to start research');
+                }
+                return;
             }
 
             const data = await response.json();

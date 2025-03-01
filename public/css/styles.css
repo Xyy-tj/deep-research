@@ -261,7 +261,7 @@ button:active::after {
 /* Chinese Ink Painting Style */
 .title-area {
     position: relative;
-    padding: 2rem 0;
+    padding: 1rem 0;
     overflow: hidden;
     border-radius: 0.5rem;
     margin: 0 auto;

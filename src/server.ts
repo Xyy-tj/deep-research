@@ -68,6 +68,19 @@ app.get('/api/user/balance', authenticateToken, async (req, res) => {
     }
 });
 
+// Calculate research cost endpoint
+app.post('/api/research/cost', authenticateToken, async (req, res) => {
+    try {
+        const { depth = 2, breadth = 4 } = req.body;
+        const creditManager = await CreditManager.getInstance();
+        const cost = creditManager.calculateQueryCost(depth, breadth);
+        res.json({ cost });
+    } catch (error) {
+        logger.error('Error calculating research cost:', error);
+        res.status(500).json({ error: 'Failed to calculate research cost' });
+    }
+});
+
 // Enable detailed request logging middleware
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`, {
