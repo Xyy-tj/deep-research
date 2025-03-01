@@ -1,0 +1,56 @@
+/* Template Styles */
+
+.template-container {
+    max-width: 100%;
+    padding: 1rem;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.template-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #4f46e5;
+}
+
+.template-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    border-left: 3px solid #4f46e5;
+}
+
+.template-section h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4f46e5;
+    margin-bottom: 0.75rem;
+}
+
+.template-section ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.template-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+    color: #4b5563;
+}
+
+.template-notes {
+    padding: 1rem;
+    background-color: #fffbeb;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.template-notes p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #92400e;
+}

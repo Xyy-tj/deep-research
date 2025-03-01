@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,12 +17,15 @@
     <script src="/js/tailwind-config.js"></script>
     <script src="/js/pdf-viewer.js"></script>
     <script src="/js/image-placeholder.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap"
+        rel="stylesheet">
+
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 </head>
-<body class="min-h-screen" style="background-image: url('/images/chinese-landscape.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-blend-mode: overlay; background-color: rgba(248, 249, 250, 0.95);">
+
+<body class="min-h-screen"
+    style="background-image: url('/images/chinese-landscape.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-blend-mode: overlay; background-color: rgba(248, 249, 250, 0.95);">
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
@@ -32,6 +36,10 @@
                 <div class="sidebar-item active" data-tab="research">
                     <i class="fas fa-search mr-2"></i>
                     <span data-i18n="research">Research</span>
+                </div>
+                <div class="sidebar-item" data-tab="caseLibrary">
+                    <i class="fas fa-book mr-2"></i>
+                    <span data-i18n="caseLibrary">Case Library</span>
                 </div>
                 <div class="sidebar-item" data-tab="history">
                     <i class="fas fa-history mr-2"></i>
@@ -45,10 +53,7 @@
                     <i class="fas fa-cog mr-2"></i>
                     <span data-i18n="settings">Settings</span>
                 </div>
-                <div class="sidebar-item" data-tab="caseLibrary">
-                    <i class="fas fa-book mr-2"></i>
-                    <span data-i18n="caseLibrary">Case Library</span>
-                </div>
+
                 <div class="sidebar-item" data-tab="help">
                     <i class="fas fa-question-circle mr-2"></i>
                     <span data-i18n="help">Help</span>
@@ -59,7 +64,7 @@
     <div class="sidebar-toggle">
         <i class="fas fa-chevron-right"></i>
     </div>
-    
+
     <!-- Main Content -->
     <div id="app" class="main-content container mx-auto px-4 py-8">
         <div class="absolute top-4 right-4 flex items-center space-x-4">
@@ -67,26 +72,30 @@
             <div id="balanceDisplay" class="hidden px-4 py-2 bg-white rounded-lg shadow text-gray-800">
                 <span data-i18n="balance">Balance</span>: <span id="userBalance" class="font-semibold">0</span>
             </div>
-            
+
             <!-- Language Selector -->
-            <select id="languageSelector" class="pl-2 pr-8 py-2 text-sm rounded-lg bg-white border border-gray-200 hover:border-gray-300 transition-colors appearance-none language-selector">
+            <select id="languageSelector"
+                class="pl-2 pr-8 py-2 text-sm rounded-lg bg-white border border-gray-200 hover:border-gray-300 transition-colors appearance-none language-selector">
                 <option value="en" data-flag="🇺🇸">🇺🇸 English</option>
                 <option value="zh" data-flag="🇨🇳">🇨🇳 简体中文</option>
             </select>
-            
+
             <div id="userSection" class="hidden">
                 <span id="userGreeting" class="text-gray-700 mr-2"></span>
-                <button id="logoutBtn" class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow z-50">
+                <button id="logoutBtn"
+                    class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow z-50">
                     <i class="fas fa-sign-out-alt mr-2"></i>
                     <span data-i18n="logout">Logout</span>
                 </button>
             </div>
-            
+
             <div id="authSection">
-                <button id="loginBtn" class="w-28 px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                <button id="loginBtn"
+                    class="w-28 px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
                     <i class="fas fa-sign-in-alt mr-1"></i> <span data-i18n="login">Login</span>
                 </button>
-                <button id="registerBtn" class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors ml-2">
+                <button id="registerBtn"
+                    class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors ml-2">
                     <i class="fas fa-user-plus mr-1"></i> <span data-i18n="register">Register</span>
                 </button>
             </div>
@@ -103,60 +112,65 @@
                 <form id="authForm" class="space-y-4" novalidate>
                     <div class="form-group">
                         <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-                        <input type="text" id="username" name="username" required minlength="3" 
-                            class="form-input" placeholder="Enter your username">
+                        <input type="text" id="username" name="username" required minlength="3" class="form-input"
+                            placeholder="Enter your username">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                        <input type="password" id="password" name="password" required minlength="6"
-                            class="form-input" placeholder="Enter your password">
+                        <input type="password" id="password" name="password" required minlength="6" class="form-input"
+                            placeholder="Enter your password">
                     </div>
 
                     <div id="invitationCodeSection" class="form-group hidden">
-    <label for="invitationCode" class="block text-sm font-medium text-gray-700">Invitation Code</label>
-    <input type="text" id="invitationCode" name="invitationCode"
-        class="form-input" placeholder="Enter invitation code">
-</div>
+                        <label for="invitationCode" class="block text-sm font-medium text-gray-700">Invitation
+                            Code</label>
+                        <input type="text" id="invitationCode" name="invitationCode" class="form-input"
+                            placeholder="Enter invitation code">
+                    </div>
 
                     <div id="emailVerification" class="space-y-4 hidden">
                         <div class="form-group">
                             <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" id="email" name="email"
-                                class="form-input" placeholder="Enter your email">
+                            <input type="email" id="email" name="email" class="form-input"
+                                placeholder="Enter your email">
                         </div>
                         <div class="verification-row">
                             <div class="form-group">
-                                <label for="verificationCode" class="block text-sm font-medium text-gray-700">Verification Code</label>
-                                <input type="text" id="verificationCode" name="verificationCode"
-                                    class="form-input" placeholder="Enter verification code">
+                                <label for="verificationCode"
+                                    class="block text-sm font-medium text-gray-700">Verification Code</label>
+                                <input type="text" id="verificationCode" name="verificationCode" class="form-input"
+                                    placeholder="Enter verification code">
                             </div>
-                            <button type="button" id="sendVerificationBtn" 
+                            <button type="button" id="sendVerificationBtn"
                                 class="h-[38px] mt-6 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                                 Send Code
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-primary-600 text-white rounded-lg px-4 py-2 hover:bg-primary-700 transition-colors">
+                    <button type="submit"
+                        class="w-full bg-primary-600 text-white rounded-lg px-4 py-2 hover:bg-primary-700 transition-colors">
                         <span id="authSubmitBtnText">Login</span>
                     </button>
                 </form>
             </div>
         </div>
 
-        <div id="mainContent" class="hidden mt-2"> 
-            <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl p-0 mb-0 relative z-10"> 
+        <div id="mainContent" class="hidden mt-2">
+            <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl p-0 mb-0 relative z-10">
                 <div class="title-area mb-0">
                     <div class="flex flex-col items-center py-3">
                         <div class="relative mb-1 flex flex-col items-center">
                             <img src="/images/logo.png" alt="Logo" class="h-16 opacity-90 mx-auto">
                             <div class="mt-6 text-center">
-                                <h1 class="text-5xl font-normal tracking-wide" style="font-family: 'Ma Shan Zheng', cursive;" data-i18n="appTitle">砚 · 海</h1>
+                                <h1 class="text-5xl font-normal tracking-wide"
+                                    style="font-family: 'Ma Shan Zheng', cursive;" data-i18n="appTitle">砚 · 海</h1>
                             </div>
                         </div>
                         <div class="w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent my-4"></div>
-                        <p class="text-lg font-light tracking-wider" style="font-family: 'Noto Serif SC', serif;" data-i18n="appSubtitle">墨海数舟，千卷瞬祈</p>
+                        <p class="text-lg font-light tracking-wider" style="font-family: 'Noto Serif SC', serif;"
+                            data-i18n="appSubtitle">墨海数舟，千卷瞬祈</p>
                     </div>
                 </div>
 
@@ -164,32 +178,39 @@
                     <div class="ink-card p-8 mb-8 transform transition-all hover:shadow-2xl ink-fade-in">
                         <form id="researchForm" method="post" onsubmit="return false;" class="space-y-8">
                             <div class="relative">
-                                <label for="query" class="block text-sm font-medium text-gray-700 mb-1 ink-title" data-i18n="researchTopic">Research Topic</label>
+                                <label for="query" class="block text-sm font-medium text-gray-700 mb-1 ink-title"
+                                    data-i18n="researchTopic">Research Topic</label>
                                 <textarea id="query" name="query" rows="3" required
-                                        class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200"></textarea>
+                                    class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200"></textarea>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2 ink-title" data-i18n="breadth">Research Breadth</label>
+                                    <label for="breadth" class="block text-sm font-medium text-gray-700 mb-2 ink-title"
+                                        data-i18n="breadth">Research Breadth</label>
                                     <input type="range" id="breadth" name="breadth" min="2" max="5" value="3"
-                                           class="w-full ink-slider">
+                                        class="w-full ink-slider">
                                     <div class="text-center mt-2">
                                         <span id="breadthValue" class="text-primary-700">3</span>
                                     </div>
                                     <p class="text-xs text-gray-500 mt-2">
-                                        <i class="fas fa-info-circle mr-1"></i> <span data-i18n="breadthExplanation">Controls how wide your research scope is. Higher values explore more diverse sources and perspectives.</span>
+                                        <i class="fas fa-info-circle mr-1"></i> <span
+                                            data-i18n="breadthExplanation">Controls how wide your research scope is.
+                                            Higher values explore more diverse sources and perspectives.</span>
                                     </p>
                                 </div>
                                 <div>
-                                    <label for="depth" class="block text-sm font-medium text-gray-700 mb-2 ink-title" data-i18n="depth">Research Depth</label>
+                                    <label for="depth" class="block text-sm font-medium text-gray-700 mb-2 ink-title"
+                                        data-i18n="depth">Research Depth</label>
                                     <input type="range" id="depth" name="depth" min="1" max="3" value="2"
-                                           class="w-full ink-slider">
+                                        class="w-full ink-slider">
                                     <div class="text-center mt-2">
                                         <span id="depthValue" class="text-primary-700">2</span>
                                     </div>
                                     <p class="text-xs text-gray-500 mt-2">
-                                        <i class="fas fa-info-circle mr-1"></i> <span data-i18n="depthExplanation">Controls how detailed your research is. Higher values provide more in-depth analysis and specific information.</span>
+                                        <i class="fas fa-info-circle mr-1"></i> <span
+                                            data-i18n="depthExplanation">Controls how detailed your research is. Higher
+                                            values provide more in-depth analysis and specific information.</span>
                                     </p>
                                 </div>
                             </div>
@@ -197,18 +218,25 @@
                             <div class="ink-divider"></div>
 
                             <div>
-                                <label for="reportLanguage" class="block text-sm font-medium text-gray-700 mb-2 ink-title" data-i18n="reportLanguage">Report Language</label>
-                                <select id="reportLanguage" name="reportLanguage" class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200">
-                                    <option value="zh-CN" selected data-i18n="chineseSimplified">Chinese (Simplified)</option>
+                                <label for="reportLanguage"
+                                    class="block text-sm font-medium text-gray-700 mb-2 ink-title"
+                                    data-i18n="reportLanguage">Report Language</label>
+                                <select id="reportLanguage" name="reportLanguage"
+                                    class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200">
+                                    <option value="zh-CN" selected data-i18n="chineseSimplified">Chinese (Simplified)
+                                    </option>
                                     <option value="en" data-i18n="english">English</option>
                                 </select>
                                 <p class="text-xs text-gray-500 mt-2">
-                                    <i class="fas fa-info-circle mr-1"></i> <span data-i18n="reportLanguageExplanation">Choose the language for your final research report.</span>
+                                    <i class="fas fa-info-circle mr-1"></i> <span
+                                        data-i18n="reportLanguageExplanation">Choose the language for your final
+                                        research report.</span>
                                 </p>
                             </div>
 
                             <div class="flex justify-center mt-6">
-                                <button type="submit" id="submitBtn" class="ink-button px-8 py-3 rounded-lg font-medium transition-all flex items-center">
+                                <button type="submit" id="submitBtn"
+                                    class="ink-button px-8 py-3 rounded-lg font-medium transition-all flex items-center">
                                     <i class="fas fa-search mr-2"></i>
                                     <span data-i18n="startResearch">Start Research</span>
                                 </button>
@@ -227,13 +255,14 @@
                                     <i class="fas fa-robot text-2xl text-primary-400"></i>
                                 </div>
                                 <div class="ml-4 flex-1">
-                                    <p id="questionText" class="text-lg font-medium text-primary-900 mb-4 ink-title"></p>
+                                    <p id="questionText" class="text-lg font-medium text-primary-900 mb-4 ink-title">
+                                    </p>
                                     <div class="space-y-3">
-                                        <input type="text" id="answerInput" 
-                                               class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200 focus:ring-opacity-50"
-                                               placeholder="Type your answer here...">
-                                        <button id="submitAnswer" 
-                                                class="inline-flex items-center px-6 py-2 rounded-lg ink-button transition-colors">
+                                        <input type="text" id="answerInput"
+                                            class="w-full px-4 py-2 rounded-lg border-2 ink-input focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                                            placeholder="Type your answer here...">
+                                        <button id="submitAnswer"
+                                            class="inline-flex items-center px-6 py-2 rounded-lg ink-button transition-colors">
                                             <i class="fas fa-paper-plane mr-2"></i>
                                             <span data-i18n="submitAnswer">Submit Answer</span>
                                         </button>
@@ -257,253 +286,26 @@
                                 </div>
                             </div>
                             <div class="overflow-hidden h-3 rounded-full bg-primary-100">
-                                <div id="progressBar" 
-                                     class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
-                                     style="width: 0%">
+                                <div id="progressBar"
+                                    class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
+                                    style="width: 0%">
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Case Demonstration Section -->
-                    <!-- <div class="ink-card p-8 mb-8">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center ink-title" data-i18n="caseStudies">Case Studies</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
-                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy1Title">Climate Change Research</h4>
-                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy1Description">
-                                    A comprehensive analysis of climate change impacts, using breadth 8 and depth 7 to explore both global patterns and specific regional effects.
-                                </p>
-                                <div class="flex items-center text-xs text-gray-500">
-                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 15 min</div>
-                                    <div><i class="fas fa-file-alt mr-1"></i> 12 sources</div>
-                                </div>
-                            </div>
-                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
-                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy2Title">Quantum Computing Overview</h4>
-                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy2Description">
-                                    An exploration of quantum computing principles and applications, using breadth 5 and depth 9 to focus deeply on core concepts.
-                                </p>
-                                <div class="flex items-center text-xs text-gray-500">
-                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 20 min</div>
-                                    <div><i class="fas fa-file-alt mr-1"></i> 8 sources</div>
-                                </div>
-                            </div>
-                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
-                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy3Title">Market Analysis</h4>
-                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy3Description">
-                                    A broad market analysis of emerging technologies, using breadth 10 and depth 4 to capture a wide range of trends without excessive detail.
-                                </p>
-                                <div class="flex items-center text-xs text-gray-500">
-                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 12 min</div>
-                                    <div><i class="fas fa-file-alt mr-1"></i> 15 sources</div>
-                                </div>
-                            </div>
-                            <div class="ink-border rounded-lg p-6 hover:shadow-md transition-shadow">
-                                <h4 class="text-lg font-semibold text-primary-600 mb-3 ink-title" data-i18n="caseStudy4Title">Historical Event Analysis</h4>
-                                <p class="text-sm text-gray-700 mb-4" data-i18n="caseStudy4Description">
-                                    A detailed examination of a historical event, using breadth 3 and depth 10 to focus on specific aspects with maximum detail.
-                                </p>
-                                <div class="flex items-center text-xs text-gray-500">
-                                    <div class="mr-4"><i class="fas fa-clock mr-1"></i> 18 min</div>
-                                    <div><i class="fas fa-file-alt mr-1"></i> 7 sources</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
+
                 </div>
             </div>
         </div>
-        
+
         <!-- Case Library Tab -->
         <div id="caseLibraryTab" class="hidden max-w-4xl mx-auto mt-4">
-            <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl p-8 mb-8 relative z-10">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center ink-title" data-i18n="caseLibraryTitle">案例库</h2>
-                
-                <!-- Research Categories Tabs -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-center mb-4 case-category-tabs">
-                        <button class="category-tab active" data-category="academic">学术研究</button>
-                        <button class="category-tab" data-category="business">商业分析</button>
-                        <button class="category-tab" data-category="technology">技术调研</button>
-                        <button class="category-tab" data-category="social">社会调查</button>
-                    </div>
-                </div>
-                
-                <!-- Research Examples Container -->
-                <div id="researchExamplesContainer">
-                    <!-- Academic Research Examples -->
-                    <div class="category-content active" data-category="academic">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Example 1 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/academic-example1.jpg" alt="Academic Research Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">长江流域水质变化趋势研究</h3>
-                                    <p class="example-theme">环境科学 | 水质分析</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="longjiang-water-quality">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/longjiang-water-quality.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Example 2 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/academic-example2.jpg" alt="Academic Research Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">中国古代哲学思想演变</h3>
-                                    <p class="example-theme">哲学 | 思想史</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="chinese-philosophy">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/chinese-philosophy.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Business Analysis Examples -->
-                    <div class="category-content" data-category="business">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Example 1 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/business-example1.jpg" alt="Business Analysis Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">中国电子商务发展趋势</h3>
-                                    <p class="example-theme">市场分析 | 电商</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="ecommerce-trends">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/ecommerce-trends.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Example 2 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/business-example2.jpg" alt="Business Analysis Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">共享经济商业模式分析</h3>
-                                    <p class="example-theme">商业模式 | 共享经济</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="sharing-economy">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/sharing-economy.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Technology Research Examples -->
-                    <div class="category-content" data-category="technology">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Example 1 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/tech-example1.jpg" alt="Technology Research Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">人工智能在医疗领域的应用</h3>
-                                    <p class="example-theme">AI | 医疗科技</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="ai-healthcare">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/ai-healthcare.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Example 2 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/tech-example2.jpg" alt="Technology Research Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">区块链技术发展与应用</h3>
-                                    <p class="example-theme">区块链 | 金融科技</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="blockchain-fintech">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/blockchain-fintech.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Social Research Examples -->
-                    <div class="category-content" data-category="social">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Example 1 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/social-example1.jpg" alt="Social Research Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">城市老龄化社会问题研究</h3>
-                                    <p class="example-theme">社会学 | 人口老龄化</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="aging-society">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/aging-society.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Example 2 -->
-                            <div class="research-example-card">
-                                <div class="preview-image">
-                                    <img src="/images/examples/social-example2.jpg" alt="Social Research Example">
-                                </div>
-                                <div class="example-content">
-                                    <h3 class="example-title">中国农村教育发展调查</h3>
-                                    <p class="example-theme">教育 | 农村发展</p>
-                                    <div class="example-actions">
-                                        <button class="view-template-btn" data-template="rural-education">查看提问模板</button>
-                                        <button class="view-pdf-btn" data-pdf="/pdfs/examples/rural-education.pdf">预览PDF</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- PDF Preview Modal -->
-                <div id="pdfPreviewModal" class="pdf-preview-modal hidden">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 id="pdfPreviewTitle">PDF预览</h3>
-                            <button id="closePdfModal" class="close-modal-btn">&times;</button>
-                        </div>
-                        <div id="pdfPreviewContainer" class="modal-body">
-                            <div id="pdfViewer"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Template Preview Modal -->
-                <div id="templatePreviewModal" class="template-preview-modal hidden">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 id="templatePreviewTitle">提问模板</h3>
-                            <button id="closeTemplateModal" class="close-modal-btn">&times;</button>
-                        </div>
-                        <div id="templatePreviewContainer" class="modal-body">
-                            <!-- Template content will be loaded here -->
-                        </div>
-                        <div class="modal-footer">
-                            <button id="useTemplateBtn" class="use-template-btn">使用此模板</button>
-                        </div>
-                    </div>
-                </div>
+            <div id="caseLibraryContainer">
+                <!-- Case library content will be loaded here dynamically -->
             </div>
         </div>
-        
+
         <!-- Welcome Page for Non-logged-in Users -->
         <div id="welcomePage" class="max-w-4xl mx-auto mt-16">
             <div class="text-center mb-12">
@@ -518,7 +320,8 @@
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="aiResearch">AI-Powered Research</h3>
                     <p class="text-gray-600" data-i18n="aiResearchDescription">
-                        Leverage advanced AI technology to conduct comprehensive research on any topic. Our system explores multiple perspectives and digs deep into the subject matter.
+                        Leverage advanced AI technology to conduct comprehensive research on any topic. Our system
+                        explores multiple perspectives and digs deep into the subject matter.
                     </p>
                 </div>
 
@@ -526,9 +329,11 @@
                     <div class="text-primary-600 text-4xl mb-4">
                         <i class="fas fa-project-diagram"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="interactiveResearch">Interactive Research Process</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="interactiveResearch">Interactive
+                        Research Process</h3>
                     <p class="text-gray-600" data-i18n="interactiveResearchDescription">
-                        Engage in an interactive research journey where you can guide the AI through your specific interests and requirements.
+                        Engage in an interactive research journey where you can guide the AI through your specific
+                        interests and requirements.
                     </p>
                 </div>
 
@@ -536,9 +341,11 @@
                     <div class="text-primary-600 text-4xl mb-4">
                         <i class="fas fa-sliders-h"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="customizableDepthBreadth">Customizable Depth & Breadth</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="customizableDepthBreadth">Customizable
+                        Depth & Breadth</h3>
                     <p class="text-gray-600" data-i18n="customizableDepthBreadthDescription">
-                        Control your research scope with adjustable parameters for both breadth and depth, ensuring you get exactly the level of detail you need.
+                        Control your research scope with adjustable parameters for both breadth and depth, ensuring you
+                        get exactly the level of detail you need.
                     </p>
                 </div>
 
@@ -546,9 +353,11 @@
                     <div class="text-primary-600 text-4xl mb-4">
                         <i class="fas fa-file-alt"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="comprehensiveResults">Comprehensive Results</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="comprehensiveResults">Comprehensive
+                        Results</h3>
                     <p class="text-gray-600" data-i18n="comprehensiveResultsDescription">
-                        Receive well-structured research results with citations, summaries, and the ability to export your findings in various formats.
+                        Receive well-structured research results with citations, summaries, and the ability to export
+                        your findings in various formats.
                     </p>
                 </div>
             </div>
@@ -557,7 +366,9 @@
                 <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center" data-i18n="howItWorks">How It Works</h3>
                 <div class="space-y-6">
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">1</div>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
+                            1</div>
                         <div>
                             <h4 class="text-lg font-semibold text-gray-800" data-i18n="signUpLogin">Sign Up & Login</h4>
                             <p class="text-gray-600" data-i18n="signUpLoginDescription">
@@ -566,7 +377,9 @@
                         </div>
                     </div>
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">2</div>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
+                            2</div>
                         <div>
                             <h4 class="text-lg font-semibold text-gray-800" data-i18n="enterTopic">Enter Your Topic</h4>
                             <p class="text-gray-600" data-i18n="enterTopicDescription">
@@ -575,18 +388,24 @@
                         </div>
                     </div>
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">3</div>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
+                            3</div>
                         <div>
-                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="guideResearch">Guide the Research</h4>
+                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="guideResearch">Guide the Research
+                            </h4>
                             <p class="text-gray-600" data-i18n="guideResearchDescription">
                                 Interact with the AI to refine and direct the research process
                             </p>
                         </div>
                     </div>
                     <div class="flex items-start">
-                        <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">4</div>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
+                            4</div>
                         <div>
-                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="reviewResults">Review Results</h4>
+                            <h4 class="text-lg font-semibold text-gray-800" data-i18n="reviewResults">Review Results
+                            </h4>
                             <p class="text-gray-600" data-i18n="reviewResultsDescription">
                                 Get comprehensive research results and export them in your preferred format
                             </p>
@@ -610,4 +429,5 @@
     <script src="/js/sidebar.js" type="module"></script>
     <script src="/js/case-library.js" type="module"></script>
 </body>
+
 </html>

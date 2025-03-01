@@ -90,9 +90,12 @@ export const translations = {
         contactDescription: 'For support or inquiries, please reach out to our team at support@deepresearch.ai'
     },
     zh: {
+        // Title and introduction
         appTitle: '砚 · 海',
         appSubtitle: '墨海数舟，千卷瞬祈',
         welcomeTitle: '您的智能研究伙伴',
+
+        // Login and registration
         login: '登录',
         logout: '退出',
         register: '注册',
@@ -155,11 +158,15 @@ export const translations = {
         
         // New translations for sidebar and tabs
         navigation: '导航',
-        research: '研究',
-        history: '历史',
+        research: '开始研究',
+        history: '研究记录',
+        favorites: '收藏',
         settings: '设置',
+        help: '帮助',
         caseLibrary: '案例库',
         about: '关于',
+
+
         researchHistory: '研究历史',
         noHistoryYet: '暂无研究历史',
         defaultLanguage: '默认语言',
