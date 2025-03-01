@@ -165,7 +165,7 @@ export async function writeFinalReport({
     learnings
       .map(learning => `<learning>\n${learning}\n</learning>`)
       .join('\n'),
-    150_000,
+    200_000,
   );
 
   // Create a reference mapping to provide to the model
