@@ -116,7 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     depthInput.addEventListener('input', (e) => {
-        depthValue.textContent = e.target.value;
+        const depthLevel = parseInt(e.target.value);
+        const depthKey = `depthLevel${depthLevel}`;
+        depthValue.textContent = t(depthKey);
     });
 
     // Handle answer submission
@@ -311,22 +313,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Language switching function
-    const updateLanguage = (lang) => {
+    function updateLanguage(lang) {
         currentLanguage = lang;
         localStorage.setItem('language', lang);
         
-        // Update all text content
+        // Update all i18n elements
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
             element.textContent = t(key);
         });
-
+        
         // Update placeholders
         document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
             const key = element.getAttribute('data-i18n-placeholder');
             element.placeholder = t(key);
         });
-    };
+        
+        // Update depth slider text
+        if (depthInput && depthValue) {
+            const currentDepthLevel = parseInt(depthInput.value);
+            const depthKey = `depthLevel${currentDepthLevel}`;
+            depthValue.textContent = t(depthKey);
+        }
+    }
 
     // Initialize language selector
     if (languageSelector) {
@@ -352,6 +361,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial language update
     updateLanguage(currentLanguage);
+    
+    // Initialize depth slider with text instead of number
+    if (depthInput && depthValue) {
+        const initialDepthLevel = parseInt(depthInput.value);
+        const initialDepthKey = `depthLevel${initialDepthLevel}`;
+        depthValue.textContent = t(initialDepthKey);
+    }
 
     // Handle research start
     async function startResearch() {

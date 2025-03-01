@@ -80,6 +80,12 @@ export const translations = {
         shallow: 'Shallow',
         deep: 'Deep',
         saveSettings: 'Save Settings',
+        
+        // Depth level labels
+        depthLevel1: 'Light Analysis',
+        depthLevel2: 'Basic',
+        depthLevel3: 'Deep',
+        
         aboutDescription: 'Deep Research Assistant is an advanced AI-powered research tool designed to help you explore topics in depth. Our platform combines state-of-the-art language models with specialized research methodologies to provide comprehensive insights on any subject.',
         keyFeatures: 'Key Features',
         featureAI: 'AI-Powered Research',
@@ -177,6 +183,12 @@ export const translations = {
         shallow: '浅',
         deep: '深',
         saveSettings: '保存设置',
+        
+        // Depth level labels
+        depthLevel1: '浅析',
+        depthLevel2: '基础',
+        depthLevel3: '深度',
+        
         aboutDescription: '深度报告助手是一款先进的AI驱动研究工具，旨在帮助您深入探索各种主题。我们的平台结合了最先进的语言模型和专业的研究方法，为任何主题提供全面的见解。',
         keyFeatures: '主要特点',
         featureAI: 'AI驱动研究',
