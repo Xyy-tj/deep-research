@@ -77,6 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (success) {
             hideAuthModal();
             updateAuthDisplay();
+            
+            // 确保余额立即更新（冗余调用，以防在页面加载顺序问题）
+            if (typeof window.updateBalance === 'function') {
+                window.updateBalance();
+            }
         } else {
             alert(type === 'login' ? 'Login failed' : 'Registration failed');
         }
@@ -132,6 +137,20 @@ function updateAuthDisplay() {
     authSection.classList.toggle('hidden', isAuthenticated);
     mainContent.classList.toggle('hidden', !isAuthenticated);
     welcomePage.classList.toggle('hidden', isAuthenticated);
+
+    // 处理余额显示
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    if (balanceDisplay) {
+        if (isAuthenticated) {
+            balanceDisplay.classList.remove('hidden');
+            // 确保余额数据是最新的
+            if (typeof window.updateBalance === 'function') {
+                window.updateBalance();
+            }
+        } else {
+            balanceDisplay.classList.add('hidden');
+        }
+    }
 
     if (isAuthenticated) {
         const username = auth.getCurrentUser();

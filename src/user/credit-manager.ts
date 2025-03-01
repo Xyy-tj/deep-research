@@ -132,16 +132,25 @@ export class CreditManager {
   async getBalance(userId: string | number): Promise<number> {
     if (!this.db) throw new Error('Database not initialized');
     
-    const user = await this.db.get<{ credits: number }>(
-      'SELECT credits FROM users WHERE id = ?',
-      [Number(userId)]
-    );
+    console.log(`[CreditManager] Getting balance for user ID: ${userId}`);
     
-    if (!user) {
-      throw new Error('User not found');
+    try {
+      const user = await this.db.get<{ credits: number }>(
+        'SELECT credits FROM users WHERE id = ?',
+        [Number(userId)]
+      );
+      
+      if (!user) {
+        console.error(`[CreditManager] User not found: ${userId}`);
+        throw new Error('User not found');
+      }
+      
+      console.log(`[CreditManager] Found balance for user ${userId}: ${user.credits}`);
+      return user.credits;
+    } catch (error) {
+      console.error(`[CreditManager] Error getting balance for user ${userId}:`, error);
+      throw error;
     }
-    
-    return user.credits;
   }
 
   async addCredits(userId: string | number, credits: number): Promise<void> {

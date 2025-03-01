@@ -1,3 +1,11 @@
+// Import the updateBalance function or declare it if needed
+let updateBalance;
+
+// This will be called when main.js defines the updateBalance function
+export function setUpdateBalanceFunction(fn) {
+    updateBalance = fn;
+}
+
 export class Auth {
     static #instance;
     #isAuthenticated = false;
@@ -198,9 +206,9 @@ export class Auth {
             const response = await fetch('/api/verify-token', {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Include cookies for auth
             });
             
             if (response.ok) {
@@ -212,12 +220,20 @@ export class Auth {
                     this.#currentUser = data.user.username;
                     this.#userCredits = data.user.credits || 0;
                     
-                    // Store in localStorage for backward compatibility
+                    // Update localStorage with the latest credit information
                     localStorage.setItem('user', data.user.username);
-                    localStorage.setItem('token', token || 'cookie-auth');
+                    if (data.token) { // If token is returned in response
+                        localStorage.setItem('token', data.token);
+                    }
                     localStorage.setItem('credits', String(this.#userCredits));
                     
                     this.#notifyAuthStateChange({ username: data.user.username });
+                    
+                    // Update the balance
+                    if (updateBalance) {
+                        updateBalance();
+                    }
+                    
                     return true;
                 }
             }
@@ -249,7 +265,8 @@ export class Auth {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            credentials: 'include' // Include cookies for auth
         }).catch(error => {
             console.error('Logout error:', error);
         }).finally(() => {
@@ -261,6 +278,15 @@ export class Auth {
             localStorage.removeItem('token');
             localStorage.removeItem('credits');
             this.#notifyAuthStateChange(null);
+            
+            // Hide balance display when logging out
+            const balanceDisplay = document.getElementById('balanceDisplay');
+            if (balanceDisplay) {
+                balanceDisplay.classList.add('hidden');
+            }
+            
+            // Update balance display to 0
+            updateBalance();
         });
     }
 
@@ -273,10 +299,13 @@ export class Auth {
     }
 
     getToken() {
-        return localStorage.getItem('token');
+        const token = localStorage.getItem('token');
+        console.log('🔑 Retrieved token from localStorage:', !!token ? 'Token exists' : 'No token found');
+        return token;
     }
 
     get isAuthenticated() {
+        console.log('🔒 Auth state check:', this.#isAuthenticated);
         return this.#isAuthenticated;
     }
 
@@ -290,12 +319,29 @@ export class Auth {
             if (typeof window.toggleMainContent === 'function') {
                 window.toggleMainContent(true);
             }
+            
+            // Show balance display for authenticated users
+            const balanceDisplay = document.getElementById('balanceDisplay');
+            if (balanceDisplay) {
+                balanceDisplay.classList.remove('hidden');
+                
+                // Update balance if the function is available
+                if (typeof window.updateBalance === 'function') {
+                    window.updateBalance();
+                }
+            }
         } else {
             callback(null);
             
             // If we have a toggleMainContent function in the global scope, use it
             if (typeof window.toggleMainContent === 'function') {
                 window.toggleMainContent(false);
+            }
+            
+            // Hide balance display for non-authenticated users
+            const balanceDisplay = document.getElementById('balanceDisplay');
+            if (balanceDisplay) {
+                balanceDisplay.classList.add('hidden');
             }
         }
     }

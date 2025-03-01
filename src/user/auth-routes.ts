@@ -206,8 +206,14 @@ router.post('/login', async (req, res) => {
 
 // Verify token endpoint
 router.get('/verify-token', async (req, res) => {
-    // Get the token from the cookie
-    const token = req.cookies.auth_token;
+    // Get the token from the cookie or Authorization header
+    let token = req.cookies.auth_token;
+    
+    // Also check Authorization header for Bearer token
+    const authHeader = req.headers['authorization'];
+    if (!token && authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
     
     if (!token) {
         return res.status(401).json({ authenticated: false });
@@ -216,38 +222,58 @@ router.get('/verify-token', async (req, res) => {
     // Verify the token
     jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
         if (err) {
+            console.error('Token verification failed:', err.message);
             return res.status(401).json({ authenticated: false });
         }
         
         try {
-            // Get user credits from database
+            // Get full user data from database
             const db = await DB.getInstance();
-            const userData = await db.get('SELECT credits FROM users WHERE id = ?', [user.id]);
-            const credits = userData ? userData.credits : 0;
+            const userData = await db.get(
+                'SELECT id, username, email, is_admin, credits FROM users WHERE id = ?', 
+                [user.id]
+            );
             
-            // Token is valid, return user info
+            if (!userData) {
+                console.error('User not found in database:', user.id);
+                return res.status(401).json({ authenticated: false });
+            }
+            
+            // Generate a fresh token to extend session
+            const newToken = jwt.sign(
+                { 
+                    id: userData.id, 
+                    username: userData.username, 
+                    email: userData.email, 
+                    isAdmin: userData.is_admin 
+                },
+                JWT_SECRET,
+                { expiresIn: '3d' }
+            );
+            
+            // Set the new token as a cookie
+            res.cookie('auth_token', newToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: COOKIE_MAX_AGE,
+                sameSite: 'strict'
+            });
+            
+            // Token is valid, return user info and new token
             return res.json({
                 authenticated: true,
+                token: newToken, // Send the token back for local storage
                 user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    isAdmin: user.isAdmin,
-                    credits: credits
+                    id: userData.id,
+                    username: userData.username,
+                    email: userData.email,
+                    isAdmin: userData.is_admin,
+                    credits: userData.credits
                 }
             });
         } catch (error) {
-            console.error('Error fetching user credits:', error);
-            // Still return user info without credits
-            return res.json({
-                authenticated: true,
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    isAdmin: user.isAdmin
-                }
-            });
+            console.error('Error fetching user data:', error);
+            return res.status(500).json({ error: 'Internal server error' });
         }
     });
 });

@@ -39,11 +39,13 @@ function authenticateToken(req: express.Request, res: express.Response, next: ex
     }
 
     if (!token) {
+        logger.debug('No token found in request');
         return res.status(401).json({ error: 'Authentication required' });
     }
 
     jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
         if (err) {
+            logger.debug('Token verification failed:', err.message);
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
         logger.debug('Authenticated user:', user);
@@ -59,11 +61,15 @@ app.use('/api', authRoutes);
 app.get('/api/user/balance', authenticateToken, async (req, res) => {
     try {
         const userId = (req as any).user.id;
+        logger.info(`[Balance] Fetching balance for user ID: ${userId}`);
+        
         const creditManager = await CreditManager.getInstance();
         const balance = await creditManager.getBalance(userId);
+        
+        logger.info(`[Balance] User ${userId} balance: ${balance}`);
         res.json({ balance });
     } catch (error) {
-        logger.error('Error fetching balance:', error);
+        logger.error('[Balance] Error fetching balance:', error);
         res.status(500).json({ error: 'Failed to fetch balance' });
     }
 });

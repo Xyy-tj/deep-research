@@ -1,4 +1,4 @@
-import { Auth } from './auth.js';
+import { Auth, setUpdateBalanceFunction } from './auth.js';
 import { translations } from './i18n.js';
 
 // Global variables
@@ -23,7 +23,9 @@ window.copyToClipboard = async (text, button) => {
 };
 
 window.downloadMarkdown = async (filename) => {
-    const response = await fetch(`/api/download/${filename}`);
+    const response = await fetch(`/api/download/${filename}`, {
+        credentials: 'include' // Include cookies for auth
+    });
     if (!response.ok) throw new Error('Download failed');
     const content = await response.text();
     const blob = new Blob([content], { type: 'text/markdown' });
@@ -40,34 +42,133 @@ window.downloadMarkdown = async (filename) => {
 // Function to update user balance
 async function updateBalance() {
     try {
+        console.log('🔄 Starting balance update process...');
+        // 获取Auth实例的token
+        const auth = Auth.getInstance();
+        console.log('👤 Auth state:', { isAuthenticated: auth.isAuthenticated, hasToken: !!auth.getToken() });
+        
+        const balanceDisplay = document.getElementById('balanceDisplay');
+        
+        // 首先检查认证状态
+        if (!auth.isAuthenticated) {
+            console.log('🔑 User not authenticated, checking auth...');
+            await auth.checkAuth();
+            console.log('🔑 Auth check completed, new state:', { isAuthenticated: auth.isAuthenticated });
+            
+            // Hide balance display if not authenticated
+            if (balanceDisplay) {
+                balanceDisplay.classList.add('hidden');
+            }
+            return 0;
+        }
+        
+        console.log('📡 Sending balance request...');
         const response = await fetch('/api/user/balance', {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+                'Authorization': auth.getToken() ? `Bearer ${auth.getToken()}` : '',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include' // 包含cookies，确保HTTP-only cookie被发送
         });
+        
+        console.log('📫 Balance response status:', response.status);
         
         if (response.ok) {
             const data = await response.json();
-            const balanceDisplay = document.getElementById('balanceDisplay');
+            console.log('💰 Balance data received:', data);
+            
             const userBalance = document.getElementById('userBalance');
             
             if (balanceDisplay && userBalance) {
-                userBalance.textContent = data.balance;
+                // Show balance display for authenticated users
                 balanceDisplay.classList.remove('hidden');
+                userBalance.textContent = data.balance;
+                console.log('✅ Balance display updated to:', data.balance);
+            } else {
+                console.error('❌ Balance display elements not found');
             }
+            return data.balance; // Return the balance for other functions to use
         } else {
-            console.error('Failed to fetch balance');
+            console.error('❌ Failed to fetch balance:', response.status, response.statusText);
+            // 如果是授权错误，尝试重新验证身份
+            if (response.status === 401 || response.status === 403) {
+                console.log('🔄 Auth error, attempting to refresh auth...');
+                await Auth.getInstance().checkAuth();
+            }
             clearInterval(balanceUpdateInterval);
+            return 0;
         }
     } catch (error) {
-        console.error('Error fetching balance:', error);
+        console.error('❌ Error fetching balance:', error);
         clearInterval(balanceUpdateInterval);
+        return 0;
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Make updateBalance globally available
+window.updateBalance = updateBalance;
+
+// Register the updateBalance function with Auth module
+setUpdateBalanceFunction(updateBalance);
+
+// Function to manually refresh balance with animation
+async function refreshBalanceWithAnimation() {
+    const refreshButton = document.getElementById('refreshBalance');
+    if (refreshButton) {
+        refreshButton.classList.add('animate-spin');
+        try {
+            console.log('🔄 Manual balance refresh triggered');
+            await updateBalance();
+        } finally {
+            setTimeout(() => {
+                refreshButton.classList.remove('animate-spin');
+            }, 1000);
+        }
+    }
+}
+
+// Function to check if user has enough credits for an operation
+async function checkSufficientCredits(requiredCredits) {
+    const currentBalance = await updateBalance();
+    if (currentBalance < requiredCredits) {
+        showNotification(t('insufficientCredits'), 'error');
+        return false;
+    }
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
     // Initialize auth and handle logout
     const auth = Auth.getInstance();
+    
+    // 获取余额显示元素
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    
+    // 检查认证状态并适当处理余额显示
+    if (auth.isAuthenticated) {
+        if (balanceDisplay) {
+            balanceDisplay.classList.remove('hidden');
+        }
+        
+        // 初始化用户余额
+        try {
+            await updateBalance();
+        } catch (error) {
+            console.error('Error initializing balance:', error);
+        }
+    } else {
+        // 如果用户未认证，确保余额显示隐藏
+        if (balanceDisplay) {
+            balanceDisplay.classList.add('hidden');
+        }
+        
+        // 检查认证状态（可能通过cookie自动登录）
+        const isAuthenticated = await auth.checkAuth();
+        if (isAuthenticated && balanceDisplay) {
+            balanceDisplay.classList.remove('hidden');
+            await updateBalance();
+        }
+    }
     
     // Handle logout
     const logoutBtn = document.getElementById('logoutBtn');
@@ -75,6 +176,15 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', () => {
             auth.logout();
             window.location.reload(); // 添加页面刷新以确保UI状态更新
+        });
+    }
+
+    // Initialize refresh balance button
+    const refreshBalanceBtn = document.getElementById('refreshBalance');
+    if (refreshBalanceBtn) {
+        refreshBalanceBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await refreshBalanceWithAnimation();
         });
     }
 
@@ -136,7 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.getInstance().getToken()}`
                 },
+                credentials: 'include', // Include cookies for auth
                 body: JSON.stringify({ answer })
             });
 
@@ -400,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
+                credentials: 'include', // Include cookies for auth
                 body: JSON.stringify({ depth, breadth })
             });
 
@@ -414,6 +527,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const costData = await costResponse.json();
+            
+            // 先检查用户余额是否足够
+            const currentBalance = await updateBalance(); // 更新并获取最新余额
+            
+            if (currentBalance < costData.cost) {
+                showError(t('insufficientCredits'));
+                return;
+            }
             
             if (!confirm(`${t('thisResearchWillCost')} ${costData.cost} ${t('credits')}. ${t('doYouWantToProceed')}?`)) {
                 return; // User canceled
@@ -464,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
+                credentials: 'include', // Include cookies for auth
                 body: JSON.stringify({ 
                     query, 
                     breadth, 
@@ -579,7 +701,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.getInstance().getToken()}`
                 },
+                credentials: 'include', // Include cookies for auth
                 body: JSON.stringify({
                     answer: answer ? 'yes' : 'no',
                     questionId: currentQuestionId
@@ -705,7 +829,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.getInstance().getToken()}`
                 },
+                credentials: 'include', // Include cookies for auth
                 body: JSON.stringify({
                     researchId: currentResearchId
                 })
@@ -744,11 +870,16 @@ document.addEventListener('DOMContentLoaded', () => {
         previewContainer.innerHTML = `<p class="text-gray-500">${t('loadingPreview')}...</p>`;
 
         try {
-            const response = await fetch(`/api/markdown/${filename}`);
+            logger.info('Testing markdown display');
+            const response = await fetch(`/api/markdown/${filename}`, {
+                credentials: 'include', // Include cookies for auth
+                headers: {
+                    'Authorization': `Bearer ${Auth.getInstance().getToken()}`
+                }
+            });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('Failed to load markdown file');
             }
-            
             const data = await response.json();
             if (data.error) {
                 throw new Error(data.error);
@@ -782,7 +913,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle markdown download
     async function downloadMarkdown(filename) {
         try {
-            const response = await fetch(`/api/download/${filename}`);
+            const response = await fetch(`/api/download/${filename}`, {
+                credentials: 'include' // Include cookies for auth
+            });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -865,7 +998,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             welcomePage.classList.remove('hidden');
             mainContent.classList.add('hidden');
-            document.getElementById('balanceDisplay').classList.add('hidden');
+            // Update the balance to show 0 but keep it visible
+            const userBalance = document.getElementById('userBalance');
+            if (userBalance) {
+                userBalance.textContent = '0';
+            }
             // Clear balance update interval
             if (balanceUpdateInterval) {
                 clearInterval(balanceUpdateInterval);
