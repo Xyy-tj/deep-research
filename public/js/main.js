@@ -983,8 +983,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Make toggleMainContent globally accessible
     window.toggleMainContent = toggleMainContent;
 
+    // Load welcome page content
+    async function loadWelcomeContent() {
+        const welcomePageContent = document.getElementById('welcomePageContent');
+        if (welcomePageContent) {
+            try {
+                const response = await fetch('/welcome-content.html');
+                if (response.ok) {
+                    const html = await response.text();
+                    welcomePageContent.innerHTML = html;
+                    
+                    // Update translations after loading content
+                    document.querySelectorAll('[data-i18n]').forEach(el => {
+                        const key = el.getAttribute('data-i18n');
+                        if (translations[currentLanguage] && translations[currentLanguage][key]) {
+                            el.textContent = translations[currentLanguage][key];
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading welcome content:', error);
+            }
+        }
+    }
+
     // Show welcome page by default for non-logged in users
     toggleMainContent(false);
+    loadWelcomeContent();
 
     // Update auth display when user logs in/out
     document.addEventListener('authStateChanged', (event) => {

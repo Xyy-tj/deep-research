@@ -97,6 +97,7 @@ export const translations = {
         guideResearchDescription: 'Interact with the AI to refine and direct the research process',
         reviewResults: 'Review Results',
         reviewResultsDescription: 'Get comprehensive research results and export them in your preferred format',
+        learnMore: 'Learn More',
     },
     zh: {
         // Title and introduction
@@ -161,6 +162,7 @@ export const translations = {
         guideResearchDescription: '与AI互动以完善和指导研究过程',
         reviewResults: '查看结果',
         reviewResultsDescription: '获取全面的研究结果，并以您喜欢的格式导出',
+        learnMore: '了解更多',
         welcome: '欢迎',
         breadthExplanation: '控制研究范围的广度。高值探索多种来源和观点。',
         depthExplanation: '控制研究深度的深度。高值探索更多的详细信息和见解。',
