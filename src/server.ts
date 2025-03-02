@@ -9,6 +9,7 @@ import authRoutes from './user/auth-routes';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import { DB } from './db/database';
+import { setupSwagger } from './swagger';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -96,6 +97,9 @@ app.use((req, res, next) => {
     });
     next();
 });
+
+// Setup Swagger UI
+setupSwagger(app);
 
 app.use(express.static('public'));
 
@@ -675,6 +679,18 @@ app.get('/api/research-list', (req, res) => {
             success: false, 
             message: 'Failed to get research list'
         });
+    }
+});
+
+// Get welcome page content
+app.get('/api/welcome-content', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, '../public/welcome-content.html');
+        const content = fs.readFileSync(filePath, 'utf8');
+        res.json({ content });
+    } catch (error) {
+        logger.error('Error reading welcome content:', error);
+        res.status(500).json({ error: 'Failed to load welcome content' });
     }
 });
 

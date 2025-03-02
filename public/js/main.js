@@ -43,9 +43,9 @@ window.downloadMarkdown = async (filename) => {
 async function updateBalance() {
     try {
         console.log('🔄 Starting balance update process...');
-        // 获取Auth实例的token
+        // 获取Auth实例
         const auth = Auth.getInstance();
-        console.log('👤 Auth state:', { isAuthenticated: auth.isAuthenticated, hasToken: !!auth.getToken() });
+        console.log('👤 Auth state:', { isAuthenticated: auth.isAuthenticated });
         
         const balanceDisplay = document.getElementById('balanceDisplay');
         
@@ -62,10 +62,13 @@ async function updateBalance() {
             return 0;
         }
         
+        // 使用异步方法获取令牌
+        const token = await auth.getTokenAsync();
+        
         console.log('📡 Sending balance request...');
         const response = await fetch('/api/user/balance', {
             headers: {
-                'Authorization': auth.getToken() ? `Bearer ${auth.getToken()}` : '',
+                'Authorization': token ? `Bearer ${token}` : '',
                 'Content-Type': 'application/json'
             },
             credentials: 'include' // 包含cookies，确保HTTP-only cookie被发送
@@ -988,10 +991,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const welcomePageContent = document.getElementById('welcomePageContent');
         if (welcomePageContent) {
             try {
-                const response = await fetch('/welcome-content.html');
+                // 使用API端点而不是直接加载HTML文件
+                const response = await fetch('/api/welcome-content');
                 if (response.ok) {
-                    const html = await response.text();
-                    welcomePageContent.innerHTML = html;
+                    const data = await response.json();
+                    welcomePageContent.innerHTML = data.content;
                     
                     // Update translations after loading content
                     document.querySelectorAll('[data-i18n]').forEach(el => {

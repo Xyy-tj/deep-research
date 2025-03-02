@@ -43,7 +43,7 @@ export class Auth {
 
     async login(username, password) {
         if (!this.validateForm('login')) {
-            return false;
+            return { success: false, message: 'Please fill in all required fields correctly' };
         }
         try {
             const response = await fetch('/api/login', {
@@ -52,6 +52,7 @@ export class Auth {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ username, password }),
+                credentials: 'include' // 确保包含cookies
             });
 
             if (response.ok) {
@@ -59,16 +60,45 @@ export class Auth {
                 this.#isAuthenticated = true;
                 this.#currentUser = username;
                 this.#userCredits = data.user.credits;
+                
+                // 保存到localStorage作为备份
                 localStorage.setItem('user', username);
-                localStorage.setItem('token', data.token);
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                }
                 localStorage.setItem('credits', data.user.credits);
+                
+                // 通知状态变化
                 this.#notifyAuthStateChange({ username });
-                return true;
+                
+                return { success: true };
+            } else {
+                // 处理不同的错误状态码
+                let errorMessage = 'Login failed';
+                
+                if (response.status === 401) {
+                    errorMessage = 'Invalid username or password';
+                } else if (response.status === 429) {
+                    errorMessage = 'Too many login attempts, please try again later';
+                } else if (response.status >= 500) {
+                    errorMessage = 'Server error, please try again later';
+                }
+                
+                try {
+                    // 尝试从响应中获取更详细的错误信息
+                    const errorData = await response.json();
+                    if (errorData && errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+                } catch (e) {
+                    // 如果无法解析JSON，使用默认错误消息
+                }
+                
+                return { success: false, message: errorMessage };
             }
-            return false;
         } catch (error) {
             console.error('Login error:', error);
-            return false;
+            return { success: false, message: 'Network error, please check your connection' };
         }
     }
 
@@ -196,20 +226,7 @@ export class Auth {
     }
 
     async checkAuth() {
-        // First check localStorage for token (backward compatibility)
-        const user = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
-        const credits = localStorage.getItem('credits');
-        
-        if (user && token) {
-            this.#isAuthenticated = true;
-            this.#currentUser = user;
-            this.#userCredits = Number(credits) || 0;
-            this.#notifyAuthStateChange({ username: user });
-            return true;
-        }
-        
-        // If no token in localStorage, check with the server for cookie authentication
+        // 优先使用API进行身份验证
         try {
             const response = await fetch('/api/verify-token', {
                 method: 'GET',
@@ -245,7 +262,55 @@ export class Auth {
                     return true;
                 }
             }
-            // 401 or other errors mean user is not authenticated
+            
+            // 如果API验证失败，尝试使用localStorage（向后兼容）
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            const credits = localStorage.getItem('credits');
+            
+            if (user && token) {
+                // 使用localStorage中的令牌再次尝试验证
+                try {
+                    const tokenResponse = await fetch('/api/verify-token', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (tokenResponse.ok) {
+                        const tokenData = await tokenResponse.json();
+                        if (tokenData.authenticated) {
+                            // 令牌有效，使用API返回的用户数据
+                            this.#isAuthenticated = true;
+                            this.#currentUser = tokenData.user.username;
+                            this.#userCredits = tokenData.user.credits || 0;
+                            
+                            // 更新localStorage
+                            localStorage.setItem('user', tokenData.user.username);
+                            if (tokenData.token) {
+                                localStorage.setItem('token', tokenData.token);
+                            }
+                            localStorage.setItem('credits', String(this.#userCredits));
+                            
+                            this.#notifyAuthStateChange({ username: tokenData.user.username });
+                            
+                            // 更新余额
+                            if (updateBalance) {
+                                updateBalance();
+                            }
+                            
+                            return true;
+                        }
+                    }
+                } catch (tokenError) {
+                    console.error('Error verifying token from localStorage:', tokenError);
+                }
+            }
+            
+            // 如果所有验证方法都失败，清除认证状态
             this.#isAuthenticated = false;
             this.#currentUser = null;
             this.#userCredits = 0;
@@ -255,7 +320,8 @@ export class Auth {
             this.#notifyAuthStateChange(null);
             return false;
         } catch (error) {
-            // Network or other errors - don't log to console
+            // Network or other errors
+            console.error('Authentication check failed:', error);
             this.#isAuthenticated = false;
             this.#currentUser = null;
             this.#userCredits = 0;
@@ -265,6 +331,43 @@ export class Auth {
             this.#notifyAuthStateChange(null);
             return false;
         }
+    }
+
+    async getTokenAsync() {
+        try {
+            // 尝试从API获取令牌
+            const response = await fetch('/api/verify-token', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Include cookies for auth
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.authenticated && data.token) {
+                    console.log('🔑 Retrieved token from API');
+                    // 更新localStorage
+                    localStorage.setItem('token', data.token);
+                    return data.token;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching token from API:', error);
+        }
+        
+        // 如果API获取失败，尝试从localStorage获取
+        const token = localStorage.getItem('token');
+        console.log('🔑 Retrieved token from localStorage:', !!token ? 'Token exists' : 'No token found');
+        return token;
+    }
+
+    // 同步方法，用于向后兼容
+    getToken() {
+        const token = localStorage.getItem('token');
+        console.log('🔑 Retrieved token from localStorage:', !!token ? 'Token exists' : 'No token found');
+        return token;
     }
 
     logout() {
@@ -304,12 +407,6 @@ export class Auth {
 
     getUserCredits() {
         return this.#userCredits;
-    }
-
-    getToken() {
-        const token = localStorage.getItem('token');
-        console.log('🔑 Retrieved token from localStorage:', !!token ? 'Token exists' : 'No token found');
-        return token;
     }
 
     get isAuthenticated() {
