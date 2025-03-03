@@ -70,6 +70,7 @@ flowchart TB
 - **Iterative Research**: Performs deep research by iteratively generating search queries, processing results, and diving deeper based on findings
 - **Intelligent Query Generation**: Uses LLMs to generate targeted search queries based on research goals and previous findings
 - **Academic Sources**: Integrates with Google Scholar via SerpAPI to include academic papers and research in your results
+- **Academic Citations**: Automatically retrieves and includes proper citation formats (APA, MLA, etc.) for academic papers in the final report
 - **Depth & Breadth Control**: Configurable parameters to control how wide (breadth) and deep (depth) the research goes
 - **Smart Follow-up**: Generates follow-up questions to better understand research needs
 - **Comprehensive Reports**: Produces detailed markdown reports with findings and sources
@@ -153,6 +154,17 @@ The system will then:
 
 The final report will be saved as `output.md` in your working directory.
 
+### Academic Citations
+
+The system now automatically retrieves proper citation formats for academic papers found through Google Scholar. These citations are included in the final report's References section, providing:
+
+- Properly formatted citations in APA style (when available)
+- Author information
+- Publication details
+- Original URLs
+
+This makes the final report more academically rigorous and suitable for scholarly work.
+
 ### Concurrency
 
 If you have a paid version of Firecrawl or a local version, feel free to increase the `ConcurrencyLimit` in `deep-research.ts` so it runs a lot faster.
@@ -189,7 +201,7 @@ OPENAI_MODEL="custom_model"
 
 4. **Report Generation**
    - Compiles all findings into a comprehensive markdown report
-   - Includes all sources and references
+   - Includes all sources and references with proper academic citations
    - Organizes information in a clear, readable format
 
 ## License

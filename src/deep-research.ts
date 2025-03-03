@@ -112,7 +112,7 @@ async function processSerpResult({
     url: item.url,
     index: index + 1
   })).filter(item => item.content));
-  
+
   log(`Ran ${query}, found ${contents.length} contents`);
 
   if (contents.length === 0) {
@@ -129,9 +129,9 @@ async function processSerpResult({
   const urls = contents.map(item => item.url);
   const uniqueUrls = [...new Set(urls)];
   log(`Found ${uniqueUrls.length} unique URLs out of ${urls.length} total URLs for query: "${query}"`);
-  
+
   const uniqueIndexes = {};
-  
+
   // Assign unique indexes to the URLs
   uniqueUrls.forEach((url, idx) => {
     if (globalReferenceMapping && globalReferenceMapping.mapping[url]) {
@@ -140,11 +140,11 @@ async function processSerpResult({
       log(`Reusing existing reference [${uniqueIndexes[url]}] for URL: ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}`);
     } else {
       // Otherwise assign a new index
-      const newIndex = globalReferenceMapping 
-        ? (globalReferenceMapping.nextIndex + idx) 
+      const newIndex = globalReferenceMapping
+        ? (globalReferenceMapping.nextIndex + idx)
         : (idx + 1);
       uniqueIndexes[url] = newIndex;
-      
+
       // Update global reference mapping if it exists
       if (globalReferenceMapping) {
         globalReferenceMapping.mapping[url] = newIndex;
@@ -152,7 +152,7 @@ async function processSerpResult({
       }
     }
   });
-  
+
   // Update next available global index if global reference mapping exists
   if (globalReferenceMapping) {
     const oldNextIndex = globalReferenceMapping.nextIndex;
@@ -168,7 +168,7 @@ async function processSerpResult({
     ...item,
     index: uniqueIndexes[item.url]
   }));
-  
+
   log(`Created ${uniqueContents.length} contents with unique indexes`);
 
   const res = await generateObject({
@@ -191,7 +191,7 @@ IMPORTANT: For each learning, make sure to cite the source using the EXACT index
         .describe('Follow-up questions for deeper research'),
     }),
   });
-  
+
   log(
     `Created ${res.object.learnings.length} learnings`,
     res.object.learnings,
@@ -200,7 +200,7 @@ IMPORTANT: For each learning, make sure to cite the source using the EXACT index
   // Process generated learnings to ensure reference numbers are consistent
   const processedLearnings = res.object.learnings.map(learning => {
     let processedLearning = learning;
-    
+
     // Find all reference numbers [X] and replace them
     const referenceRegex = /\[(\d+)\]/g;
     processedLearning = processedLearning.replace(referenceRegex, (match, localIndex) => {
@@ -212,7 +212,7 @@ IMPORTANT: For each learning, make sure to cite the source using the EXACT index
       }
       return match; // If no matching URL is found, keep the original
     });
-    
+
     return processedLearning;
   });
 
@@ -265,9 +265,45 @@ export async function writeFinalReport({
     }
   }
 
+  // Create a map to store citation formats for each URL
+  const citationFormats = {};
+
+  // Extract citation formats from Google Scholar results (if available)
+  uniqueUrls.forEach(url => {
+    // Check if this URL has citation data attached to it
+    // This information would have been added during the searchGoogleScholar function
+    const urlParts = url.split('#');
+    if (urlParts.length > 1 && urlParts[1] === 'citations') {
+      // This is a citation URL, extract the citation data
+      try {
+        const citationData = JSON.parse(urlParts[2]);
+        if (citationData && citationData.formats) {
+          citationFormats[url] = citationData;
+          log(`Found citation formats for URL: ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}`);
+        }
+      } catch (e) {
+        log(`Error parsing citation data for URL: ${url}`);
+      }
+    }
+  });
+
+  log(`Found citation formats for ${Object.keys(citationFormats).length} URLs`);
+
   const referencesMapping = uniqueUrls
     .map(url => {
       const refNumber = referenceMapping[url] || 0;
+      const citation = citationFormats[url];
+
+      // If we have citation formats, include the APA format (or first available format)
+      if (citation && citation.formats && citation.formats.length > 0) {
+        // Try to find APA format first
+        const apaFormat = citation.formats.find(format => format.title === 'APA');
+        const citationFormat = apaFormat || citation.formats[0]; // Use APA if available, otherwise use the first format
+
+        return `[${refNumber}] ${citationFormat.snippet}\n   URL: ${url}`;
+      }
+
+      // Otherwise just return the URL
       return `[${refNumber}] ${url}`;
     })
     .sort((a, b) => {
@@ -276,12 +312,15 @@ export async function writeFinalReport({
       return indexA - indexB;
     })
     .join('\n');
-
+  
   // Log reference statistics
+  log(`referencesMapping: ${referencesMapping}`);
   const refNumbers = uniqueUrls.map(url => referenceMapping[url] || 0);
   const validRefs = refNumbers.filter(num => num > 0);
+
+
   log(`Final report will include ${validRefs.length} valid references with numbers ranging from ${Math.min(...validRefs) || 0} to ${Math.max(...validRefs) || 0}`);
-  
+
   if (validRefs.length === 0) {
     log(`WARNING: No valid references found for the final report. The report will not contain citations.`);
   }
@@ -334,10 +373,24 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
     }),
   });
 
+  log(`res: ${res.object.reportMarkdown}`)
+
   // Generate a references section using the same global reference mapping
   const urlsSection = `\n\n## References\n${uniqueUrls
     .map(url => {
       const refNumber = referenceMapping[url] || 0;
+      const citation = citationFormats[url];
+
+      // If we have citation formats, include the APA format (or first available format)
+      if (citation && citation.formats && citation.formats.length > 0) {
+        // Try to find APA format first
+        const apaFormat = citation.formats.find(format => format.title === 'APA');
+        const citationFormat = apaFormat || citation.formats[0]; // Use APA if available, otherwise use the first format
+
+        return `[${refNumber}] ${citationFormat.snippet}\n   URL: ${url}`;
+      }
+
+      // Otherwise just return the URL
       return `[${refNumber}] ${url}`;
     })
     .sort((a, b) => {
@@ -346,35 +399,36 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
       return indexA - indexB;
     })
     .join('\n')}\n`;
-  
+
   // Add a note about references to the report and ensure it ends with references
   let reportWithReferences = res.object.reportMarkdown;
-  
+
   // Check if the generated report already contains references
   const hasReferencesSection = reportWithReferences.includes('## References');
   log(`Generated report ${hasReferencesSection ? 'already includes' : 'does not include'} a References section`);
-  
+
   // Count references in the report
   const referencePattern = /\[(\d+)\]/g;
   const referencesInReport = [...reportWithReferences.matchAll(referencePattern)].map(match => parseInt(match[1]));
   const uniqueReferencesInReport = [...new Set(referencesInReport)];
-  
+
   log(`Found ${referencesInReport.length} reference citations in the report (${uniqueReferencesInReport.length} unique reference numbers)`);
-  
+
   if (referencesInReport.length === 0) {
     log(`WARNING: The generated report does not contain any reference citations.`);
   } else {
     log(`Reference numbers used in the report: ${uniqueReferencesInReport.sort((a, b) => a - b).join(', ')}`);
   }
-  
+
   // Add references section if not already present
   if (!hasReferencesSection) {
     log(`Adding References section to the report`);
-    reportWithReferences = reportWithReferences.trim() + urlsSection;
+    reportWithReferences = reportWithReferences.trim();
+    // reportWithReferences = reportWithReferences.trim() + urlsSection;
   }
-  
+
   log(`Final report generation completed with ${uniqueReferencesInReport.length} unique references cited`);
-  
+
   return reportWithReferences;
 }
 
@@ -402,7 +456,7 @@ export async function deepResearch({
   const results: ResearchResult[] = [];
   const session: ResearchSession = {
     output,
-    resolve: () => {},
+    resolve: () => { },
     report: '',
     partialResults: [],
   };
@@ -452,13 +506,13 @@ export async function deepResearch({
   const limit = pLimit(ConcurrencyLimit);
   const newLearnings = [...learnings];
   const newVisitedUrls = [...visitedUrls];
-  
+
   // Initialize global reference mapping to track consistent reference numbers
   const referenceMapping = {};
   let nextGlobalIndex = 1;
-  const globalReferenceMapping = { 
-    mapping: referenceMapping, 
-    nextIndex: nextGlobalIndex 
+  const globalReferenceMapping = {
+    mapping: referenceMapping,
+    nextIndex: nextGlobalIndex
   };
 
   log(`Initialized reference mapping system. Starting with empty mapping.`);
@@ -493,11 +547,11 @@ export async function deepResearch({
 
       try {
         log(`Starting research for query: "${serpQuery.query}"`);
-        
+
         // Initialize default empty results
         let webResult = { data: [] };
         let scholarResult = { data: [] };
-        
+
         // Perform web search using Firecrawl
         try {
           webResult = await limit(() => firecrawl.search(serpQuery.query, {
@@ -511,34 +565,51 @@ export async function deepResearch({
           log(`Continuing with empty web results. Will still attempt to use Google Scholar results.`);
           // Keep webResult.data as empty array and continue
         }
-        
+
         // Perform Google Scholar search
         try {
           scholarResult = await limit(() => searchGoogleScholar(serpQuery.query));
           log(`Google Scholar search found ${scholarResult.data.length} results for query: "${serpQuery.query}"`);
+
+          // Process scholar results to include citation data in the URL
+          scholarResult.data = scholarResult.data.map(result => {
+            if (result.citations) {
+              // Encode citation data in the URL for later use in the final report
+              const citationData = {
+                formats: result.citations.formats,
+                links: result.citations.links
+              };
+
+              // Append citation data to URL with a special marker
+              const citationJson = JSON.stringify(citationData);
+              result.url = `${result.url}#citations#${citationJson}`;
+              log(`Added citation data to URL: ${result.url.substring(0, 50)}...`);
+            }
+            return result;
+          });
         } catch (scholarError) {
           log(`Google Scholar search failed for query "${serpQuery.query}": ${scholarError.message || 'Unknown error'}`);
           log(`Continuing with empty scholar results.`);
           // Keep scholarResult.data as empty array and continue
         }
-        
+
         // Combine results from both sources
         const combinedResult = {
           data: [...webResult.data, ...scholarResult.data]
         };
         log(`Combined search results: ${combinedResult.data.length} total items for query: "${serpQuery.query}"`);
-        
+
         // Skip processing if no results were found from either source
         if (combinedResult.data.length === 0) {
           log(`No results found from either Firecrawl or Google Scholar for query: "${serpQuery.query}". Skipping processing.`);
           reportProgress({ completedQueries: progress.completedQueries + 1 });
           continue;
         }
-        
+
         // Log reference mapping state before processing
         const refCountBefore = Object.keys(referenceMapping).length;
         log(`Reference mapping before processing query "${serpQuery.query}": ${refCountBefore} entries`);
-        
+
         const processed = await processSerpResult({
           query: serpQuery.query,
           result: combinedResult,
@@ -561,11 +632,11 @@ export async function deepResearch({
         if (processed.referenceIndexes) {
           const newReferences = Object.keys(processed.referenceIndexes).filter(url => !referenceMapping[url]);
           log(`Adding ${newReferences.length} new references to global mapping from query "${serpQuery.query}"`);
-          
+
           if (newReferences.length > 0) {
             log(`New reference URLs added: ${newReferences.slice(0, 3).join(', ')}${newReferences.length > 3 ? ` and ${newReferences.length - 3} more...` : ''}`);
           }
-          
+
           Object.assign(referenceMapping, processed.referenceIndexes);
         } else {
           log(`No reference indexes found in processed results for query "${serpQuery.query}"`);
@@ -599,7 +670,7 @@ export async function deepResearch({
     // Log the current state of the reference mapping
     const refUrls = Object.keys(referenceMapping);
     log(`Current reference mapping has ${refUrls.length} entries`);
-    
+
     if (refUrls.length === 0) {
       log(`WARNING: No references found after depth ${currentDepth}/${depth}. This may affect the quality of the final report.`);
     } else {
@@ -620,7 +691,7 @@ export async function deepResearch({
   // Log final reference statistics
   const finalRefCount = Object.keys(referenceMapping).length;
   log(`Research completed with ${finalRefCount} total references collected.`);
-  
+
   if (finalRefCount === 0) {
     log(`WARNING: No references were collected during the entire research process. The final report will not contain citations.`);
   } else {
@@ -668,25 +739,67 @@ async function searchGoogleScholar(query: string): Promise<any> {
 
     // Process the response to match the format expected by processSerpResult
     const organicResults = response.data.organic_results || [];
-    
+
+    // Fetch citation formats for each result
+    const resultsWithCitations = await Promise.all(
+      organicResults.map(async (result: any) => {
+        let citations = null;
+
+        // Get the result_id from the result
+        const resultId = result.result_id || (result.inline_links?.serpapi_cite_link ?
+          new URL(result.inline_links.serpapi_cite_link).searchParams.get('q') : null);
+
+        if (resultId) {
+          try {
+            log(`Fetching citation formats for result: ${result.title}`);
+            const citeResponse = await axios.get('https://serpapi.com/search', {
+              params: {
+                engine: 'google_scholar_cite',
+                q: resultId,
+                api_key: serpApiKey,
+              },
+            });
+
+            citations = {
+              formats: citeResponse.data.citations || [],
+              links: citeResponse.data.links || []
+            };
+
+            log(`Successfully retrieved ${citations.formats.length} citation formats and ${citations.links.length} citation links for "${result.title}"`);
+          } catch (citeError) {
+            log(`Error fetching citation formats for "${result.title}": ${citeError.message || 'Unknown error'}`);
+          }
+        } else {
+          log(`No result_id or serpapi_cite_link found for "${result.title}", cannot fetch citation formats`);
+        }
+
+        return {
+          url: result.link || '',
+          title: result.title || '',
+          description: `${result.title || ''}\n\n${result.publication_info?.summary || ''}\n\n${result.snippet || ''}\n\nAuthors: ${result.publication_info?.authors?.map((a: any) => a.name).join(', ') || 'Unknown'}\n\nCited by: ${result.inline_links?.cited_by?.total || 0} papers`,
+          citations: citations
+        };
+      })
+    );
+
     const formattedResults = {
-      data: organicResults.map((result: any) => ({
-        url: result.link || '',
-        title: result.title || '',
-        description: `${result.title || ''}\n\n${result.publication_info?.summary || ''}\n\n${result.snippet || ''}\n\nAuthors: ${result.publication_info?.authors?.map((a: any) => a.name).join(', ') || 'Unknown'}\n\nCited by: ${result.inline_links?.cited_by?.total || 0} papers`,
-      })),
+      data: resultsWithCitations,
     };
 
     log(`Google Scholar search found ${formattedResults.data.length} results for "${query}"`);
-    
+
     if (formattedResults.data.length === 0) {
       log(`WARNING: No Google Scholar results found for query: "${query}". This may affect academic references.`);
     } else {
       // Log sample of scholar results
       const sampleSize = Math.min(2, formattedResults.data.length);
       log(`Scholar result sample: ${formattedResults.data.slice(0, sampleSize).map(r => r.title).join(', ')}${formattedResults.data.length > sampleSize ? ` and ${formattedResults.data.length - sampleSize} more...` : ''}`);
+
+      // Log citation information
+      const resultsWithCitationCount = formattedResults.data.filter(r => r.citations && r.citations.formats && r.citations.formats.length > 0).length;
+      log(`Retrieved citation formats for ${resultsWithCitationCount} out of ${formattedResults.data.length} results`);
     }
-    
+
     return formattedResults;
   } catch (error) {
     log(`Error searching Google Scholar for "${query}": ${error.message || 'Unknown error'}`);
