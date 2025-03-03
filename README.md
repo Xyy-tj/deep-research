@@ -69,6 +69,7 @@ flowchart TB
 
 - **Iterative Research**: Performs deep research by iteratively generating search queries, processing results, and diving deeper based on findings
 - **Intelligent Query Generation**: Uses LLMs to generate targeted search queries based on research goals and previous findings
+- **Academic Sources**: Integrates with Google Scholar via SerpAPI to include academic papers and research in your results
 - **Depth & Breadth Control**: Configurable parameters to control how wide (breadth) and deep (depth) the research goes
 - **Smart Follow-up**: Generates follow-up questions to better understand research needs
 - **Comprehensive Reports**: Produces detailed markdown reports with findings and sources
@@ -80,6 +81,7 @@ flowchart TB
 - API keys for:
   - Firecrawl API (for web search and content extraction)
   - OpenAI API (for o3 mini model)
+  - SerpAPI (for Google Scholar academic search)
 
 ## Setup
 
@@ -100,6 +102,9 @@ FIRECRAWL_KEY="your_firecrawl_key"
 # FIRECRAWL_BASE_URL="http://localhost:3002"
 
 OPENAI_KEY="your_openai_key"
+
+# For Google Scholar academic search integration
+SERPAPI_KEY="your_serpapi_key"
 ```
 
 To use local LLM, comment out `OPENAI_KEY` and instead uncomment `OPENAI_ENDPOINT` and `OPENAI_MODEL`:

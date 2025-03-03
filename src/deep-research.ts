@@ -3,6 +3,7 @@ import { generateObject } from 'ai';
 import { compact } from 'lodash-es';
 import pLimit from 'p-limit';
 import { z } from 'zod';
+import axios from 'axios';
 
 import { o3MiniModel, trimPrompt } from './ai/providers';
 import { systemPrompt } from './prompt';
@@ -41,11 +42,13 @@ const ConcurrencyLimit = Number(process.env.CONCURRENCY_LIMIT ?? 2);
 const QuestionTimeoutMs = Number(process.env.QUESTION_TIMEOUT_MS ?? 3000);
 
 // Initialize Firecrawl with optional API key and optional base url
-
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_KEY ?? '',
   apiUrl: process.env.FIRECRAWL_BASE_URL,
 });
+
+// Initialize SerpAPI key for Google Scholar
+const serpApiKey = process.env.SERPAPI_KEY ?? '';
 
 // take en user query, return a list of SERP queries
 async function generateSerpQueries({
@@ -125,6 +128,8 @@ async function processSerpResult({
   // Ensure unique indexes for this batch of search results
   const urls = contents.map(item => item.url);
   const uniqueUrls = [...new Set(urls)];
+  log(`Found ${uniqueUrls.length} unique URLs out of ${urls.length} total URLs for query: "${query}"`);
+  
   const uniqueIndexes = {};
   
   // Assign unique indexes to the URLs
@@ -132,6 +137,7 @@ async function processSerpResult({
     if (globalReferenceMapping && globalReferenceMapping.mapping[url]) {
       // If URL already has a global reference number, use it
       uniqueIndexes[url] = globalReferenceMapping.mapping[url];
+      log(`Reusing existing reference [${uniqueIndexes[url]}] for URL: ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}`);
     } else {
       // Otherwise assign a new index
       const newIndex = globalReferenceMapping 
@@ -142,16 +148,19 @@ async function processSerpResult({
       // Update global reference mapping if it exists
       if (globalReferenceMapping) {
         globalReferenceMapping.mapping[url] = newIndex;
+        log(`Assigned new reference [${newIndex}] to URL: ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}`);
       }
     }
   });
   
   // Update next available global index if global reference mapping exists
   if (globalReferenceMapping) {
+    const oldNextIndex = globalReferenceMapping.nextIndex;
     globalReferenceMapping.nextIndex = Math.max(
       globalReferenceMapping.nextIndex,
       ...Object.values(uniqueIndexes)
     ) + 1;
+    log(`Updated next global reference index: ${oldNextIndex} → ${globalReferenceMapping.nextIndex}`);
   }
 
   // Update contents with unique indexes
@@ -159,6 +168,8 @@ async function processSerpResult({
     ...item,
     index: uniqueIndexes[item.url]
   }));
+  
+  log(`Created ${uniqueContents.length} contents with unique indexes`);
 
   const res = await generateObject({
     model: o3MiniModel,
@@ -227,6 +238,10 @@ export async function writeFinalReport({
   language?: string;
   referenceMapping?: Record<string, number>;
 }) {
+  log(`Starting to write final report for prompt: "${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}"`);
+  log(`Using ${learnings.length} learnings and ${visitedUrls.length} visited URLs`);
+  log(`Reference mapping contains ${Object.keys(referenceMapping).length} entries`);
+
   const learningsString = trimPrompt(
     learnings
       .map(learning => `<learning>\n${learning}\n</learning>`)
@@ -237,6 +252,19 @@ export async function writeFinalReport({
   // Use the global reference mapping directly without renumbering
   // Create a references mapping string for the prompt
   const uniqueUrls = [...new Set(visitedUrls)];
+  log(`Found ${uniqueUrls.length} unique URLs out of ${visitedUrls.length} total URLs for the final report`);
+
+  // Check if any URLs are missing from the reference mapping
+  const missingRefs = uniqueUrls.filter(url => !referenceMapping[url]);
+  if (missingRefs.length > 0) {
+    log(`WARNING: Found ${missingRefs.length} URLs without reference numbers. These will be assigned 0.`);
+    if (missingRefs.length < 5) {
+      log(`Missing reference URLs: ${missingRefs.join(', ')}`);
+    } else {
+      log(`Sample of missing reference URLs: ${missingRefs.slice(0, 3).join(', ')}...`);
+    }
+  }
+
   const referencesMapping = uniqueUrls
     .map(url => {
       const refNumber = referenceMapping[url] || 0;
@@ -248,6 +276,15 @@ export async function writeFinalReport({
       return indexA - indexB;
     })
     .join('\n');
+
+  // Log reference statistics
+  const refNumbers = uniqueUrls.map(url => referenceMapping[url] || 0);
+  const validRefs = refNumbers.filter(num => num > 0);
+  log(`Final report will include ${validRefs.length} valid references with numbers ranging from ${Math.min(...validRefs) || 0} to ${Math.max(...validRefs) || 0}`);
+  
+  if (validRefs.length === 0) {
+    log(`WARNING: No valid references found for the final report. The report will not contain citations.`);
+  }
 
   const res = await generateObject({
     model: o3MiniModel,
@@ -312,9 +349,31 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
   
   // Add a note about references to the report and ensure it ends with references
   let reportWithReferences = res.object.reportMarkdown;
-  if (!reportWithReferences.includes('## References')) {
+  
+  // Check if the generated report already contains references
+  const hasReferencesSection = reportWithReferences.includes('## References');
+  log(`Generated report ${hasReferencesSection ? 'already includes' : 'does not include'} a References section`);
+  
+  // Count references in the report
+  const referencePattern = /\[(\d+)\]/g;
+  const referencesInReport = [...reportWithReferences.matchAll(referencePattern)].map(match => parseInt(match[1]));
+  const uniqueReferencesInReport = [...new Set(referencesInReport)];
+  
+  log(`Found ${referencesInReport.length} reference citations in the report (${uniqueReferencesInReport.length} unique reference numbers)`);
+  
+  if (referencesInReport.length === 0) {
+    log(`WARNING: The generated report does not contain any reference citations.`);
+  } else {
+    log(`Reference numbers used in the report: ${uniqueReferencesInReport.sort((a, b) => a - b).join(', ')}`);
+  }
+  
+  // Add references section if not already present
+  if (!hasReferencesSection) {
+    log(`Adding References section to the report`);
     reportWithReferences = reportWithReferences.trim() + urlsSection;
   }
+  
+  log(`Final report generation completed with ${uniqueReferencesInReport.length} unique references cited`);
   
   return reportWithReferences;
 }
@@ -402,6 +461,8 @@ export async function deepResearch({
     nextIndex: nextGlobalIndex 
   };
 
+  log(`Initialized reference mapping system. Starting with empty mapping.`);
+
   for (let currentDepth = 1; currentDepth <= depth; currentDepth++) {
     reportProgress({ currentDepth });
 
@@ -422,6 +483,7 @@ export async function deepResearch({
 
         if (!shouldResearch) {
           reportProgress({ completedQueries: progress.completedQueries + 1 });
+          log(`Skipping research for query: "${serpQuery.query}"`);
           continue;
         }
       } catch (error) {
@@ -430,16 +492,64 @@ export async function deepResearch({
       }
 
       try {
-        const result = await limit(() => firecrawl.search(serpQuery.query, {
-          scrapeOptions: {
-            formats: ["markdown"]
-          }
-        }));
+        log(`Starting research for query: "${serpQuery.query}"`);
+        
+        // Initialize default empty results
+        let webResult = { data: [] };
+        let scholarResult = { data: [] };
+        
+        // Perform web search using Firecrawl
+        try {
+          webResult = await limit(() => firecrawl.search(serpQuery.query, {
+            scrapeOptions: {
+              formats: ["markdown"]
+            }
+          }));
+          log(`Firecrawl search found ${webResult.data.length} results for query: "${serpQuery.query}"`);
+        } catch (firecrawlError) {
+          log(`Firecrawl search failed for query "${serpQuery.query}": ${firecrawlError.message || 'Unknown error'}`);
+          log(`Continuing with empty web results. Will still attempt to use Google Scholar results.`);
+          // Keep webResult.data as empty array and continue
+        }
+        
+        // Perform Google Scholar search
+        try {
+          scholarResult = await limit(() => searchGoogleScholar(serpQuery.query));
+          log(`Google Scholar search found ${scholarResult.data.length} results for query: "${serpQuery.query}"`);
+        } catch (scholarError) {
+          log(`Google Scholar search failed for query "${serpQuery.query}": ${scholarError.message || 'Unknown error'}`);
+          log(`Continuing with empty scholar results.`);
+          // Keep scholarResult.data as empty array and continue
+        }
+        
+        // Combine results from both sources
+        const combinedResult = {
+          data: [...webResult.data, ...scholarResult.data]
+        };
+        log(`Combined search results: ${combinedResult.data.length} total items for query: "${serpQuery.query}"`);
+        
+        // Skip processing if no results were found from either source
+        if (combinedResult.data.length === 0) {
+          log(`No results found from either Firecrawl or Google Scholar for query: "${serpQuery.query}". Skipping processing.`);
+          reportProgress({ completedQueries: progress.completedQueries + 1 });
+          continue;
+        }
+        
+        // Log reference mapping state before processing
+        const refCountBefore = Object.keys(referenceMapping).length;
+        log(`Reference mapping before processing query "${serpQuery.query}": ${refCountBefore} entries`);
+        
         const processed = await processSerpResult({
           query: serpQuery.query,
-          result,
+          result: combinedResult,
           globalReferenceMapping
         });
+
+        // Log detailed information about the processed results
+        log(`Processed results for query "${serpQuery.query}":
+  - Learnings: ${processed.learnings?.length || 0}
+  - Visited URLs: ${processed.visitedUrls?.length || 0}
+  - Reference indexes: ${Object.keys(processed.referenceIndexes || {}).length || 0}`);
 
         if (processed.learnings) {
           newLearnings.push(...processed.learnings);
@@ -449,12 +559,22 @@ export async function deepResearch({
         }
         // Store the reference index mapping from this search result
         if (processed.referenceIndexes) {
+          const newReferences = Object.keys(processed.referenceIndexes).filter(url => !referenceMapping[url]);
+          log(`Adding ${newReferences.length} new references to global mapping from query "${serpQuery.query}"`);
+          
+          if (newReferences.length > 0) {
+            log(`New reference URLs added: ${newReferences.slice(0, 3).join(', ')}${newReferences.length > 3 ? ` and ${newReferences.length - 3} more...` : ''}`);
+          }
+          
           Object.assign(referenceMapping, processed.referenceIndexes);
+        } else {
+          log(`No reference indexes found in processed results for query "${serpQuery.query}"`);
         }
 
         reportProgress({ completedQueries: progress.completedQueries + 1 });
       } catch (error) {
         console.error('Error processing query:', serpQuery.query, error);
+        log(`Failed to process query "${serpQuery.query}": ${error.message || 'Unknown error'}`);
         reportProgress({ completedQueries: progress.completedQueries + 1 });
       }
     }
@@ -477,7 +597,17 @@ export async function deepResearch({
     }
 
     // Log the current state of the reference mapping
-    log(`Current reference mapping has ${Object.keys(referenceMapping).length} entries`);
+    const refUrls = Object.keys(referenceMapping);
+    log(`Current reference mapping has ${refUrls.length} entries`);
+    
+    if (refUrls.length === 0) {
+      log(`WARNING: No references found after depth ${currentDepth}/${depth}. This may affect the quality of the final report.`);
+    } else {
+      // Log a sample of the references
+      const sampleSize = Math.min(3, refUrls.length);
+      const refSample = refUrls.slice(0, sampleSize).map(url => `[${referenceMapping[url]}] ${url}`);
+      log(`Reference sample (${sampleSize}/${refUrls.length}): ${refSample.join(', ')}`);
+    }
 
     // Save partial results to session
     session.partialResults = [...results, {
@@ -485,6 +615,16 @@ export async function deepResearch({
       visitedUrls: [...new Set(newVisitedUrls)],
       referenceMapping
     }];
+  }
+
+  // Log final reference statistics
+  const finalRefCount = Object.keys(referenceMapping).length;
+  log(`Research completed with ${finalRefCount} total references collected.`);
+  
+  if (finalRefCount === 0) {
+    log(`WARNING: No references were collected during the entire research process. The final report will not contain citations.`);
+  } else {
+    log(`References will be included in the final report with consistent global numbering.`);
   }
 
   return session.partialResults;
@@ -506,6 +646,51 @@ async function askQuestionWithTimeout(output: any, question: string, timeoutMs: 
       return true;
     }
     throw error;
+  }
+}
+
+// Function to search Google Scholar using SerpAPI
+async function searchGoogleScholar(query: string): Promise<any> {
+  if (!serpApiKey) {
+    log('SerpAPI key not found. Skipping Google Scholar search.');
+    return { data: [] };
+  }
+
+  try {
+    log(`Searching Google Scholar for: ${query}`);
+    const response = await axios.get('https://serpapi.com/search', {
+      params: {
+        engine: 'google_scholar',
+        q: query,
+        api_key: serpApiKey,
+      },
+    });
+
+    // Process the response to match the format expected by processSerpResult
+    const organicResults = response.data.organic_results || [];
+    
+    const formattedResults = {
+      data: organicResults.map((result: any) => ({
+        url: result.link || '',
+        title: result.title || '',
+        description: `${result.title || ''}\n\n${result.publication_info?.summary || ''}\n\n${result.snippet || ''}\n\nAuthors: ${result.publication_info?.authors?.map((a: any) => a.name).join(', ') || 'Unknown'}\n\nCited by: ${result.inline_links?.cited_by?.total || 0} papers`,
+      })),
+    };
+
+    log(`Google Scholar search found ${formattedResults.data.length} results for "${query}"`);
+    
+    if (formattedResults.data.length === 0) {
+      log(`WARNING: No Google Scholar results found for query: "${query}". This may affect academic references.`);
+    } else {
+      // Log sample of scholar results
+      const sampleSize = Math.min(2, formattedResults.data.length);
+      log(`Scholar result sample: ${formattedResults.data.slice(0, sampleSize).map(r => r.title).join(', ')}${formattedResults.data.length > sampleSize ? ` and ${formattedResults.data.length - sampleSize} more...` : ''}`);
+    }
+    
+    return formattedResults;
+  } catch (error) {
+    log(`Error searching Google Scholar for "${query}": ${error.message || 'Unknown error'}`);
+    return { data: [] };
   }
 }
 
