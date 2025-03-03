@@ -169,7 +169,7 @@ router.post('/register', async (req, res) => {
         // 创建新用户
         const result = await db.run(
             'INSERT INTO users (username, email, password, credits, is_verified) VALUES (?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, 100, true]
+            [username, email, hashedPassword, process.env.INITIAL_CREDITS || 100, true]
         );
 
         // 确保我们有有效的用户ID
