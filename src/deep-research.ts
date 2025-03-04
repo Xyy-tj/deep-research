@@ -423,8 +423,7 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
   // Add references section if not already present
   if (!hasReferencesSection) {
     log(`Adding References section to the report`);
-    reportWithReferences = reportWithReferences.trim();
-    // reportWithReferences = reportWithReferences.trim() + urlsSection;
+    reportWithReferences = reportWithReferences.trim() + urlsSection;
   }
 
   log(`Final report generation completed with ${uniqueReferencesInReport.length} unique references cited`);
