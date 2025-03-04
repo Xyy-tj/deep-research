@@ -1102,6 +1102,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Make saveResults globally accessible
+    window.saveResults = saveResults;
+
     // Load markdown preview
     async function loadMarkdownPreview(filename) {
         const previewContainer = document.getElementById('markdown-preview');
