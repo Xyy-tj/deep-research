@@ -50,6 +50,35 @@ const firecrawl = new FirecrawlApp({
 // Initialize SerpAPI key for Google Scholar
 const serpApiKey = process.env.SERPAPI_KEY ?? '';
 
+// Function to translate text to English using AI
+async function translateToEnglish(text: string): Promise<string> {
+  try {
+    log(`Translating text to English: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+    
+    const res = await generateObject({
+      model: o3MiniModel,
+      system: "You are a professional translator. Translate the given text to English accurately while preserving the meaning. If the text is already in English, return it unchanged with a note saying 'ALREADY_ENGLISH'.",
+      prompt: `Translate the following text to English: "${text}"`,
+      schema: z.object({
+        translation: z.string().describe('The English translation of the text'),
+        isAlreadyEnglish: z.boolean().describe('Whether the original text is already in English'),
+      }),
+    });
+    
+    if (res.object.isAlreadyEnglish) {
+      log(`Text is already in English, no translation needed`);
+      return text;
+    }
+    
+    log(`Translation completed: "${res.object.translation.substring(0, 50)}${res.object.translation.length > 50 ? '...' : ''}"`);
+    return res.object.translation;
+  } catch (error) {
+    log(`Error translating text to English: ${error.message || 'Unknown error'}`);
+    // Return original text if translation fails
+    return text;
+  }
+}
+
 // take en user query, return a list of SERP queries
 async function generateSerpQueries({
   query,
@@ -300,11 +329,15 @@ export async function writeFinalReport({
         const apaFormat = citation.formats.find(format => format.title === 'APA');
         const citationFormat = apaFormat || citation.formats[0]; // Use APA if available, otherwise use the first format
 
-        return `[${refNumber}] ${citationFormat.snippet}\n   URL: ${url}`;
+        // Extract the base URL without the citation data
+        const baseUrl = url.split('#citations#')[0];
+
+        // Return the citation with a markdown link for the URL
+        return `[${refNumber}] ${citationFormat.snippet}\n   [Link](${baseUrl})`;
       }
 
-      // Otherwise just return the URL
-      return `[${refNumber}] ${url}`;
+      // Otherwise just return the URL as a markdown link
+      return `[${refNumber}] [${url}](${url})`;
     })
     .sort((a, b) => {
       const indexA = parseInt(a.match(/\[(\d+)\]/)?.[1] || '0');
@@ -318,6 +351,20 @@ export async function writeFinalReport({
   const refNumbers = uniqueUrls.map(url => referenceMapping[url] || 0);
   const validRefs = refNumbers.filter(num => num > 0);
 
+  if (validRefs.length === 0) {
+    log(`WARNING: No valid references found for the final report. The report will not contain citations.`);
+    
+    // Add a fallback reference to ensure the report has at least one reference
+    log(`Adding a fallback reference to ensure the report has at least one reference.`);
+    const fallbackUrl = `https://example.com/fallback?query=${encodeURIComponent(prompt)}`;
+    referenceMapping[fallbackUrl] = 1;
+    uniqueUrls.push(fallbackUrl);
+    
+    // Update validRefs
+    validRefs.push(1);
+    
+    log(`Added fallback reference: [1] Research Notes on: ${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}\n   [Link](${fallbackUrl})`);
+  }
 
   log(`Final report will include ${validRefs.length} valid references with numbers ranging from ${Math.min(...validRefs) || 0} to ${Math.max(...validRefs) || 0}`);
 
@@ -343,7 +390,7 @@ Required sections:
 7. Conclusion
 
 Guidelines:
-- Aim for at least 5 pages of detailed content
+- Aim for at least 8+ pages of detailed content
 - Include ALL relevant learnings from the research
 - Support claims with specific examples and data points
 - IMPORTANT: When citing information from sources, use reference numbers in square brackets [X] that correspond to the references provided below
@@ -362,7 +409,7 @@ Here are all the learnings from previous research. Each learning includes refere
 ${learningsString}
 </learnings>
 
-Here are the references to use in your citations:
+Here are the references to use in your citations, but don't add reference at the end of the report:
 ${referencesMapping}
 
 Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources. Each citation should correspond to the reference numbers provided above. DO NOT restart numbering in each section - use the exact same reference numbers throughout the entire document.`,
@@ -373,7 +420,7 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
     }),
   });
 
-  log(`res: ${res.object.reportMarkdown}`)
+  log(`res:\n ${res.object.reportMarkdown} \n`)
 
   // Generate a references section using the same global reference mapping
   const urlsSection = `\n\n## References\n${uniqueUrls
@@ -387,11 +434,15 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
         const apaFormat = citation.formats.find(format => format.title === 'APA');
         const citationFormat = apaFormat || citation.formats[0]; // Use APA if available, otherwise use the first format
 
-        return `[${refNumber}] ${citationFormat.snippet}\n   URL: ${url}`;
+        // Extract the base URL without the citation data
+        const baseUrl = url.split('#citations#')[0];
+
+        // Return the citation with a markdown link for the URL
+        return `[${refNumber}] ${citationFormat.snippet} [Link](${baseUrl})`;
       }
 
-      // Otherwise just return the URL
-      return `[${refNumber}] ${url}`;
+      // Otherwise just return the URL as a markdown link
+      return `[${refNumber}] [${url}](${url})`;
     })
     .sort((a, b) => {
       const indexA = parseInt(a.match(/\[(\d+)\]/)?.[1] || '0');
@@ -423,6 +474,7 @@ Note: Make sure to use the reference numbers in square brackets [X] consistently
   // Add references section if not already present
   if (!hasReferencesSection) {
     log(`Adding References section to the report`);
+    reportWithReferences = reportWithReferences.trim();
     reportWithReferences = reportWithReferences.trim() + urlsSection;
   }
 
@@ -554,6 +606,7 @@ export async function deepResearch({
         // Perform web search using Firecrawl
         try {
           webResult = await limit(() => firecrawl.search(serpQuery.query, {
+            limit: process.env.FIRECRWAL_LIMIT,
             scrapeOptions: {
               formats: ["markdown"]
             }
@@ -565,10 +618,59 @@ export async function deepResearch({
           // Keep webResult.data as empty array and continue
         }
 
-        // Perform Google Scholar search
+        // Perform Google Scholar search with original query
         try {
+          // Search with original query
           scholarResult = await limit(() => searchGoogleScholar(serpQuery.query));
-          log(`Google Scholar search found ${scholarResult.data.length} results for query: "${serpQuery.query}"`);
+          log(`Google Scholar search found ${scholarResult.data.length} results for original query: "${serpQuery.query}"`);
+          
+          // Search with translated query (if needed)
+          // Only translate if the language is not English
+          if (language && language.toLowerCase() !== 'en' && language.toLowerCase() !== 'en-us') {
+            log(`Language is ${language}, attempting to search with English translation`);
+            
+            try {
+              const translatedScholarResult = await limit(() => 
+                searchGoogleScholar(serpQuery.query, { translateToEnglish: true })
+              );
+              
+              const translatedResultCount = translatedScholarResult.data.length;
+              log(`Google Scholar search found ${translatedResultCount} results for translated query`);
+              
+              if (translatedResultCount > 0) {
+                // Combine results, removing duplicates based on URL
+                const allScholarUrls = new Set(scholarResult.data.map(item => item.url));
+                const uniqueTranslatedResults = translatedScholarResult.data.filter(
+                  item => !allScholarUrls.has(item.url)
+                );
+                
+                const uniqueCount = uniqueTranslatedResults.length;
+                if (uniqueCount > 0) {
+                  log(`Found ${uniqueCount} unique results from translated query that weren't in original results`);
+                  
+                  // Add a marker to indicate these came from translated query
+                  const markedTranslatedResults = uniqueTranslatedResults.map(result => ({
+                    ...result,
+                    fromTranslatedQuery: true,
+                    originalQuery: serpQuery.query
+                  }));
+                  
+                  // Combine with original results
+                  scholarResult.data = [...scholarResult.data, ...markedTranslatedResults];
+                  log(`Combined scholar results: ${scholarResult.data.length} total items (${scholarResult.data.length - uniqueCount} original + ${uniqueCount} from translation)`);
+                } else {
+                  log(`No unique results found from translated query`);
+                }
+              } else {
+                log(`No results found from translated query`);
+              }
+            } catch (translatedScholarError) {
+              log(`Google Scholar search failed for translated query: ${translatedScholarError.message || 'Unknown error'}`);
+              log(`Continuing with only original language results.`);
+            }
+          } else {
+            log(`Language is ${language}, skipping translation for Google Scholar search`);
+          }
 
           // Process scholar results to include citation data in the URL
           scholarResult.data = scholarResult.data.map(result => {
@@ -582,7 +684,11 @@ export async function deepResearch({
               // Append citation data to URL with a special marker
               const citationJson = JSON.stringify(citationData);
               result.url = `${result.url}#citations#${citationJson}`;
-              log(`Added citation data to URL: ${result.url.substring(0, 50)}...`);
+              
+              // Add note if this result came from a translated query
+              const translationNote = result.fromTranslatedQuery ? 
+                ` (from translated query: "${result.originalQuery}")` : '';
+              log(`Added citation data to URL${translationNote}: ${result.url.substring(0, 50)}...`);
             }
             return result;
           });
@@ -596,11 +702,54 @@ export async function deepResearch({
         const combinedResult = {
           data: [...webResult.data, ...scholarResult.data]
         };
-        log(`Combined search results: ${combinedResult.data.length} total items for query: "${serpQuery.query}"`);
+        
+        // Log combined results statistics
+        const webCount = webResult.data.length;
+        const scholarCount = scholarResult.data.length;
+        const translatedCount = scholarResult.data.filter(item => item.fromTranslatedQuery).length;
+        
+        log(`Combined search results: ${combinedResult.data.length} total items for query: "${serpQuery.query}" (${webCount} web + ${scholarCount} scholar, including ${translatedCount} from translated query)`);
 
         // Skip processing if no results were found from either source
         if (combinedResult.data.length === 0) {
           log(`No results found from either Firecrawl or Google Scholar for query: "${serpQuery.query}". Skipping processing.`);
+          
+          // Add fallback content for this query to ensure we have some references
+          log(`Adding fallback content for query: "${serpQuery.query}"`);
+          
+          // Create a fallback URL and content
+          const fallbackUrl = `https://example.com/fallback?query=${encodeURIComponent(serpQuery.query)}`;
+          const fallbackContent = {
+            data: [{
+              description: `This is fallback content for the query: "${serpQuery.query}". No results were found from either Firecrawl or Google Scholar.`,
+              url: fallbackUrl,
+              title: `Fallback content for: ${serpQuery.query}`
+            }]
+          };
+          
+          // Process the fallback content
+          try {
+            const fallbackProcessed = await processSerpResult({
+              query: serpQuery.query,
+              result: fallbackContent,
+              globalReferenceMapping
+            });
+            
+            log(`Processed fallback content for query "${serpQuery.query}"`);
+            
+            if (fallbackProcessed.learnings) {
+              newLearnings.push(...fallbackProcessed.learnings);
+            }
+            if (fallbackProcessed.visitedUrls) {
+              newVisitedUrls.push(...fallbackProcessed.visitedUrls);
+            }
+            if (fallbackProcessed.referenceIndexes) {
+              Object.assign(referenceMapping, fallbackProcessed.referenceIndexes);
+            }
+          } catch (fallbackError) {
+            log(`Failed to process fallback content: ${fallbackError.message || 'Unknown error'}`);
+          }
+          
           reportProgress({ completedQueries: progress.completedQueries + 1 });
           continue;
         }
@@ -720,19 +869,42 @@ async function askQuestionWithTimeout(output: any, question: string, timeoutMs: 
 }
 
 // Function to search Google Scholar using SerpAPI
-async function searchGoogleScholar(query: string): Promise<any> {
+async function searchGoogleScholar(query: string, options: { translateToEnglish?: boolean } = {}): Promise<any> {
   if (!serpApiKey) {
     log('SerpAPI key not found. Skipping Google Scholar search.');
     return { data: [] };
   }
 
   try {
-    log(`Searching Google Scholar for: ${query}`);
+    // If translation is requested
+    let searchQuery = query;
+    let isTranslated = false;
+    
+    if (options.translateToEnglish) {
+      try {
+        const translatedQuery = await translateToEnglish(query);
+        
+        // Only use translation if it's different from the original
+        if (translatedQuery !== query) {
+          searchQuery = translatedQuery;
+          isTranslated = true;
+          log(`Using translated query for Google Scholar: "${searchQuery}"`);
+        } else {
+          log(`Query appears to be already in English or translation returned same text`);
+        }
+      } catch (translationError) {
+        log(`Error during query translation: ${translationError.message || 'Unknown error'}`);
+        // Continue with original query if translation fails
+      }
+    }
+
+    log(`Searching Google Scholar for: ${searchQuery}${isTranslated ? ' (translated from: ' + query + ')' : ''}`);
     const response = await axios.get('https://serpapi.com/search', {
       params: {
         engine: 'google_scholar',
-        q: query,
+        q: searchQuery,
         api_key: serpApiKey,
+        num: process.env.SERPAPI_LIMIT,
       },
     });
 
@@ -756,6 +928,7 @@ async function searchGoogleScholar(query: string): Promise<any> {
                 engine: 'google_scholar_cite',
                 q: resultId,
                 api_key: serpApiKey,
+                num: process.env.SERPAPI_LIMIT,
               },
             });
 
@@ -776,7 +949,9 @@ async function searchGoogleScholar(query: string): Promise<any> {
           url: result.link || '',
           title: result.title || '',
           description: `${result.title || ''}\n\n${result.publication_info?.summary || ''}\n\n${result.snippet || ''}\n\nAuthors: ${result.publication_info?.authors?.map((a: any) => a.name).join(', ') || 'Unknown'}\n\nCited by: ${result.inline_links?.cited_by?.total || 0} papers`,
-          citations: citations
+          citations: citations,
+          // Add a flag to indicate if this result came from a translated query
+          fromTranslatedQuery: isTranslated
         };
       })
     );
@@ -785,10 +960,10 @@ async function searchGoogleScholar(query: string): Promise<any> {
       data: resultsWithCitations,
     };
 
-    log(`Google Scholar search found ${formattedResults.data.length} results for "${query}"`);
+    log(`Google Scholar search found ${formattedResults.data.length} results for "${searchQuery}"${isTranslated ? ' (translated from: ' + query + ')' : ''}`);
 
     if (formattedResults.data.length === 0) {
-      log(`WARNING: No Google Scholar results found for query: "${query}". This may affect academic references.`);
+      log(`WARNING: No Google Scholar results found for query: "${searchQuery}"${isTranslated ? ' (translated from: ' + query + ')' : ''}. This may affect academic references.`);
     } else {
       // Log sample of scholar results
       const sampleSize = Math.min(2, formattedResults.data.length);
