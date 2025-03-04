@@ -3,223 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invitation Code Management</title>
-    <link rel="stylesheet" href="css/tailwind.css">
-    <style>
-        .code-item {
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        .code-used {
-            background-color: #f1f1f1;
-            opacity: 0.7;
-        }
-    </style>
+    <title>邀请码管理 | Deep Research</title>
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+    <link href="/css/panel-styles.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Invitation Code Management</h1>
-            <p class="text-gray-600">Generate and manage one-time use invitation codes</p>
+<body class="min-h-screen bg-gray-50" style="background-image: url('/images/chinese-landscape.jpg'); background-size: cover; background-position: center; background-attachment: fixed; background-blend-mode: overlay; background-color: rgba(248, 249, 250, 0.95);">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <header class="mb-8 text-center">
+            <div class="flex justify-center mb-4">
+                <img src="/images/logo.png" alt="Logo" class="h-16 opacity-90">
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">邀请码管理系统</h1>
+            <p class="text-gray-600 text-lg">生成和管理一次性使用的邀请码</p>
+            <div class="w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent my-4 mx-auto"></div>
         </header>
 
         <div id="adminPanel" class="hidden">
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h2 class="text-xl font-semibold mb-4">Generate New Codes</h2>
-                <div class="flex items-end space-x-4">
-                    <div>
-                        <label for="codeCount" class="block text-sm font-medium text-gray-700 mb-1">Number of codes</label>
-                        <input type="number" id="codeCount" min="1" max="50" value="5" class="border border-gray-300 rounded-md px-3 py-2">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="panel-card p-6 col-span-1">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-key text-primary-600 mr-2"></i>
+                        生成新邀请码
+                    </h2>
+                    <form id="generateCodesForm" class="space-y-4" onsubmit="return false;">
+                        <div>
+                            <label for="codeCount" class="block text-sm font-medium text-gray-700 mb-1">邀请码数量</label>
+                            <div class="flex items-center">
+                                <input type="number" id="codeCount" min="1" max="50" value="5" class="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                                <span class="text-xs text-gray-500 ml-2">最多50个</span>
+                            </div>
+                        </div>
+                        <button id="generateBtn" type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
+                            <span id="generateBtnText" class="flex items-center justify-center">
+                                <i class="fas fa-plus-circle mr-2"></i>
+                                生成邀请码
+                            </span>
+                            <span id="generateBtnLoading" class="hidden">
+                                <div class="loading mr-2"></div>
+                                生成中...
+                            </span>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="panel-card p-6 col-span-1 md:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-list-alt text-primary-600 mr-2"></i>
+                            邀请码统计
+                        </h2>
+                        <button id="logoutBtn" class="text-gray-500 hover:text-gray-700 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-1"></i>
+                            退出登录
+                        </button>
                     </div>
-                    <button id="generateBtn" class="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors">
-                        Generate Codes
-                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 stats-grid">
+                        <div class="bg-blue-50 rounded-lg p-4 border border-blue-100 stats-card">
+                            <div class="text-blue-800 text-sm font-medium mb-1">可用邀请码</div>
+                            <div class="text-2xl font-bold text-blue-900" id="availableCodesCount">-</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-100 stats-card">
+                            <div class="text-gray-800 text-sm font-medium mb-1">已使用邀请码</div>
+                            <div class="text-2xl font-bold text-gray-900" id="usedCodesCount">-</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">Existing Invitation Codes</h2>
-                <div class="mb-4">
-                    <button id="refreshBtn" class="bg-gray-200 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-300 transition-colors text-sm">
-                        Refresh List
-                    </button>
+            <div class="panel-card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold flex items-center">
+                        <i class="fas fa-ticket-alt text-primary-600 mr-2"></i>
+                        邀请码列表
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <div class="relative">
+                            <input type="text" id="codeFilter" placeholder="搜索邀请码..." class="pl-8 pr-4 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all">
+                            <i class="fas fa-search text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                        </div>
+                        <button id="refreshBtn" class="bg-gray-200 text-gray-800 px-3 py-1 rounded-md hover:bg-gray-300 transition-colors text-sm flex items-center">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            刷新
+                        </button>
+                    </div>
                 </div>
-                <div id="codesList" class="space-y-2">
-                    <p class="text-gray-500 italic">Loading codes...</p>
+                
+                <div class="overflow-hidden">
+                    <div class="flex space-x-2 mb-2">
+                        <button class="filter-btn active px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors" data-filter="all">全部</button>
+                        <button class="filter-btn px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors" data-filter="available">可用</button>
+                        <button class="filter-btn px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors" data-filter="used">已使用</button>
+                    </div>
+                </div>
+                
+                <div id="codesListContainer" class="mt-4 overflow-auto max-h-[500px] pr-2">
+                    <div id="codesList" class="space-y-2">
+                        <p class="text-gray-500 italic">加载中...</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="loginPrompt" class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold mb-4">Admin Login Required</h2>
-            <p class="mb-4">Please login with an admin account to manage invitation codes.</p>
+        <div id="loginPrompt" class="panel-card p-6 max-w-md mx-auto fade-in">
+            <div class="text-center mb-6">
+                <i class="fas fa-lock text-primary-600 text-4xl mb-4"></i>
+                <h2 class="text-2xl font-semibold mb-2">管理员登录</h2>
+                <p class="text-gray-600">请使用管理员账号登录以管理邀请码</p>
+            </div>
+            
             <form id="adminLoginForm" class="space-y-4">
                 <div>
-                    <label for="adminUsername" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" id="adminUsername" class="border border-gray-300 rounded-md px-3 py-2 w-full">
+                    <label for="adminUsername" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="adminUsername" class="pl-10 border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="输入管理员用户名">
+                    </div>
                 </div>
                 <div>
-                    <label for="adminPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="adminPassword" class="border border-gray-300 rounded-md px-3 py-2 w-full">
+                    <label for="adminPassword" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="adminPassword" class="pl-10 border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all" placeholder="输入管理员密码">
+                    </div>
                 </div>
-                <button type="submit" class="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors">
-                    Login
+                <button id="loginBtn" type="submit" class="w-full bg-blue-100 text-blue-800 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    登录
                 </button>
             </form>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const adminPanel = document.getElementById('adminPanel');
-            const loginPrompt = document.getElementById('loginPrompt');
-            const adminLoginForm = document.getElementById('adminLoginForm');
-            const generateBtn = document.getElementById('generateBtn');
-            const refreshBtn = document.getElementById('refreshBtn');
-            const codesList = document.getElementById('codesList');
-            const codeCount = document.getElementById('codeCount');
+    <footer class="mt-8 py-4 text-center text-gray-600">
+        <div class="w-48 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent my-4 mx-auto"></div>
+        <p>&copy; 2025 Deep Research AI - 邀请码管理系统</p>
+    </footer>
 
-            let authToken = localStorage.getItem('admin_token');
-
-            // Check if already logged in
-            if (authToken) {
-                showAdminPanel();
-                loadCodes();
-            }
-
-            // Admin login
-            adminLoginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('adminUsername').value;
-                const password = document.getElementById('adminPassword').value;
-
-                try {
-                    const response = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ username, password }),
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        // Check if user is admin
-                        if (data.user.isAdmin) {
-                            authToken = data.token;
-                            localStorage.setItem('admin_token', authToken);
-                            showAdminPanel();
-                            loadCodes();
-                        } else {
-                            alert('Admin privileges required');
-                        }
-                    } else {
-                        alert('Login failed');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    alert('Login failed');
-                }
-            });
-
-            // Generate codes
-            generateBtn.addEventListener('click', async () => {
-                const count = parseInt(codeCount.value) || 1;
-                
-                try {
-                    const response = await fetch('/api/admin/generate-invitation-codes', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${authToken}`,
-                        },
-                        body: JSON.stringify({ count }),
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        alert(`Generated ${data.codes.length} new invitation codes`);
-                        loadCodes();
-                    } else {
-                        const error = await response.json();
-                        alert(`Failed to generate codes: ${error.error}`);
-                    }
-                } catch (error) {
-                    console.error('Generate codes error:', error);
-                    alert('Failed to generate codes');
-                }
-            });
-
-            // Refresh codes list
-            refreshBtn.addEventListener('click', loadCodes);
-
-            // Load invitation codes
-            async function loadCodes() {
-                try {
-                    codesList.innerHTML = '<p class="text-gray-500 italic">Loading codes...</p>';
-                    
-                    const response = await fetch('/api/admin/invitation-codes', {
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                        },
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        displayCodes(data.codes);
-                    } else {
-                        const error = await response.json();
-                        codesList.innerHTML = `<p class="text-red-500">Error: ${error.error}</p>`;
-                    }
-                } catch (error) {
-                    console.error('Load codes error:', error);
-                    codesList.innerHTML = '<p class="text-red-500">Failed to load invitation codes</p>';
-                }
-            }
-
-            // Display codes in the UI
-            function displayCodes(codes) {
-                if (!codes || codes.length === 0) {
-                    codesList.innerHTML = '<p class="text-gray-500">No invitation codes found</p>';
-                    return;
-                }
-
-                codesList.innerHTML = '';
-                
-                codes.forEach(code => {
-                    const isUsed = code.is_used === 1;
-                    const codeElement = document.createElement('div');
-                    codeElement.className = `code-item ${isUsed ? 'code-used' : ''}`;
-                    
-                    codeElement.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="text-lg font-mono font-bold">${code.code}</div>
-                                <div class="text-sm text-gray-500">Created: ${new Date(code.created_at).toLocaleString()}</div>
-                                ${isUsed ? `
-                                    <div class="text-sm text-gray-500">Used by: ${code.used_by_username || 'Unknown'}</div>
-                                    <div class="text-sm text-gray-500">Used at: ${new Date(code.used_at).toLocaleString()}</div>
-                                ` : ''}
-                            </div>
-                            <div class="px-2 py-1 rounded text-sm ${isUsed ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}">
-                                ${isUsed ? 'Used' : 'Available'}
-                            </div>
-                        </div>
-                    `;
-                    
-                    codesList.appendChild(codeElement);
-                });
-            }
-
-            // Show admin panel and hide login prompt
-            function showAdminPanel() {
-                loginPrompt.classList.add('hidden');
-                adminPanel.classList.remove('hidden');
-            }
-        });
-    </script>
+    <script src="/js/panel.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 import { Auth, setUpdateBalanceFunction } from './auth.js';
-import { translations } from './i18n.js';
+import { translations, updateCostFormulas } from './i18n.js';
 
 // Global variables
 let currentLanguage = localStorage.getItem('language') || 'en';
@@ -150,11 +150,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (response.ok) {
             window.creditConfig = await response.json();
             console.log('Credit configuration loaded:', window.creditConfig);
+            
+            // Update cost formula translations with the loaded configuration
+            updateCostFormulas();
+            
+            // Update any displayed cost formulas on the page
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (key && translations[currentLanguage] && translations[currentLanguage][key]) {
+                    el.textContent = translations[currentLanguage][key];
+                }
+            });
         } else {
             console.error('Failed to load credit configuration:', response.status);
         }
     } catch (error) {
         console.error('Error loading credit configuration:', error);
+    }
+    
+    // Fetch application configuration from server
+    try {
+        const response = await fetch('/api/config/app');
+        if (response.ok) {
+            window.appConfig = await response.json();
+            console.log('Application configuration loaded:', window.appConfig);
+        } else {
+            console.error('Failed to load application configuration:', response.status);
+        }
+    } catch (error) {
+        console.error('Error loading application configuration:', error);
     }
     
     // 获取余额显示元素
@@ -278,6 +302,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     costPreview.classList.remove('text-yellow-600', 'scale-110');
                 }, 300);
             }
+        }
+        
+        // Update the cost formula element if it exists
+        const costFormulaElement = document.querySelector('[data-i18n="costFormula"]');
+        if (costFormulaElement && window.creditConfig) {
+            costFormulaElement.textContent = t('costFormula');
         }
     }
 
@@ -636,6 +666,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateLanguage(lang) {
         currentLanguage = lang;
         localStorage.setItem('language', lang);
+        
+        // Make sure cost formulas are updated with current credit configuration
+        if (window.creditConfig) {
+            updateCostFormulas();
+        }
         
         // Update all i18n elements
         document.querySelectorAll('[data-i18n]').forEach(element => {
@@ -1334,7 +1369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Add test button to the page when in development mode
-    const isDevelopmentMode = true; // 直接设置为true进行测试
+    const isDevelopmentMode = window.appConfig?.isTestMode || false; // Use the server configuration
     logger.info('Development mode: ' + isDevelopmentMode);
     
     if (isDevelopmentMode) {
@@ -1347,15 +1382,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             testReferencesButton.className = 'fixed top-20 right-4 z-50 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors';
             testReferencesButton.addEventListener('click', testReferencesDisplay);
             document.body.appendChild(testReferencesButton);
-            
-            // Add the original test button for markdown display if it doesn't exist yet
-            const testButton = document.createElement('button');
-            testButton.textContent = '测试Markdown显示';
-            testButton.className = 'fixed top-32 right-4 z-50 px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors';
-            testButton.addEventListener('click', testMarkdownDisplay);
-            document.body.appendChild(testButton);
-            
-            logger.info('Test buttons added to the page');
         }
         
         // 确保DOM已加载完成

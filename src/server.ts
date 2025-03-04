@@ -102,6 +102,18 @@ app.get('/api/config/credits', (req, res) => {
     }
 });
 
+// Get application configuration including test mode
+app.get('/api/config/app', (req, res) => {
+    try {
+        res.json({
+            isTestMode: process.env.TEST_MODE === 'true' || process.env.TEST_MODE === '1'
+        });
+    } catch (error) {
+        logger.error('Error fetching application configuration:', error);
+        res.status(500).json({ error: 'Failed to fetch application configuration' });
+    }
+});
+
 // Enable detailed request logging middleware
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`, {
@@ -114,6 +126,11 @@ app.use((req, res, next) => {
 
 // Setup Swagger UI
 setupSwagger(app);
+
+// Route for panel.html
+app.get('/panel', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/panel.html'));
+});
 
 app.use(express.static('public'));
 

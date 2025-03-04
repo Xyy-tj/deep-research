@@ -105,7 +105,7 @@ export const translations = {
         depthRule: 'Depth cost: 0.5 credits per depth level',
         breadthRule: 'Breadth cost: 1 credit per breadth level',
         currentCost: 'Current Cost:',
-        costFormula: 'Expected cost = Base(2) + Depth × 1 + Breadth × 0.5',
+        costFormula: `Expected cost = Base(${window.creditConfig?.baseCredits || 2}) + Depth × ${window.creditConfig?.depthMultiplier || 1} + Breadth × ${window.creditConfig?.breadthMultiplier || 0.5}`,
     },
     zh: {
         // Title and introduction
@@ -217,9 +217,30 @@ export const translations = {
         // Billing related translations
         billingRules: '计费规则',
         baseCreditsRule: '基础费用: 每次研究2积分',
-        depthRule: '深度费用: 每个深度级别0.5积分',
-        breadthRule: '广度费用: 每个广度级别1积分',
+        depthRule: '深度费用: 每级深度0.5积分',
+        breadthRule: '广度费用: 每级广度1积分',
         currentCost: '当前费用:',
-        costFormula: '预期消耗 = 基础(2) + 深度 × 1 + 广度 × 0.5',
+        costFormula: `预期消耗 = 基础(${window.creditConfig?.baseCredits || 2}) + 深度 × ${window.creditConfig?.depthMultiplier || 1} + 广度 × ${window.creditConfig?.breadthMultiplier || 0.5}`,
     }
 };
+
+// Function to update cost formula translations with current credit configuration
+export function updateCostFormulas() {
+    if (window.creditConfig) {
+        const baseCredits = window.creditConfig.baseCredits || 2;
+        const depthMultiplier = window.creditConfig.depthMultiplier || 1;
+        const breadthMultiplier = window.creditConfig.breadthMultiplier || 0.5;
+        
+        translations.en.costFormula = `Expected cost = Base(${baseCredits}) + Depth × ${depthMultiplier} + Breadth × ${breadthMultiplier}`;
+        translations.zh.costFormula = `预期消耗 = 基础(${baseCredits}) + 深度 × ${depthMultiplier} + 广度 × ${breadthMultiplier}`;
+        
+        // Also update the rule descriptions
+        translations.en.baseCreditsRule = `Base cost: ${baseCredits} credits per research`;
+        translations.en.depthRule = `Depth cost: ${depthMultiplier} credits per depth level`;
+        translations.en.breadthRule = `Breadth cost: ${breadthMultiplier} credits per breadth level`;
+        
+        translations.zh.baseCreditsRule = `基础费用: 每次研究${baseCredits}积分`;
+        translations.zh.depthRule = `深度费用: 每级深度${depthMultiplier}积分`;
+        translations.zh.breadthRule = `广度费用: 每级广度${breadthMultiplier}积分`;
+    }
+}
