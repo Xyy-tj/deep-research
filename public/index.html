@@ -9,6 +9,16 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Configure marked.js to allow HTML in markdown
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            sanitize: false, // Allow HTML in the markdown
+            smartLists: true,
+            smartypants: true
+        });
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="/css/tabs.css" rel="stylesheet">
     <link href="/css/styles.css" rel="stylesheet">

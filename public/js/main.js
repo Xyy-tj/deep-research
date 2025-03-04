@@ -395,15 +395,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.info('Displaying research result');
         logger.debug('Creating result section in DOM');
 
-        const content = result.content || result;
-        const filename = result.filename || 'report.md';
-
+        const resultsContainer = document.getElementById('results');
+        if (!resultsContainer) return;
+        
+        resultsContainer.innerHTML = '';
+        
+        let content = '';
+        let filename = '';
+        
+        if (typeof result === 'string') {
+            content = result;
+            filename = 'research-result.md';
+        } else if (result && result.content) {
+            content = result.content;
+            filename = result.filename || 'research-result.md';
+        } else {
+            logger.error('Invalid result format');
+            return;
+        }
+        
+        // Process the markdown content to format references properly
+        const processedContent = formatReferences(content);
+        
         const resultSection = document.createElement('div');
         resultSection.className = 'mt-8';
+        
+        // 使用两步渲染过程：先解析Markdown，然后将HTML插入到DOM中
+        const markdownHtml = marked.parse(processedContent);
+        
         resultSection.innerHTML = `
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-xl font-semibold mb-4">${t('researchResults')}</h3>
-                <div class="markdown-content">${marked.parse(content)}</div>
+                <div class="markdown-content"></div>
                 <div class="mt-6 flex justify-end space-x-4">
                     <button onclick="saveResults()" class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors">
                         ${t('saveResults')}
@@ -416,15 +439,147 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
         `;
-
-        const resultsContainer = document.getElementById('results');
-        // Clear previous results
-        resultsContainer.innerHTML = '';
         
-        logger.debug('Appending result section to container');
         resultsContainer.appendChild(resultSection);
-        resultsContainer.scrollIntoView({ behavior: 'smooth' });
-        logger.info('Research result displayed successfully');
+        
+        // 将解析后的HTML安全地插入到markdown-content元素中
+        const markdownContent = resultSection.querySelector('.markdown-content');
+        if (markdownContent) {
+            markdownContent.innerHTML = markdownHtml;
+        }
+        
+        // Show the results section
+        resultsContainer.style.display = 'block';
+        
+        // Save the result to the current research session
+        if (currentResearchSession) {
+            currentResearchSession.result = content;
+        }
+    }
+
+    // Function to format references in markdown content
+    function formatReferences(content) {
+        // Check if the content has a References section
+        if (!content.includes('## References')) {
+            return content;
+        }
+
+        // Split the content into sections
+        const parts = content.split('## References');
+        
+        if (parts.length < 2) {
+            return content;
+        }
+        
+        // Get the content before and after the References section
+        const beforeReferences = parts[0];
+        let referencesSection = parts[1];
+        
+        // Regular expression to match reference entries
+        // Format: [number] Author. (Year). Title. Journal, Volume(Issue), Pages.
+        //    [Link](url)
+        const referenceRegex = /\[(\d+)\](.*?)(?:\n\s*\[Link\]\((.*?)\))?(?=\n\n|\n\[\d+\]|$)/gs;
+        
+        // Create HTML for references section
+        let referencesHTML = '<div class="references-container">';
+        
+        // Replace each reference with formatted HTML
+        let match;
+        while ((match = referenceRegex.exec(referencesSection)) !== null) {
+            const [fullMatch, number, text, url] = match;
+            const formattedText = text.trim();
+            
+            // Extract year if available (assuming format includes a year in parentheses)
+            const yearMatch = formattedText.match(/\((\d{4})\)/);
+            const year = yearMatch ? yearMatch[1] : '';
+            
+            // Extract author(s) - assuming they come before the year
+            let author = '';
+            if (yearMatch) {
+                author = formattedText.substring(0, formattedText.indexOf(yearMatch[0])).trim();
+            } else {
+                // Try to extract author by looking for the first period
+                const firstPeriodPos = formattedText.indexOf('.');
+                if (firstPeriodPos > -1) {
+                    author = formattedText.substring(0, firstPeriodPos + 1).trim();
+                }
+            }
+            
+            // Extract title - assuming it comes after the year and before the journal
+            let title = '';
+            let journal = '';
+            
+            if (yearMatch) {
+                const afterYear = formattedText.substring(formattedText.indexOf(yearMatch[0]) + yearMatch[0].length).trim();
+                // Title typically ends with a period before journal name
+                const titleEndPos = afterYear.indexOf('. ');
+                if (titleEndPos > -1) {
+                    title = afterYear.substring(0, titleEndPos + 1).trim();
+                    journal = afterYear.substring(titleEndPos + 1).trim();
+                } else {
+                    title = afterYear;
+                }
+            } else {
+                // If no year found, try to extract title and journal based on periods
+                const parts = formattedText.split('. ');
+                if (parts.length > 1) {
+                    // Skip the first part (author)
+                    title = parts[1] + '.';
+                    journal = parts.slice(2).join('. ');
+                }
+            }
+            
+            // Create a professional academic reference card
+            referencesHTML += `
+            <div class="reference-card">
+                <div class="reference-number">[${number}]</div>
+                <div class="reference-content">`;
+                
+            // 创建作者行，如果有年份则包含年份
+            if (author) {
+                referencesHTML += `<div class="reference-author">`;
+                
+                // 如果有年份，先显示年份
+                if (year) {
+                    referencesHTML += `<span class="reference-year">${year}</span> `;
+                }
+                
+                // 显示作者
+                referencesHTML += `${author.replace(/'/g, "\\'")}</div>`;
+            } else if (year) {
+                // 如果只有年份没有作者
+                referencesHTML += `<div class="reference-author"><span class="reference-year">${year}</span></div>`;
+            }
+            
+            // 只添加期刊信息（如果存在）
+            if (journal) {
+                referencesHTML += `<div class="reference-details">
+                    <span class="reference-journal">${journal}</span>
+                </div>`;
+            }
+                        
+            if (url) {
+                referencesHTML += `
+                    <div class="reference-link-container">
+                        <a href="${url}" class="reference-link" onclick="return openReferenceModal('${url.replace(/'/g, "\\'")}', '${(author || '').replace(/'/g, "\\'")}${year ? ' (' + year + ')' : ''}', event);">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="reference-link-icon" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                            </svg>
+                            查看原文
+                        </a>
+                    </div>`;
+            }
+            
+            referencesHTML += `
+                </div>
+            </div>`;
+        }
+        
+        referencesHTML += '</div>';
+        
+        // Return the formatted content
+        return beforeReferences + '## References\n' + referencesHTML;
     }
 
     // Language switching function
@@ -1050,30 +1205,261 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     })();
 
-    // Test function to display local markdown file
-    async function testMarkdownDisplay() {
-        try {
-            logger.info('Testing markdown display');
-            const response = await fetch('/test/test.md');
-            if (!response.ok) {
-                throw new Error('Failed to load test markdown file');
-            }
-            const content = await response.text();
-            displayResult(content);
-            logger.info('Test markdown loaded and displayed successfully');
-        } catch (error) {
-            logger.error('Error testing markdown display:', error);
-            showError('Failed to load test markdown file');
+    // 测试函数 - 显示模拟研究结果
+    function testReferencesDisplay() {
+        logger.info('Testing references display');
+        
+        // 确保marked已定义
+        if (typeof marked === 'undefined') {
+            console.error("marked is not defined. Loading it dynamically...");
+            // 如果marked未定义，动态加载它
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+            script.onload = function() {
+                // 配置marked选项
+                marked.setOptions({
+                    gfm: true,
+                    breaks: true,
+                    sanitize: false,
+                    smartLists: true,
+                    smartypants: true
+                });
+                console.log("marked loaded successfully");
+                // 加载完成后继续执行测试
+                continueTest();
+            };
+            document.head.appendChild(script);
+        } else {
+            // 如果marked已定义，直接继续
+            continueTest();
+        }
+        
+        function continueTest() {
+            // Mock research result with references
+            const mockResult = {
+                content: `# 机器学习在石油工业中的应用研究
+
+## 摘要
+本研究探讨了机器学习技术在石油工业中的应用现状与发展前景。通过分析现有文献和实践案例，总结了机器学习在油藏表征、生产优化、设备维护等方面的应用成果，并讨论了未来发展趋势。
+
+## 关键词
+机器学习、石油工业、油藏表征、生产优化、预测性维护
+
+## 研究背景
+随着数字化转型的推进，石油工业正积极采用人工智能和机器学习技术来提高生产效率、降低成本并实现更可持续的发展。机器学习作为人工智能的核心分支，通过从历史数据中学习模式和规律，为石油行业提供了新的解决方案和优化途径。
+
+## 主要发现
+1. 机器学习技术在油藏表征方面显著提高了地质模型的准确性，特别是在复杂地质构造的解释上。
+2. 在生产优化领域，机器学习算法能够实时分析生产数据，提供更精准的生产参数调整建议。
+3. 预测性维护系统通过分析设备运行数据，可以提前预警潜在故障，减少非计划停机时间。
+4. 数据驱动与机理模型的融合是当前研究热点，可以克服单一模型的局限性。
+
+## 结论与建议
+机器学习技术在石油工业中展现出巨大潜力，但仍面临数据质量、算法解释性等挑战。建议加强跨学科合作，提高数据标准化水平，并注重算法的可解释性研究，以促进机器学习技术在石油工业中的更广泛应用。
+
+## References
+[1] 肖立志. (2022). 机器学习数据驱动与机理模型融合及可解释性问题. 石油物探, 61(2), 205-212.
+[Link](https://html.rhhz.net/SYWT/HTML/22-02-02.htm)
+
+[2] 刘合, 李艳春, 贾德利, 王素玲, 乔美霞, 屈如意, ... & 任智慧. (2023). 人工智能在注水开发方案精细化调整中的应用现状及展望. 石油学报, 44(9), 1574.
+[Link](https://www.syxb-cps.com.cn/CN/abstract/abstract6462.shtml)
+
+[3] 张三, 李四, 王五. (2024). 深度学习在油藏特征提取中的应用. 石油学报, 45(2), 112-125.
+[Link](https://example.com/paper3)
+
+[4] Johnson, A., Smith, B., & Williams, C. (2023). Machine Learning Applications in Petroleum Engineering: A Comprehensive Review. Journal of Petroleum Technology, 75(3), 45-58.
+[Link](https://example.com/paper4)
+
+[5] Wang, X., Zhang, Y., & Li, Z. (2024). Predictive Maintenance for Offshore Platforms Using Machine Learning. SPE Journal, 29(1), 78-92.
+[Link](https://example.com/paper5)`,
+                filename: 'machine-learning-petroleum-research.md'
+            };
+            
+            // Display the mock result
+            displayResult(mockResult);
+            
+            // Show the main content area if it's hidden
+            toggleMainContent(true);
+            
+            // Scroll to the results section
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
     }
-
+    
     // Add test button to the page when in development mode
-    const isDevelopmentMode = false; // Set to true for development, false for production
+    const isDevelopmentMode = true; // 直接设置为true进行测试
+    logger.info('Development mode: ' + isDevelopmentMode);
+    
     if (isDevelopmentMode) {
-        const testButton = document.createElement('button');
-        testButton.textContent = 'Test Markdown Display';
-        testButton.className = 'fixed bottom-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700';
-        testButton.onclick = testMarkdownDisplay;
-        document.body.appendChild(testButton);
+        // 确保在DOM完全加载后添加测试按钮
+        function addTestButtons() {
+            logger.info('Adding test references button');
+            // Add test references button
+            const testReferencesButton = document.createElement('button');
+            testReferencesButton.textContent = '测试参考文献显示';
+            testReferencesButton.className = 'fixed top-20 right-4 z-50 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors';
+            testReferencesButton.addEventListener('click', testReferencesDisplay);
+            document.body.appendChild(testReferencesButton);
+            
+            // Add the original test button for markdown display if it doesn't exist yet
+            const testButton = document.createElement('button');
+            testButton.textContent = '测试Markdown显示';
+            testButton.className = 'fixed top-32 right-4 z-50 px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors';
+            testButton.addEventListener('click', testMarkdownDisplay);
+            document.body.appendChild(testButton);
+            
+            logger.info('Test buttons added to the page');
+        }
+        
+        // 确保DOM已加载完成
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(addTestButtons, 1000); // 延迟1秒添加按钮
+        } else {
+            window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(addTestButtons, 1000); // 延迟1秒添加按钮
+            });
+        }
     }
 });
+
+// 添加打开引用链接的浮动窗口函数
+window.openReferenceModal = function(url, title, e) {
+    // 获取点击位置 (确保使用传入的事件对象)
+    const event = e || window.event;
+    const clickX = event.clientX;
+    const clickY = event.clientY;
+    
+    console.log("Opening popup at:", clickX, clickY, "for URL:", url);
+    
+    // 创建浮动窗口
+    const popup = document.createElement('div');
+    popup.className = 'reference-popup';
+    
+    // 创建浮动窗口内容
+    popup.innerHTML = `
+        <div class="reference-popup-content">
+            <div class="reference-popup-header">
+                <h3>${title || '查看参考文献'}</h3>
+                <button class="reference-popup-close">&times;</button>
+            </div>
+            <div class="reference-popup-body">
+                <div class="iframe-container">
+                    <iframe src="${url}" frameborder="0" class="reference-iframe"></iframe>
+                    <div class="iframe-error-message" style="display: none;">
+                        <p>无法在此窗口中显示内容，因为目标网站不允许被嵌入。</p>
+                        <button class="open-in-new-tab-btn">在新标签页中打开</button>
+                    </div>
+                </div>
+            </div>
+            <div class="reference-popup-footer">
+                <a href="${url}" target="_blank" class="reference-popup-open-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="reference-link-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                        <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                    </svg>
+                    在新标签页打开
+                </a>
+            </div>
+        </div>
+    `;
+    
+    // 添加到body
+    document.body.appendChild(popup);
+    
+    // 计算位置
+    const popupWidth = 500; // 预设宽度
+    const popupHeight = 400; // 预设高度
+    
+    // 计算左侧位置，确保不超出屏幕
+    let left = clickX;
+    if (left + popupWidth > window.innerWidth) {
+        left = window.innerWidth - popupWidth - 20;
+    }
+    
+    // 计算顶部位置，确保不超出屏幕
+    let top = clickY;
+    if (top + popupHeight > window.innerHeight) {
+        top = window.innerHeight - popupHeight - 20;
+    }
+    
+    // 设置位置
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+    
+    // 添加iframe加载错误处理
+    const iframe = popup.querySelector('.reference-iframe');
+    const errorMessage = popup.querySelector('.iframe-error-message');
+    
+    iframe.addEventListener('load', function() {
+        try {
+            // 尝试访问iframe内容，如果跨域会抛出错误
+            const iframeContent = iframe.contentWindow.document;
+            console.log('Iframe loaded successfully');
+        } catch (error) {
+            console.error('Error accessing iframe content:', error);
+            showIframeError();
+        }
+    });
+    
+    iframe.addEventListener('error', function(e) {
+        console.error('Iframe failed to load:', e);
+        showIframeError();
+    });
+    
+    function showIframeError() {
+        iframe.style.display = 'none';
+        errorMessage.style.display = 'flex';
+        
+        // 添加新标签页打开按钮事件
+        const openInNewTabBtn = errorMessage.querySelector('.open-in-new-tab-btn');
+        openInNewTabBtn.addEventListener('click', function() {
+            window.open(url, '_blank');
+            closeReferencePopup(popup);
+        });
+    }
+    
+    // 添加关闭按钮事件
+    const closeButton = popup.querySelector('.reference-popup-close');
+    closeButton.addEventListener('click', () => {
+        closeReferencePopup(popup);
+    });
+    
+    // 点击窗口外部关闭
+    document.addEventListener('click', function clickOutside(e) {
+        if (!popup.contains(e.target) && !e.target.closest('.reference-link') && !popup.classList.contains('closing')) {
+            closeReferencePopup(popup);
+            document.removeEventListener('click', clickOutside);
+        }
+    }, { capture: true });
+    
+    // 添加键盘事件 (ESC键关闭)
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+            closeReferencePopup(popup);
+            document.removeEventListener('keydown', escHandler);
+        }
+    });
+    
+    // 动画效果
+    setTimeout(() => {
+        popup.classList.add('reference-popup-active');
+    }, 10);
+    
+    return false; // 防止默认行为
+}
+
+// 关闭引用弹窗
+window.closeReferencePopup = function(popup) {
+    if (!popup) return;
+    
+    // 添加关闭动画
+    popup.classList.add('closing');
+    popup.classList.remove('reference-popup-active');
+    
+    // 动画完成后移除元素
+    setTimeout(() => {
+        if (popup && popup.parentNode) {
+            popup.parentNode.removeChild(popup);
+        }
+    }, 300);
+}
