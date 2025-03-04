@@ -6,9 +6,9 @@ export class CreditManager {
   private db?: DB;
   
   private config: CreditConfig = {
-    baseCredits: 1,
-    depthMultiplier: 0.5,
-    breadthMultiplier: 0.3,
+    baseCredits: process.env.CREDITS_BASE_PRICE ? Number(process.env.CREDITS_BASE_PRICE) : 2,
+    depthMultiplier: process.env.CREDITS_DEPTH_MULTIPLIER ? Number(process.env.CREDITS_DEPTH_MULTIPLIER) : 1,
+    breadthMultiplier: process.env.CREDITS_BREADTH_MULTIPLIER ? Number(process.env.CREDITS_BREADTH_MULTIPLIER) : 0.5,
   };
 
   private constructor() {}

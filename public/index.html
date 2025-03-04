@@ -234,6 +234,29 @@
 
                             <div class="ink-divider"></div>
 
+                            <!-- Billing Information Section -->
+                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-coins text-yellow-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-800" data-i18n="billingRules">Billing Rules</span>
+                                    </div>
+                                    <div class="flex items-center bg-white px-3 py-1 rounded-full border border-yellow-300 shadow-sm">
+                                        <i class="fas fa-coins text-yellow-500 mr-1"></i>
+                                        <span id="costPreview" class="font-bold text-lg text-primary-700 transition-all duration-300">5</span>
+                                        <span class="ml-1 text-sm text-gray-700" data-i18n="credits">credits</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-2 text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
+                                    <div class="font-mono">
+                                        <span data-i18n="costFormula">Expected cost = Base(2) + Depth × 1 + Breadth × 0.5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ink-divider"></div>
+
                             <div>
                                 <label for="reportLanguage"
                                     class="block text-sm font-medium text-gray-700 mb-2 ink-title"

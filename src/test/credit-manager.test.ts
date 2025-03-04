@@ -38,7 +38,7 @@ describe('CreditManager', () => {
             const breadth = 3;
             
             // Calculate expected cost
-            const expectedCost = Math.ceil(1 + depth * 0.5 + breadth * 0.3);
+            const expectedCost = Math.ceil(1 + depth * 1 + breadth * 0.5);
             
             // Deduct credits
             const cost = await creditManager.deductCredits(testUserId, query, depth, breadth);
@@ -91,7 +91,7 @@ describe('CreditManager', () => {
         });
 
         it('should handle concurrent credit deductions correctly', async () => {
-            const cost = Math.ceil(1 + 2 * 0.5 + 3 * 0.3); // Calculate cost once
+            const cost = Math.ceil(1 + 2 * 1 + 3 * 0.5); // Calculate cost once
             const maxDeductions = Math.floor(initialCredits / cost);
             const numAttempts = maxDeductions + 2; // Try a few more than possible
             

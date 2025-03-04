@@ -88,6 +88,20 @@ app.post('/api/research/cost', authenticateToken, async (req, res) => {
     }
 });
 
+// Get credit pricing configuration
+app.get('/api/config/credits', (req, res) => {
+    try {
+        res.json({
+            baseCredits: process.env.CREDITS_BASE_PRICE ? Number(process.env.CREDITS_BASE_PRICE) : 2,
+            depthMultiplier: process.env.CREDITS_DEPTH_MULTIPLIER ? Number(process.env.CREDITS_DEPTH_MULTIPLIER) : 1,
+            breadthMultiplier: process.env.CREDITS_BREADTH_MULTIPLIER ? Number(process.env.CREDITS_BREADTH_MULTIPLIER) : 0.5
+        });
+    } catch (error) {
+        logger.error('Error fetching credit configuration:', error);
+        res.status(500).json({ error: 'Failed to fetch credit configuration' });
+    }
+});
+
 // Enable detailed request logging middleware
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`, {

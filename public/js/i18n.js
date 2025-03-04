@@ -98,6 +98,14 @@ export const translations = {
         reviewResults: 'Review Results',
         reviewResultsDescription: 'Get comprehensive research results and export them in your preferred format',
         learnMore: 'Learn More',
+        
+        // Billing related translations
+        billingRules: 'Billing Rules',
+        baseCreditsRule: 'Base cost: 2 credits per research',
+        depthRule: 'Depth cost: 0.5 credits per depth level',
+        breadthRule: 'Breadth cost: 1 credit per breadth level',
+        currentCost: 'Current Cost:',
+        costFormula: 'Expected cost = Base(2) + Depth × 1 + Breadth × 0.5',
     },
     zh: {
         // Title and introduction
@@ -205,5 +213,13 @@ export const translations = {
         insufficientCredits: '您的积分不足以进行此操作。请添加更多积分以继续。',
         thisResearchWillCost: '此研究将花费',
         doYouWantToProceed: '您是否要继续',
+        
+        // Billing related translations
+        billingRules: '计费规则',
+        baseCreditsRule: '基础费用: 每次研究2积分',
+        depthRule: '深度费用: 每个深度级别0.5积分',
+        breadthRule: '广度费用: 每个广度级别1积分',
+        currentCost: '当前费用:',
+        costFormula: '预期消耗 = 基础(2) + 深度 × 1 + 广度 × 0.5',
     }
 };

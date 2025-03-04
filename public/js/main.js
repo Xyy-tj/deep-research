@@ -144,6 +144,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize auth and handle logout
     const auth = Auth.getInstance();
     
+    // Fetch credit configuration from server
+    try {
+        const response = await fetch('/api/config/credits');
+        if (response.ok) {
+            window.creditConfig = await response.json();
+            console.log('Credit configuration loaded:', window.creditConfig);
+        } else {
+            console.error('Failed to load credit configuration:', response.status);
+        }
+    } catch (error) {
+        console.error('Error loading credit configuration:', error);
+    }
+    
     // 获取余额显示元素
     const balanceDisplay = document.getElementById('balanceDisplay');
     
@@ -226,13 +239,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update range input values
     breadthInput.addEventListener('input', (e) => {
         breadthValue.textContent = e.target.value;
+        updateCostPreview();
     });
 
     depthInput.addEventListener('input', (e) => {
         const depthLevel = parseInt(e.target.value);
         const depthKey = `depthLevel${depthLevel}`;
         depthValue.textContent = t(depthKey);
+        updateCostPreview();
     });
+
+    // Function to calculate and update the cost preview
+    function updateCostPreview() {
+        const depth = parseInt(depthInput.value);
+        const breadth = parseInt(breadthInput.value);
+        
+        // Use the credit configuration from the server
+        const baseCredits = window.creditConfig?.baseCredits || 2;
+        const depthMultiplier = window.creditConfig?.depthMultiplier || 1;
+        const breadthMultiplier = window.creditConfig?.breadthMultiplier || 0.5;
+        
+        // Calculate cost using the same formula as in credit-manager.ts
+        const cost = Math.ceil(
+            baseCredits + 
+            depth * depthMultiplier + 
+            breadth * breadthMultiplier
+        );
+        
+        // Update the cost preview element
+        const costPreview = document.getElementById('costPreview');
+        if (costPreview) {
+            // Add a subtle animation effect when the cost changes
+            const oldCost = parseInt(costPreview.textContent);
+            if (oldCost !== cost) {
+                costPreview.textContent = cost;
+                costPreview.classList.add('text-yellow-600', 'scale-110');
+                setTimeout(() => {
+                    costPreview.classList.remove('text-yellow-600', 'scale-110');
+                }, 300);
+            }
+        }
+    }
+
+    // Initialize cost preview on page load
+    updateCostPreview();
 
     // Handle answer submission
     submitAnswer.addEventListener('click', async (e) => {
@@ -638,6 +688,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initialDepthKey = `depthLevel${initialDepthLevel}`;
         depthValue.textContent = t(initialDepthKey);
     }
+    
+    // Initialize cost preview
+    updateCostPreview();
 
     // Handle research start
     async function startResearch() {
@@ -664,37 +717,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Calculate and display estimated cost before proceeding
         try {
-            const costResponse = await fetch('/api/research/cost', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                credentials: 'include', // Include cookies for auth
-                body: JSON.stringify({ depth, breadth })
-            });
-
-            if (!costResponse.ok) {
-                const error = await costResponse.json();
-                if (error.error && error.error.includes('Insufficient credits')) {
-                    showError(t('insufficientCredits'));
-                } else {
-                    throw new Error(error.error || 'Failed to calculate cost');
-                }
-                return;
-            }
-
-            const costData = await costResponse.json();
+            // Get the cost from our cost preview calculation
+            const depth = parseInt(document.getElementById('depth').value) || 2;
+            const breadth = parseInt(document.getElementById('breadth').value) || 4;
+            
+            // Billing configuration from credit-manager.ts
+            const baseCredits = window.creditConfig?.baseCredits || 2;
+            const depthMultiplier = window.creditConfig?.depthMultiplier || 1;
+            const breadthMultiplier = window.creditConfig?.breadthMultiplier || 0.5;
+            
+            // Calculate cost using the same formula as in credit-manager.ts
+            const cost = Math.ceil(
+                baseCredits + 
+                depth * depthMultiplier + 
+                breadth * breadthMultiplier
+            );
             
             // 先检查用户余额是否足够
             const currentBalance = await updateBalance(); // 更新并获取最新余额
             
-            if (currentBalance < costData.cost) {
+            if (currentBalance < cost) {
                 showError(t('insufficientCredits'));
                 return;
             }
             
-            if (!confirm(`${t('thisResearchWillCost')} ${costData.cost} ${t('credits')}. ${t('doYouWantToProceed')}?`)) {
+            if (!confirm(`${t('thisResearchWillCost')} ${cost} ${t('credits')}. ${t('doYouWantToProceed')}?`)) {
                 return; // User canceled
             }
         } catch (error) {
