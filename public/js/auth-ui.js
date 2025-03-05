@@ -1,7 +1,11 @@
 import { Auth } from './auth.js';
+import { translations } from './i18n.js';
 
 // Initialize auth module
 const auth = Auth.getInstance();
+
+// Get current language from localStorage or default to English
+const currentLanguage = localStorage.getItem('language') || 'en';
 
 // DOM Elements
 let userSection, authSection, authModal, authForm, authModalTitle, 
@@ -175,7 +179,9 @@ async function updateAuthDisplay() {
     if (isAuthenticated) {
         const userInfo = await auth.getCurrentUser();
         const displayName = userInfo?.username || 'User';
-        document.getElementById('userGreeting').textContent = t('welcome', { name: displayName });
+        // Get the welcome message and concatenate with the username
+        const welcomeMessage = translations[currentLanguage]?.welcome || 'Welcome';
+        document.getElementById('userGreeting').textContent = `${welcomeMessage}, ${displayName}`;
     }
 }
 
