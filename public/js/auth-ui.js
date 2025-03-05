@@ -175,7 +175,7 @@ async function updateAuthDisplay() {
     if (isAuthenticated) {
         const userInfo = await auth.getCurrentUser();
         const displayName = userInfo?.username || 'User';
-        document.getElementById('userGreeting').textContent = `Welcome, ${displayName}!`;
+        document.getElementById('userGreeting').textContent = t('welcome', { name: displayName });
     }
 }
 
