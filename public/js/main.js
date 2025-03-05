@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const form = document.getElementById('researchForm');
-    const startButton = document.getElementById('startResearch');
+    const startButton = document.getElementById('submitBtn');
     const breadthInput = document.getElementById('breadth');
     const depthInput = document.getElementById('depth');
     const breadthValue = document.getElementById('breadthValue');
@@ -450,6 +450,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     logger.debug('Closing EventSource connection');
                     currentEventSource.close();
                     currentEventSource = null;
+                    
+                    // Reset button state on completion
+                    if (startButton) {
+                        startButton.disabled = false;
+                        startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+                    }
                     break;
                 case 'error':
                     logger.error('Received error from server:', data.error);
@@ -457,6 +463,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     logger.debug('Closing EventSource connection due to error');
                     currentEventSource.close();
                     currentEventSource = null;
+                    
+                    // Reset button state on error
+                    if (startButton) {
+                        startButton.disabled = false;
+                        startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+                    }
                     break;
             }
         };
@@ -485,6 +497,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await savePartialResults();
                     currentEventSource = null;
                     showNotification('Connection lost. Partial results have been saved.', 'error');
+                    
+                    // Reset button state when connection is permanently lost
+                    if (startButton) {
+                        startButton.disabled = false;
+                        startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+                    }
                 }
             }
         };
@@ -766,9 +784,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle research start
     async function startResearch() {
+        // Set button to loading state
+        if (startButton) {
+            startButton.disabled = true;
+            const originalContent = startButton.innerHTML;
+            startButton.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i><span data-i18n="researching">${t('researching')}</span>`;
+        }
+
         const query = document.getElementById('query').value.trim();
         if (!query) {
             alert(t('pleaseEnterResearchTopic'));
+            // Reset button state
+            if (startButton) {
+                startButton.disabled = false;
+                startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+            }
             return;
         }
 
@@ -778,6 +808,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isAuthenticated) {
             logger.error('Not authenticated');
             alert(t('pleaseLogInFirst'));
+            // Reset button state
+            if (startButton) {
+                startButton.disabled = false;
+                startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+            }
             return;
         }
         const token = auth.getToken();
@@ -810,10 +845,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (currentBalance < cost) {
                 showError(t('insufficientCredits'));
+                // Reset button state
+                if (startButton) {
+                    startButton.disabled = false;
+                    startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+                }
                 return;
             }
             
             if (!confirm(`${t('thisResearchWillCost')} ${cost} ${t('credits')}. ${t('doYouWantToProceed')}?`)) {
+                // Reset button state
+                if (startButton) {
+                    startButton.disabled = false;
+                    startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+                }
                 return; // User canceled
             }
         } catch (error) {
@@ -878,6 +923,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     throw new Error(error.error || 'Failed to start research');
                 }
+                // Reset button state
+                if (startButton) {
+                    startButton.disabled = false;
+                    startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+                }
                 return;
             }
 
@@ -894,6 +944,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             logger.error('Error starting research:', error);
             alert(t('anErrorOccurredWhileProcessingYourRequest'));
+            // Reset button state on error
+            if (startButton) {
+                startButton.disabled = false;
+                startButton.innerHTML = `<i class="fas fa-search mr-2"></i><span data-i18n="startResearch">${t('startResearch')}</span>`;
+            }
         }
     }
 
