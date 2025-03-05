@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Research Admin Panel</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .admin-tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .admin-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .admin-tab.active {
+            background-color: #f0f0f0;
+            border-color: #e0e0e0;
+            border-bottom-color: #f0f0f0;
+            margin-bottom: -1px;
+        }
+        
+        .admin-content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .user-table th, .user-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .user-table th {
+            background-color: #f0f0f0;
+        }
+        
+        .user-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .invitation-code {
+            background-color: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .credit-input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        
+        .status-used {
+            background-color: #ffcccc;
+            color: #cc0000;
+        }
+        
+        .status-available {
+            background-color: #ccffcc;
+            color: #006600;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 50%;
+            max-width: 500px;
+        }
+        
+        .close-modal {
+            float: right;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .alert {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Deep Research</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="admin.html" class="active">Admin</a></li>
+                    <li><a href="#" id="logoutBtn">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="admin-container">
+            <div class="admin-header">
+                <h2>Admin Panel</h2>
+                <div id="adminInfo">Loading...</div>
+            </div>
+            
+            <div class="admin-tabs">
+                <div class="admin-tab active" data-tab="users">Users</div>
+                <div class="admin-tab" data-tab="invitations">Invitation Codes</div>
+                <div class="admin-tab" data-tab="payments">Payments</div>
+                <div class="admin-tab" data-tab="system">System</div>
+            </div>
+            
+            <div class="admin-content">
+                <!-- Users Tab -->
+                <div class="tab-content active" id="users-tab">
+                    <h3>User Management</h3>
+                    <div class="search-box">
+                        <input type="text" id="userSearchInput" placeholder="Search users...">
+                        <button id="searchUsersBtn" class="btn">Search</button>
+                    </div>
+                    
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Credits</th>
+                                <th>Admin</th>
+                                <th>Verified</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center">Loading users...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Invitation Codes Tab -->
+                <div class="tab-content" id="invitations-tab">
+                    <h3>Invitation Codes</h3>
+                    <div class="actions">
+                        <button id="generateCodesBtn" class="btn">Generate New Codes</button>
+                        <input type="number" id="codeCount" min="1" max="50" value="5" style="width: 60px;">
+                    </div>
+                    
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Code</th>
+                                <th>Status</th>
+                                <th>Used By</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="codesTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading invitation codes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Payments Tab -->
+                <div class="tab-content" id="payments-tab">
+                    <h3>Payment History</h3>
+                    <div class="search-box">
+                        <input type="text" id="paymentSearchInput" placeholder="Search by order ID or username...">
+                        <button id="searchPaymentsBtn" class="btn">Search</button>
+                    </div>
+                    
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Credits</th>
+                                <th>Status</th>
+                                <th>Method</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading payments...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- System Tab -->
+                <div class="tab-content" id="system-tab">
+                    <h3>System Settings</h3>
+                    <div class="form-group">
+                        <label for="baseCreditsInput">Base Credits Cost:</label>
+                        <input type="number" id="baseCreditsInput" class="form-control" min="1" step="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="depthMultiplierInput">Depth Multiplier:</label>
+                        <input type="number" id="depthMultiplierInput" class="form-control" min="0.1" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="breadthMultiplierInput">Breadth Multiplier:</label>
+                        <input type="number" id="breadthMultiplierInput" class="form-control" min="0.1" step="0.1">
+                    </div>
+                    
+                    <button id="saveSystemSettingsBtn" class="btn">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Edit Credits Modal -->
+    <div id="editCreditsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeCreditsModal">&times;</span>
+            <h3>Edit User Credits</h3>
+            <div id="editCreditsAlert" class="alert" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="currentCredits">Current Credits:</label>
+                <span id="currentCredits">0</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="creditsOperation">Operation:</label>
+                <select id="creditsOperation" class="form-control">
+                    <option value="add">Add Credits</option>
+                    <option value="subtract">Subtract Credits</option>
+                    <option value="set">Set Credits</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="creditsAmount">Amount:</label>
+                <input type="number" id="creditsAmount" class="form-control" min="1" value="10">
+            </div>
+            
+            <div class="form-group">
+                <label for="creditsNote">Note (optional):</label>
+                <input type="text" id="creditsNote" class="form-control" placeholder="Reason for adjustment">
+            </div>
+            
+            <input type="hidden" id="editUserId">
+            <button id="saveCreditsBtn" class="btn">Save Changes</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>

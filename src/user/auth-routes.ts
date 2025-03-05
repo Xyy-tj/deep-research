@@ -272,6 +272,8 @@ router.post('/login', async (req, res) => {
 
 // Verify token endpoint
 router.get('/verify-token', async (req, res) => {
+    console.log('Verify token request received');
+    
     // Get the token from the cookie or Authorization header
     let token = req.cookies.auth_token;
     
@@ -281,7 +283,10 @@ router.get('/verify-token', async (req, res) => {
         token = authHeader.split(' ')[1];
     }
     
+    console.log('Token from request:', token ? 'Token exists' : 'No token');
+    
     if (!token) {
+        console.log('No token found in request');
         return res.status(401).json({ authenticated: false });
     }
     
@@ -291,6 +296,8 @@ router.get('/verify-token', async (req, res) => {
             console.error('Token verification failed:', err.message);
             return res.status(401).json({ authenticated: false });
         }
+        
+        console.log('Token verified for user:', user);
         
         try {
             // Get full user data from database
@@ -305,13 +312,15 @@ router.get('/verify-token', async (req, res) => {
                 return res.status(401).json({ authenticated: false });
             }
             
+            console.log('User data from database:', userData);
+            
             // Generate a fresh token to extend session
             const newToken = jwt.sign(
                 { 
                     id: userData.id, 
                     username: userData.username, 
                     email: userData.email, 
-                    isAdmin: userData.is_admin 
+                    isAdmin: userData.is_admin === 1 || userData.is_admin === true
                 },
                 JWT_SECRET,
                 { expiresIn: '3d' }
@@ -333,7 +342,7 @@ router.get('/verify-token', async (req, res) => {
                     id: userData.id,
                     username: userData.username,
                     email: userData.email,
-                    isAdmin: userData.is_admin,
+                    isAdmin: userData.is_admin === 1 || userData.is_admin === true,
                     credits: userData.credits
                 }
             });

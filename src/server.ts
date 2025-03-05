@@ -7,6 +7,7 @@ import { OutputManager } from './output-manager';
 import { CreditManager } from './user/credit-manager';
 import authRoutes from './user/auth-routes';
 import paymentRoutes, { notifyRouter } from './payment/payment-routes';
+import adminRoutes from './admin/admin-routes';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import { DB } from './db/database';
@@ -45,14 +46,35 @@ function authenticateToken(req: express.Request, res: express.Response, next: ex
         return res.status(401).json({ error: 'Authentication required' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
         if (err) {
             logger.debug('Token verification failed:', err.message);
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
-        logger.debug('Authenticated user:', user);
-        (req as any).user = user;
-        next();
+        
+        try {
+            // Get full user data from database
+            const db = await DB.getInstance();
+            const userData = await db.get(
+                'SELECT id, username, email, is_admin, credits FROM users WHERE id = ?', 
+                [user.id]
+            );
+            
+            if (!userData) {
+                logger.debug('User not found in database:', user.id);
+                return res.status(401).json({ error: 'User not found' });
+            }
+            
+            // Add isAdmin property for compatibility
+            userData.isAdmin = userData.is_admin;
+            
+            logger.debug('Authenticated user:', userData);
+            (req as any).user = userData;
+            next();
+        } catch (error) {
+            logger.error('Error fetching user data:', error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
     });
 }
 
@@ -64,6 +86,10 @@ app.use('/api/payment/wxnotify', express.urlencoded({ extended: true }), notifyR
 
 // Mount payment routes (protected by authentication)
 app.use('/api/payment', authenticateToken, paymentRoutes);
+
+// Mount admin routes (protected by authentication)
+// 注意：admin-routes.ts中已经包含了authenticateJWT和isAdmin中间件
+app.use('/api/admin', adminRoutes);
 
 // Get user balance endpoint
 app.get('/api/user/balance', authenticateToken, async (req, res) => {
@@ -137,6 +163,11 @@ setupSwagger(app);
 // Route for panel.html
 app.get('/panel', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/panel.html'));
+});
+
+// Route for admin.html
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
 app.use(express.static('public'));

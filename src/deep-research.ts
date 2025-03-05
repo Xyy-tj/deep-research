@@ -606,12 +606,13 @@ export async function deepResearch({
         // Perform web search using Firecrawl
         try {
           webResult = await limit(() => firecrawl.search(serpQuery.query, {
-            limit: process.env.FIRECRWAL_LIMIT,
+            limit: process.env.FIRECRAWL_LIMIT,
             scrapeOptions: {
               formats: ["markdown"]
             }
           }));
           log(`Firecrawl search found ${webResult.data.length} results for query: "${serpQuery.query}"`);
+          log(`Web results: ${JSON.stringify(webResult)}`);
         } catch (firecrawlError) {
           log(`Firecrawl search failed for query "${serpQuery.query}": ${firecrawlError.message || 'Unknown error'}`);
           log(`Continuing with empty web results. Will still attempt to use Google Scholar results.`);

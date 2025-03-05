@@ -11,6 +11,7 @@ export class Auth {
     #isAuthenticated = false;
     #currentUser = null;
     #userCredits = 0;
+    #userInfo = null; // 存储完整的用户信息
     #authStateListeners = [];
 
     constructor() {
@@ -28,6 +29,16 @@ export class Auth {
             this.#isAuthenticated = true;
             this.#currentUser = user;
             this.#userCredits = Number(credits) || 0;
+            
+            // 尝试从localStorage获取用户信息
+            try {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    this.#userInfo = JSON.parse(userInfoStr);
+                }
+            } catch (e) {
+                console.error('Error parsing userInfo from localStorage:', e);
+            }
         }
         
         // Check for authentication when the class is instantiated (async)
@@ -60,6 +71,7 @@ export class Auth {
                 this.#isAuthenticated = true;
                 this.#currentUser = username;
                 this.#userCredits = data.user.credits;
+                this.#userInfo = data.user; // 存储完整的用户信息
                 
                 // 保存到localStorage作为备份
                 localStorage.setItem('user', username);
@@ -67,9 +79,10 @@ export class Auth {
                     localStorage.setItem('token', data.token);
                 }
                 localStorage.setItem('credits', data.user.credits);
+                localStorage.setItem('userInfo', JSON.stringify(data.user)); // 保存完整用户信息
                 
                 // 通知状态变化
-                this.#notifyAuthStateChange({ username });
+                this.#notifyAuthStateChange(data.user);
                 
                 return { success: true };
             } else {
@@ -244,6 +257,7 @@ export class Auth {
                     this.#isAuthenticated = true;
                     this.#currentUser = data.user.username;
                     this.#userCredits = data.user.credits || 0;
+                    this.#userInfo = data.user; // 存储完整的用户信息
                     
                     // Update localStorage with the latest credit information
                     localStorage.setItem('user', data.user.username);
@@ -251,8 +265,9 @@ export class Auth {
                         localStorage.setItem('token', data.token);
                     }
                     localStorage.setItem('credits', String(this.#userCredits));
+                    localStorage.setItem('userInfo', JSON.stringify(data.user)); // 保存完整用户信息
                     
-                    this.#notifyAuthStateChange({ username: data.user.username });
+                    this.#notifyAuthStateChange(data.user);
                     
                     // Update the balance
                     if (updateBalance) {
@@ -287,6 +302,7 @@ export class Auth {
                             this.#isAuthenticated = true;
                             this.#currentUser = tokenData.user.username;
                             this.#userCredits = tokenData.user.credits || 0;
+                            this.#userInfo = tokenData.user; // 存储完整的用户信息
                             
                             // 更新localStorage
                             localStorage.setItem('user', tokenData.user.username);
@@ -294,8 +310,9 @@ export class Auth {
                                 localStorage.setItem('token', tokenData.token);
                             }
                             localStorage.setItem('credits', String(this.#userCredits));
+                            localStorage.setItem('userInfo', JSON.stringify(tokenData.user)); // 保存完整用户信息
                             
-                            this.#notifyAuthStateChange({ username: tokenData.user.username });
+                            this.#notifyAuthStateChange(tokenData.user);
                             
                             // 更新余额
                             if (updateBalance) {
@@ -314,9 +331,11 @@ export class Auth {
             this.#isAuthenticated = false;
             this.#currentUser = null;
             this.#userCredits = 0;
+            this.#userInfo = null;
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             localStorage.removeItem('credits');
+            localStorage.removeItem('userInfo');
             this.#notifyAuthStateChange(null);
             return false;
         } catch (error) {
@@ -325,9 +344,11 @@ export class Auth {
             this.#isAuthenticated = false;
             this.#currentUser = null;
             this.#userCredits = 0;
+            this.#userInfo = null;
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             localStorage.removeItem('credits');
+            localStorage.removeItem('userInfo');
             this.#notifyAuthStateChange(null);
             return false;
         }
@@ -335,6 +356,7 @@ export class Auth {
 
     async getTokenAsync() {
         try {
+            console.log('Getting token async...');
             // 尝试从API获取令牌
             const response = await fetch('/api/verify-token', {
                 method: 'GET',
@@ -344,8 +366,12 @@ export class Auth {
                 credentials: 'include' // Include cookies for auth
             });
             
+            console.log('Token API response status:', response.status);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('Token API response data:', data);
+                
                 if (data.authenticated && data.token) {
                     console.log('🔑 Retrieved token from API');
                     // 更新localStorage
@@ -385,9 +411,11 @@ export class Auth {
             this.#isAuthenticated = false;
             this.#currentUser = null;
             this.#userCredits = 0;
+            this.#userInfo = null;
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             localStorage.removeItem('credits');
+            localStorage.removeItem('userInfo');
             this.#notifyAuthStateChange(null);
             
             // Hide balance display when logging out
@@ -401,8 +429,13 @@ export class Auth {
         });
     }
 
-    getCurrentUser() {
-        return this.#currentUser;
+    async getCurrentUser() {
+        if (!this.#isAuthenticated) {
+            await this.checkAuth();
+        }
+        
+        // 返回完整的用户信息对象
+        return this.#userInfo;
     }
 
     getUserCredits() {
@@ -418,7 +451,7 @@ export class Auth {
         this.#authStateListeners.push(callback);
         // 立即触发一次当前状态
         if (this.#isAuthenticated) {
-            callback({ username: this.#currentUser });
+            callback(this.#userInfo);
             
             // If we have a toggleMainContent function in the global scope, use it
             if (typeof window.toggleMainContent === 'function') {
@@ -452,6 +485,8 @@ export class Auth {
     }
 
     #notifyAuthStateChange(user) {
-        this.#authStateListeners.forEach(callback => callback(user));
+        this.#authStateListeners.forEach(callback => {
+            callback(user);
+        });
     }
 }

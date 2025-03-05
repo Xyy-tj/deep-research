@@ -164,4 +164,15 @@ export class PaymentService {
   getCreditPackage(packageId: number) {
     return CREDIT_PRICING.getPackage(packageId);
   }
+
+  /**
+   * Get all payments (for admin use)
+   */
+  async getAllPayments(): Promise<PaymentRecord[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return this.db.all<PaymentRecord>(
+      'SELECT * FROM payment_records ORDER BY created_at DESC'
+    );
+  }
 }
