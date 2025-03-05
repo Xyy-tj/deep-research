@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import { DB } from './db/database';
 import { setupSwagger } from './swagger';
+import { ResearchManager } from './research/research-manager';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -418,6 +419,35 @@ app.post('/api/research', authenticateToken, async (req, res) => {
         });
         logger.debug('Created new research session:', researchId);
 
+        // Create research record in database
+        try {
+            const researchManager = await ResearchManager.getInstance();
+            const creditManager = await CreditManager.getInstance();
+            const creditsUsed = creditManager.calculateQueryCost(depth, breadth);
+            
+            // Save initial research record
+            await researchManager.createResearchRecord({
+                user_id: Number(userId),
+                research_id: researchId,
+                query,
+                query_depth: depth,
+                query_breadth: breadth,
+                language,
+                credits_used: creditsUsed,
+                status: 'started',
+                config_json: JSON.stringify({
+                    appVersion: process.env.npm_package_version || '0.0.1',
+                    isTestMode: process.env.TEST_MODE === 'true' || process.env.TEST_MODE === '1',
+                    concurrencyLimit: Number(process.env.CONCURRENCY_LIMIT ?? 2),
+                    questionTimeoutMs: Number(process.env.QUESTION_TIMEOUT_MS ?? 3000)
+                })
+            });
+            logger.info('Created research record in database:', researchId);
+        } catch (error) {
+            logger.error('Failed to create research record:', error);
+            // Continue with research even if recording fails
+        }
+
         // Send initial response
         res.json({ researchId });
         logger.debug('Sent initial response to client');
@@ -484,6 +514,22 @@ app.post('/api/research', authenticateToken, async (req, res) => {
                     const filename = path.basename(filepath);
                     logger.info('Report saved successfully to:', filepath);
                     
+                    // Update research record with completion details
+                    try {
+                        const researchManager = await ResearchManager.getInstance();
+                        await researchManager.completeResearchRecord(researchId, {
+                            output_filename: filename,
+                            output_path: filepath,
+                            num_references: Object.keys(results?.[results.length - 1]?.referenceMapping || {}).length,
+                            num_learnings: results?.flatMap(r => r.learnings).length || 0,
+                            visited_urls_count: results?.flatMap(r => r.visitedUrls).length || 0,
+                            status: 'completed'
+                        });
+                        logger.info('Updated research record with completion details');
+                    } catch (error) {
+                        logger.error('Failed to update research record:', error);
+                    }
+                    
                     // Send result to all clients with filename
                     logger.info('Sending result event to clients');
                     (output as WebOutputManager).sendEventToAll({
@@ -495,6 +541,18 @@ app.post('/api/research', authenticateToken, async (req, res) => {
                     });
                 } catch (error) {
                     logger.error('Failed to save report to disk:', error);
+                    
+                    // Update research record with error
+                    try {
+                        const researchManager = await ResearchManager.getInstance();
+                        await researchManager.completeResearchRecord(researchId, {
+                            error_message: `Failed to save report: ${error.message || 'Unknown error'}`,
+                            status: 'completed' // Still mark as completed since we have the report
+                        });
+                    } catch (recordError) {
+                        logger.error('Failed to update research record with error:', recordError);
+                    }
+                    
                     // Still send the result even if saving failed
                     (output as WebOutputManager).sendEventToAll({
                         type: 'result',
@@ -530,6 +588,18 @@ app.post('/api/research', authenticateToken, async (req, res) => {
         } catch (error) {
             logger.error('Research process error:', error);
             
+            // Update research record with error
+            try {
+                const researchManager = await ResearchManager.getInstance();
+                await researchManager.completeResearchRecord(researchId, {
+                    error_message: error.message || 'An error occurred during research',
+                    status: 'failed'
+                });
+                logger.info('Updated research record with error details');
+            } catch (recordError) {
+                logger.error('Failed to update research record with error:', recordError);
+            }
+            
             // Send error to all clients
             logger.info('Sending error event to clients');
             (output as WebOutputManager).sendEventToAll({
@@ -547,68 +617,6 @@ app.post('/api/research', authenticateToken, async (req, res) => {
     }
 });
 
-// Save report to disk
-function saveReportToDisk(researchId: string, report: string) {
-    try {
-        const resultsDir = path.join(__dirname, '../output');
-        // Create results directory if it doesn't exist
-        if (!fs.existsSync(resultsDir)) {
-            fs.mkdirSync(resultsDir, { recursive: true });
-        }
-        
-        // Generate filename with timestamp and research ID
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `${timestamp}-${researchId}.md`;
-        const filepath = path.join(resultsDir, filename);
-        
-        // Write report to file
-        fs.writeFileSync(filepath, report, 'utf8');
-        logger.info('Saved report to file:', filepath);
-        
-        return filepath;
-    } catch (error) {
-        logger.error('Error saving report to disk:', error);
-        throw error;
-    }
-}
-
-// Handle partial results request
-app.post('/api/research/:id/partial', authenticateToken, async (req, res) => {
-    const researchId = req.params.id;
-    
-    const session = activeSessions.get(researchId);
-    if (!session) {
-        logger.error('Research session not found for partial results:', researchId);
-        res.status(404).json({ error: 'Research session not found' });
-        return;
-    }
-
-    try {
-        logger.info('Generating partial report for research:', researchId);
-        
-        // Generate partial report from current state
-        const partialResults = session.partialResults?.[session.partialResults.length - 1];
-        const partialReport = await writeFinalReport({
-            prompt: req.body.query || 'Research interrupted',
-            learnings: partialResults?.learnings || [],
-            visitedUrls: partialResults?.visitedUrls || [], 
-            language: req.body.language || 'zh-CN',
-            referenceMapping: partialResults?.referenceMapping || {}
-        });
-
-        // Clean up the session
-        activeSessions.delete(researchId);
-        
-        res.json({ 
-            success: true,
-            report: partialReport
-        });
-    } catch (error) {
-        logger.error('Error generating partial report:', error);
-        res.status(500).json({ error: 'Failed to generate partial report' });
-    }
-});
-
 // Save research results
 app.post('/api/save', async (req, res) => {
     const { researchId } = req.body;
@@ -620,7 +628,7 @@ app.post('/api/save', async (req, res) => {
 
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const outputDir = path.join(__dirname, '..', 'output');
+        const outputDir = path.join(__dirname, '../output');
         
         // Ensure output directory exists
         if (!fs.existsSync(outputDir)) {
@@ -643,7 +651,7 @@ app.post('/api/save', async (req, res) => {
 // Markdown preview endpoint
 app.get('/api/markdown/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '..', 'output', filename);
+    const filePath = path.join(__dirname, '../output', filename);
 
     try {
         // Check if file exists
@@ -666,7 +674,7 @@ app.get('/api/markdown/:filename', (req, res) => {
 // Download markdown endpoint
 app.get('/api/download/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '..', 'output', filename);
+    const filePath = path.join(__dirname, '../output', filename);
 
     try {
         // Check if file exists
@@ -775,6 +783,9 @@ async function startServer() {
         await DB.getInstance();
         logger.info('Database initialized successfully');
 
+        const researchManager = await ResearchManager.getInstance();
+        logger.info('Research manager initialized successfully');
+
         const port = process.env.PORT || 3000;
         app.listen(port, () => {
             logger.info(`Server is running on port ${port}`);
@@ -786,3 +797,188 @@ async function startServer() {
 }
 
 startServer();
+
+// Save report to disk
+function saveReportToDisk(researchId: string, report: string) {
+    try {
+        const resultsDir = path.join(__dirname, '../output');
+        // Create results directory if it doesn't exist
+        if (!fs.existsSync(resultsDir)) {
+            fs.mkdirSync(resultsDir, { recursive: true });
+        }
+        
+        // Generate filename with timestamp and research ID
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${timestamp}-${researchId}.md`;
+        const filepath = path.join(resultsDir, filename);
+        
+        // Write report to file
+        fs.writeFileSync(filepath, report, 'utf8');
+        logger.info('Saved report to file:', filepath);
+        
+        return filepath;
+    } catch (error) {
+        logger.error('Error saving report to disk:', error);
+        throw error;
+    }
+}
+
+// Handle partial results request
+app.post('/api/research/:id/partial', authenticateToken, async (req, res) => {
+    const researchId = req.params.id;
+    
+    const session = activeSessions.get(researchId);
+    if (!session) {
+        logger.error('Research session not found for partial results:', researchId);
+        res.status(404).json({ error: 'Research session not found' });
+        return;
+    }
+
+    try {
+        logger.info('Generating partial report for research:', researchId);
+        
+        // Generate partial report from current state
+        const partialResults = session.partialResults?.[session.partialResults.length - 1];
+        const partialReport = await writeFinalReport({
+            prompt: req.body.query || 'Research interrupted',
+            learnings: partialResults?.learnings || [],
+            visitedUrls: partialResults?.visitedUrls || [], 
+            language: req.body.language || 'zh-CN',
+            referenceMapping: partialResults?.referenceMapping || {}
+        });
+
+        // Save partial report to disk
+        let filepath;
+        let filename;
+        try {
+            const resultsDir = path.join(__dirname, '../output');
+            // Create results directory if it doesn't exist
+            if (!fs.existsSync(resultsDir)) {
+                fs.mkdirSync(resultsDir, { recursive: true });
+            }
+            
+            // Generate filename with timestamp and research ID (partial)
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            filename = `${timestamp}-${researchId}-partial.md`;
+            filepath = path.join(resultsDir, filename);
+            
+            // Write report to file
+            fs.writeFileSync(filepath, partialReport, 'utf8');
+            logger.info('Saved partial report to file:', filepath);
+            
+            // Update research record with partial completion details
+            try {
+                const researchManager = await ResearchManager.getInstance();
+                await researchManager.completeResearchRecord(researchId, {
+                    output_filename: filename,
+                    output_path: filepath,
+                    num_references: Object.keys(partialResults?.referenceMapping || {}).length,
+                    num_learnings: partialResults?.learnings?.length || 0,
+                    visited_urls_count: partialResults?.visitedUrls?.length || 0,
+                    status: 'completed',
+                    error_message: 'Research was interrupted and partial results were generated'
+                });
+                logger.info('Updated research record with partial completion details');
+            } catch (error) {
+                logger.error('Failed to update research record for partial results:', error);
+            }
+        } catch (error) {
+            logger.error('Error saving partial report to disk:', error);
+            // Continue even if saving fails
+        }
+
+        // Clean up the session
+        activeSessions.delete(researchId);
+        
+        res.json({ 
+            success: true,
+            report: partialReport,
+            filename: filename
+        });
+    } catch (error) {
+        logger.error('Error generating partial report:', error);
+        
+        // Update research record with error
+        try {
+            const researchManager = await ResearchManager.getInstance();
+            await researchManager.completeResearchRecord(researchId, {
+                error_message: `Error generating partial report: ${error.message || 'Unknown error'}`,
+                status: 'failed'
+            });
+            logger.info('Updated research record with partial report error');
+        } catch (recordError) {
+            logger.error('Failed to update research record with partial report error:', recordError);
+        }
+        
+        res.status(500).json({ error: 'Failed to generate partial report' });
+    }
+});
+
+// Get user research history
+app.get('/api/user/research', authenticateToken, async (req, res) => {
+    try {
+        const userId = (req as any).user.id;
+        logger.info(`[Research History] Fetching research history for user ID: ${userId}`);
+        
+        const researchManager = await ResearchManager.getInstance();
+        const researchRecords = await researchManager.getUserResearchRecords(userId);
+        
+        logger.info(`[Research History] Found ${researchRecords.length} records for user ${userId}`);
+        res.json({ records: researchRecords });
+    } catch (error) {
+        logger.error('[Research History] Error fetching research history:', error);
+        res.status(500).json({ error: 'Failed to fetch research history' });
+    }
+});
+
+// Get specific research record
+app.get('/api/research/:id', authenticateToken, async (req, res) => {
+    try {
+        const researchId = req.params.id;
+        const userId = (req as any).user.id;
+        logger.info(`[Research Record] Fetching research record: ${researchId} for user ${userId}`);
+        
+        const researchManager = await ResearchManager.getInstance();
+        const record = await researchManager.getResearchRecord(researchId);
+        
+        if (!record) {
+            logger.error(`[Research Record] Record not found: ${researchId}`);
+            return res.status(404).json({ error: 'Research record not found' });
+        }
+        
+        // Check if the user owns this research or is an admin
+        if (record.user_id !== Number(userId) && !(req as any).user.is_admin) {
+            logger.error(`[Research Record] Unauthorized access attempt: User ${userId} tried to access record ${researchId} owned by user ${record.user_id}`);
+            return res.status(403).json({ error: 'You do not have permission to access this research' });
+        }
+        
+        logger.info(`[Research Record] Successfully retrieved record: ${researchId}`);
+        res.json({ record });
+    } catch (error) {
+        logger.error('[Research Record] Error fetching research record:', error);
+        res.status(500).json({ error: 'Failed to fetch research record' });
+    }
+});
+
+// Admin endpoint to get all recent research records
+app.get('/api/admin/research', authenticateToken, async (req, res) => {
+    try {
+        // Check if user is admin
+        if (!(req as any).user.is_admin) {
+            logger.error(`[Admin Research] Unauthorized access attempt by user ${(req as any).user.id}`);
+            return res.status(403).json({ error: 'Admin privileges required' });
+        }
+        
+        const limit = req.query.limit ? Number(req.query.limit) : 50;
+        logger.info(`[Admin Research] Fetching recent research records, limit: ${limit}`);
+        
+        const researchManager = await ResearchManager.getInstance();
+        const records = await researchManager.getRecentResearchRecords(limit);
+        
+        logger.info(`[Admin Research] Found ${records.length} recent research records`);
+        res.json({ records });
+    } catch (error) {
+        logger.error('[Admin Research] Error fetching research records:', error);
+        res.status(500).json({ error: 'Failed to fetch research records' });
+    }
+});

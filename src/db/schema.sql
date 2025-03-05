@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     is_admin BOOLEAN DEFAULT 0,
-    credits INTEGER DEFAULT 0,
+    credits INTEGER DEFAULT 10,
     is_verified BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -20,6 +20,30 @@ CREATE TABLE IF NOT EXISTS usage_records (
     query_breadth INTEGER NOT NULL,
     credits_used INTEGER NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Research records table
+CREATE TABLE IF NOT EXISTS research_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    research_id TEXT UNIQUE NOT NULL,
+    query TEXT NOT NULL,
+    query_depth INTEGER NOT NULL,
+    query_breadth INTEGER NOT NULL,
+    language TEXT NOT NULL,
+    credits_used INTEGER NOT NULL,
+    output_filename TEXT,
+    output_path TEXT,
+    num_references INTEGER DEFAULT 0,
+    num_learnings INTEGER DEFAULT 0,
+    visited_urls_count INTEGER DEFAULT 0,
+    config_json TEXT,
+    status TEXT DEFAULT 'completed',
+    error_message TEXT,
+    start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    end_time DATETIME,
+    execution_time_ms INTEGER,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -56,3 +80,5 @@ CREATE INDEX IF NOT EXISTS idx_usage_records_user_id ON usage_records(user_id);
 CREATE INDEX IF NOT EXISTS idx_invitation_codes_code ON invitation_codes(code);
 CREATE INDEX IF NOT EXISTS idx_payment_records_user_id ON payment_records(user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_records_order_id ON payment_records(order_id);
+CREATE INDEX IF NOT EXISTS idx_research_records_user_id ON research_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_research_records_research_id ON research_records(research_id);

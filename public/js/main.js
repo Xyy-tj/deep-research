@@ -355,6 +355,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             logger.info('Cleaning up event source');
             currentEventSource.close();
             currentEventSource = null;
+            
+            // Hide progress indicators when cleaning up
+            const progressElement = document.getElementById('progress');
+            if (progressElement) {
+                progressElement.classList.add('hidden');
+            }
+            
+            const progressSection = document.getElementById('progress-section');
+            if (progressSection) {
+                progressSection.classList.add('hidden');
+            }
         }
     }
 
@@ -419,10 +430,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'result':
                     logger.info('Received final result');
                     logger.debug('Result content length:', data.result.length);
+                    // Hide progress bar when displaying results
+                    document.getElementById('progress').classList.add('hidden');
+                    const progressSection = document.getElementById('progress-section');
+                    if (progressSection) {
+                        progressSection.classList.add('hidden');
+                    }
                     displayResult(data.result);
                     break;
                 case 'complete':
                     logger.info('Research completed successfully');
+                    // Hide progress bar on completion
+                    document.getElementById('progress').classList.add('hidden');
+                    const progressSectionComplete = document.getElementById('progress-section');
+                    if (progressSectionComplete) {
+                        progressSectionComplete.classList.add('hidden');
+                    }
                     showNotification('Research completed successfully!', 'success');
                     logger.debug('Closing EventSource connection');
                     currentEventSource.close();
@@ -474,6 +497,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     function displayResult(result) {
         logger.info('Displaying research result');
         logger.debug('Creating result section in DOM');
+
+        // Hide progress indicators
+        const progressElement = document.getElementById('progress');
+        if (progressElement) {
+            progressElement.classList.add('hidden');
+        }
+        
+        const progressSection = document.getElementById('progress-section');
+        if (progressSection) {
+            progressSection.classList.add('hidden');
+        }
 
         const resultsContainer = document.getElementById('results');
         if (!resultsContainer) return;
@@ -666,6 +700,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateLanguage(lang) {
         currentLanguage = lang;
         localStorage.setItem('language', lang);
+        
+        // 设置 html 元素的 lang 属性，用于 CSS 选择器
+        document.documentElement.setAttribute('lang', lang);
         
         // Make sure cost formulas are updated with current credit configuration
         if (window.creditConfig) {

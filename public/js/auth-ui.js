@@ -182,6 +182,12 @@ async function updateAuthDisplay() {
         // Get the welcome message and concatenate with the username
         const welcomeMessage = translations[currentLanguage]?.welcome || 'Welcome';
         document.getElementById('userGreeting').textContent = `${welcomeMessage}, ${displayName}`;
+        
+        // 触发用户登录事件，用于侧边栏展开
+        window.dispatchEvent(new Event('userLoggedIn'));
+    } else {
+        // 触发用户登出事件，用于侧边栏折叠
+        window.dispatchEvent(new Event('userLoggedOut'));
     }
 }
 

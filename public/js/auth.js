@@ -84,6 +84,9 @@ export class Auth {
                 // 通知状态变化
                 this.#notifyAuthStateChange(data.user);
                 
+                // 触发用户登录事件，用于侧边栏展开
+                window.dispatchEvent(new Event('userLoggedIn'));
+                
                 return { success: true };
             } else {
                 // 处理不同的错误状态码
@@ -417,6 +420,9 @@ export class Auth {
             localStorage.removeItem('credits');
             localStorage.removeItem('userInfo');
             this.#notifyAuthStateChange(null);
+            
+            // 触发用户登出事件，用于侧边栏折叠
+            window.dispatchEvent(new Event('userLoggedOut'));
             
             // Hide balance display when logging out
             const balanceDisplay = document.getElementById('balanceDisplay');
