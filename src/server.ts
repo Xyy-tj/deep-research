@@ -6,6 +6,7 @@ import { generateFeedback } from './feedback';
 import { OutputManager } from './output-manager';
 import { CreditManager } from './user/credit-manager';
 import authRoutes from './user/auth-routes';
+import paymentRoutes, { notifyRouter } from './payment/payment-routes';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import { DB } from './db/database';
@@ -57,6 +58,12 @@ function authenticateToken(req: express.Request, res: express.Response, next: ex
 
 // Mount authentication routes
 app.use('/api', authRoutes);
+
+// Mount payment notification endpoint without authentication (with URL-encoded body parser)
+app.use('/api/payment/wxnotify', express.urlencoded({ extended: true }), notifyRouter);
+
+// Mount payment routes (protected by authentication)
+app.use('/api/payment', authenticateToken, paymentRoutes);
 
 // Get user balance endpoint
 app.get('/api/user/balance', authenticateToken, async (req, res) => {

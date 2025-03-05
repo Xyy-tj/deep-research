@@ -34,8 +34,25 @@ CREATE TABLE IF NOT EXISTS invitation_codes (
     FOREIGN KEY (used_by) REFERENCES users(id)
 );
 
+-- Payment records table
+CREATE TABLE IF NOT EXISTS payment_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    order_id TEXT UNIQUE NOT NULL,
+    amount REAL NOT NULL,
+    credits INTEGER NOT NULL,
+    status TEXT NOT NULL, -- 'pending', 'completed', 'failed'
+    payment_method TEXT NOT NULL, -- 'wxpay', etc.
+    payment_data TEXT, -- JSON string with payment provider data
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_usage_records_user_id ON usage_records(user_id);
 CREATE INDEX IF NOT EXISTS idx_invitation_codes_code ON invitation_codes(code);
+CREATE INDEX IF NOT EXISTS idx_payment_records_user_id ON payment_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_records_order_id ON payment_records(order_id);

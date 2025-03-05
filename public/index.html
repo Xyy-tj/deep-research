@@ -26,10 +26,12 @@
     <link href="/css/chatbot-styles.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
     <link href="/css/case-library.css" rel="stylesheet">
+    <link href="/css/payment-styles.css" rel="stylesheet">
     <script src="/js/tailwind-config.js"></script>
     <script src="/js/pdf-viewer.js"></script>
     <script src="/js/image-placeholder.js"></script>
     <script src="/js/redirect.js" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400&display=swap"
         rel="stylesheet">
 
@@ -88,6 +90,10 @@
                 <button id="refreshBalance" class="ml-2 text-blue-500 hover:text-blue-700" title="刷新余额">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+                <button id="rechargeBtn" class="ml-2 recharge-button" title="充值">
+                    <i class="fas fa-plus-circle"></i>
+                    <span data-i18n="recharge">Recharge</span>
+                </button>
             </div>
 
             <!-- Language Selector -->
@@ -115,6 +121,55 @@
                     class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors ml-2">
                     <i class="fas fa-user-plus mr-1"></i> <span data-i18n="register">Register</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Recharge Modal -->
+        <div id="rechargeModal" class="recharge-modal hidden">
+            <div class="recharge-modal-content">
+                <div class="recharge-modal-header">
+                    <h2 class="recharge-modal-title" data-i18n="rechargeCredits">Recharge Credits</h2>
+                    <button id="closeRechargeModal" class="recharge-modal-close">&times;</button>
+                </div>
+                <div id="paymentOptions">
+                    <div class="credit-packages" id="creditPackages">
+                        <!-- Credit packages will be dynamically inserted here -->
+                    </div>
+                    <div id="customAmountContainer" class="custom-amount-container hidden">
+                        <label for="customAmount" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="customAmount">Custom Amount (¥)</label>
+                        <input type="number" id="customAmount" class="custom-amount-input" min="1" step="0.01" placeholder="Enter amount">
+                    </div>
+                    <div class="payment-methods">
+                        <div class="payment-method selected" data-method="wxpay">
+                            <div class="payment-method-icon">
+                                <i class="fab fa-weixin text-green-500"></i>
+                            </div>
+                            <div class="payment-method-name" data-i18n="wechatPay">WeChat Pay</div>
+                        </div>
+                    </div>
+                    <div class="payment-summary" id="paymentSummary">
+                        <div class="text-gray-500" data-i18n="selectPackage">Please select a package or enter a custom amount</div>
+                    </div>
+                    <form id="paymentForm">
+                        <button type="submit" id="paymentSubmitBtn" class="payment-submit" disabled data-i18n="payNow">Pay Now</button>
+                    </form>
+                </div>
+                <div id="qrCodeContainer" class="qr-code-container hidden">
+                    <h3 class="text-lg font-semibold mb-4" data-i18n="scanToPay">Scan QR Code to Pay</h3>
+                    <div class="qr-code" id="paymentQrCode"></div>
+                    <div class="qr-code-info">
+                        <div class="qr-code-amount">¥<span id="paymentAmount">0.00</span></div>
+                        <div class="qr-code-credits" data-i18n="willReceive">You will receive <span id="paymentCredits">0</span> credits</div>
+                    </div>
+                </div>
+                <div id="paymentResult" class="payment-result hidden">
+                    <div class="payment-result-icon" id="paymentResultIcon">
+                        <i class="fas fa-check-circle text-green-500 text-5xl"></i>
+                    </div>
+                    <div class="payment-result-message" id="paymentResultMessage">
+                        Payment successful!
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -365,6 +420,7 @@
     <script src="/js/chatbot-config.js" type="module"></script>
     <script src="/js/sidebar.js" type="module"></script>
     <script src="/js/case-library.js" type="module"></script>
+    <script src="/js/payment.js" type="module"></script>
 </body>
 
 </html>
