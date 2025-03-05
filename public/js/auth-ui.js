@@ -67,30 +67,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle auth form submission
     async function handleAuth(e) {
         e.preventDefault();
+        
         const type = authForm.dataset.type;
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         
         let success = false;
+        
         if (type === 'login') {
-            success = await auth.login(username, password);
+            const result = await auth.login(username, password);
+            success = result.success;
+            
+            if (!success) {
+                alert(result.message || 'Login failed');
+            }
         } else {
             const email = document.getElementById('email').value;
             const verificationCode = document.getElementById('verificationCode').value;
-            const invitationCode = document.getElementById('invitationCode').value;
-            success = await auth.registerWithVerificationCode(username, email, password, verificationCode, invitationCode);
+            const invitationCode = document.getElementById('invitationCode')?.value;
+            
+            const result = await auth.registerWithVerificationCode(username, email, password, verificationCode, invitationCode);
+            success = result.success;
+            
+            if (!success) {
+                alert(result.message || 'Registration failed');
+            }
         }
 
         if (success) {
             hideAuthModal();
-            updateAuthDisplay();
+            await updateAuthDisplay();
             
             // 确保余额立即更新（冗余调用，以防在页面加载顺序问题）
             if (typeof window.updateBalance === 'function') {
                 window.updateBalance();
             }
-        } else {
-            alert(type === 'login' ? 'Login failed' : 'Registration failed');
         }
     }
 
@@ -148,30 +159,33 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Update auth display based on authentication state
-function updateAuthDisplay() {
+async function updateAuthDisplay() {
     const isAuthenticated = auth.isAuthenticated;
-    userSection.classList.toggle('hidden', !isAuthenticated);
-    authSection.classList.toggle('hidden', isAuthenticated);
-    mainContent.classList.toggle('hidden', !isAuthenticated);
-    welcomePage.classList.toggle('hidden', isAuthenticated);
-
-    // 处理余额显示
-    const balanceDisplay = document.getElementById('balanceDisplay');
-    if (balanceDisplay) {
-        if (isAuthenticated) {
-            balanceDisplay.classList.remove('hidden');
-            // 确保余额数据是最新的
-            if (typeof window.updateBalance === 'function') {
-                window.updateBalance();
-            }
-        } else {
-            balanceDisplay.classList.add('hidden');
-        }
+    
+    if (userSection && authSection) {
+        userSection.classList.toggle('hidden', !isAuthenticated);
+        authSection.classList.toggle('hidden', isAuthenticated);
+    }
+    
+    if (mainContent && welcomePage) {
+        mainContent.classList.toggle('hidden', !isAuthenticated);
+        welcomePage.classList.toggle('hidden', isAuthenticated);
     }
 
     if (isAuthenticated) {
-        const username = auth.getCurrentUser();
-        document.getElementById('userGreeting').textContent = `Welcome, ${username}!`;
+        const userInfo = await auth.getCurrentUser();
+        const displayName = userInfo?.username || 'User';
+        document.getElementById('userGreeting').textContent = `Welcome, ${displayName}!`;
+    }
+}
+
+// 处理余额显示
+const balanceDisplay = document.getElementById('balanceDisplay');
+if (balanceDisplay) {
+    balanceDisplay.classList.toggle('hidden', !auth.isAuthenticated);
+    // 确保余额数据是最新的
+    if (typeof window.updateBalance === 'function') {
+        window.updateBalance();
     }
 }
 

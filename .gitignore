@@ -42,3 +42,4 @@ yarn-error.log*
 bun.lockb
 /output
 research.db
+*.zip
