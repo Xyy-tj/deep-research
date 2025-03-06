@@ -452,6 +452,22 @@
 
     </div>
 
+    <!-- PDF Preview Modal -->
+    <div id="pdfPreviewModal" class="pdf-preview-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="pdfPreviewTitle">PDF预览</h3>
+                <button id="closePdfModal" class="close-modal-btn">&times;</button>
+            </div>
+            <div id="pdfPreviewContainer" class="modal-body">
+                <div id="pdfDebugInfo" style="padding: 10px; background-color: #fffde7; margin-bottom: 10px; border-radius: 4px;">
+                    <strong>PDF调试信息</strong>: <span id="pdfDebugStatus">等待加载</span>
+                </div>
+                <div id="pdfViewer" style="min-height: 500px; background-color: #f5f5f5; border: 1px dashed #ccc;"></div>
+            </div>
+        </div>
+    </div>
+
     <footer class="mt-1 py-2 text-center text-gray-600">
         <p data-i18n="poweredBy">Powered by Deep Research AI</p>
     </footer>

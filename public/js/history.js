@@ -6,8 +6,6 @@ import { Auth } from './auth.js';
 // Helper function to get auth headers
 async function getAuthHeaders() {
     const token = await Auth.getInstance().getTokenAsync();
-    console.log('Auth token for API request:', token ? 'Token exists' : 'No token');
-    console.log('Token:', token);
     
     return {
         'Content-Type': 'application/json',
@@ -16,18 +14,11 @@ async function getAuthHeaders() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Research History JS loaded');
-    
-    // Load research history content into the history tab
     const loadResearchHistoryContent = async () => {
-        console.info('[Research History] Attempting to load research history content');
         try {
             // Try to fetch from API first
             let data = { records: [] };
             try {
-                console.log('Fetching research history from API...');
-                console.log(await getAuthHeaders());
-
                 const response = await fetch('/api/research/list', {
                     method: 'POST',
                     headers: await getAuthHeaders(),
@@ -245,6 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const endTime = record.end_time ? new Date(record.end_time) : null;
         const duration = calculateDuration(startTime, endTime);
         const formattedStartTime = startTime ? startTime.toLocaleTimeString() : '';
+
+        console.log('record.output_filename:', record.output_filename);
         
         return `
             <div class="research-record p-4 bg-white rounded-md shadow-sm hover:shadow-md transition-all">
@@ -270,12 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex space-x-2 mt-3">
                     ${record.output_filename ? `
                         <button class="view-report-btn px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md text-sm hover:bg-indigo-200" 
-                                data-research-id="${researchId}">
+                                data-research-id="${researchId}" data-filename="${record.output_filename}">
                             View Report
                         </button>
                         <button class="download-report-btn px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200"
-                                data-research-id="${researchId}" 
-                                data-filename="${record.output_filename}">
+                                data-research-id="${researchId}" data-filename="${record.output_filename}">
                             Download
                         </button>
                     ` : ''}
@@ -373,16 +365,72 @@ document.addEventListener('DOMContentLoaded', () => {
     const initializeEventHandlers = () => {
         console.log('Initializing research history event handlers');
         
+        // Handle PDF modal close button
+        const closePdfModalButton = document.getElementById('closePdfModal');
+        if (closePdfModalButton) {
+            closePdfModalButton.addEventListener('click', () => {
+                const pdfPreviewModal = document.getElementById('pdfPreviewModal');
+                if (pdfPreviewModal) {
+                    pdfPreviewModal.classList.remove('active');
+                    pdfPreviewModal.classList.add('hidden');
+                    pdfPreviewModal.style.display = 'none';
+                    
+                    // Clear the PDF viewer content
+                    const pdfViewer = document.getElementById('pdfViewer');
+                    if (pdfViewer) {
+                        pdfViewer.innerHTML = '';
+                    }
+                }
+            });
+            console.log('PDF modal close button event listener added');
+        }
+        
         // Handle view report buttons
         document.querySelectorAll('.view-report-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const researchId = button.getAttribute('data-research-id');
-                const filename = button.getAttribute('data-filename');
+                const filename = 'output/' + button.getAttribute('data-filename');
                 console.log(`View report clicked for research: ${researchId}, filename: ${filename}`);
                 
                 if (filename) {
                     try {
-                        await loadMarkdownPreview(filename);
+                        // First ensure we're in the history tab
+                        const historyTab = document.querySelector('.sidebar-item[data-tab="history"]');
+                        if (historyTab && !historyTab.classList.contains('active')) {
+                            console.log('Activating history tab before showing PDF');
+                            historyTab.click();
+                            
+                            // Small delay to ensure tab switch is complete
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                        
+                        const pdfPreviewModal = document.getElementById('pdfPreviewModal');
+                        const pdfViewer = document.getElementById('pdfViewer');
+                        const closePdfModalButton = document.getElementById('closePdfModal');
+                        const pdfDebugStatus = document.getElementById('pdfDebugStatus');
+
+                        console.log('PDF modal exists:', !!pdfPreviewModal);
+                        console.log('PDF viewer exists:', !!pdfViewer);
+                        console.log('Close PDF button exists:', !!closePdfModalButton); 
+
+                        if (pdfViewer) {
+                            console.log('Showing modal and loading PDF');
+                            // Show modal - using both active class (for CSS) and removing hidden class
+                            pdfPreviewModal.classList.add('active');
+                            pdfPreviewModal.classList.remove('hidden');
+                            pdfPreviewModal.style.display = 'flex'; // Force display flex
+        
+                            // Update debug info
+                            if (pdfDebugStatus) {
+                                pdfDebugStatus.textContent = '正在加载PDF: ' + filename;
+                            }
+                            
+                            // Load PDF in container
+                            pdfViewer.innerHTML = `<iframe src="${filename}" width="100%" height="100%" frameborder="0"></iframe>`;
+                            console.log('PDF iframe added to viewer');
+                        } else {
+                            console.error('PDF viewer element or PDF URL not found');
+                        }
                     } catch (error) {
                         console.error('Error loading markdown preview:', error);
                         showNotification('Failed to load research report', 'error');
