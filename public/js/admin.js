@@ -14,7 +14,8 @@ const adminState = {
         depthMultiplier: 1,
         breadthMultiplier: 0.5,
         creditExchangeRate: 10
-    }
+    },
+    researchRecords: [] // 添加研究记录状态
 };
 
 // Helper function to get auth headers
@@ -107,6 +108,11 @@ function initTabs() {
             tab.classList.add('active');
             const tabName = tab.getAttribute('data-tab');
             document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // 加载研究记录数据
+            if (tabName === 'research-records') {
+                loadResearchRecords();
+            }
         });
     });
 }
@@ -145,6 +151,7 @@ function addEventListeners() {
     window.addEventListener('click', event => {
         const editCreditsModal = document.getElementById('editCreditsModal');
         const packageModal = document.getElementById('packageModal');
+        const researchModal = document.getElementById('research-content-modal');
         
         if (event.target === editCreditsModal) {
             editCreditsModal.style.display = 'none';
@@ -152,6 +159,10 @@ function addEventListeners() {
         
         if (event.target === packageModal) {
             packageModal.style.display = 'none';
+        }
+        
+        if (event.target === researchModal) {
+            researchModal.style.display = 'none';
         }
     });
 
@@ -166,6 +177,22 @@ function addEventListeners() {
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         await Auth.getInstance().logout();
         window.location.href = 'index.html';
+    });
+
+    // 研究记录相关事件监听
+    document.getElementById('searchResearchBtn').addEventListener('click', searchResearchRecords);
+    document.getElementById('researchSearchInput').addEventListener('keyup', event => {
+        if (event.key === 'Enter') {
+            searchResearchRecords();
+        }
+    });
+    
+    // 研究内容模态框关闭按钮
+    document.getElementById('closeResearchModal').addEventListener('click', () => {
+        document.getElementById('research-content-modal').style.display = 'none';
+    });
+    document.getElementById('closeResearchBtn').addEventListener('click', () => {
+        document.getElementById('research-content-modal').style.display = 'none';
     });
 }
 
@@ -818,9 +845,206 @@ function showSuccess(message) {
     alert(message);
 }
 
+// 加载研究记录
+async function loadResearchRecords() {
+    try {
+        document.getElementById('research-records-tbody').innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center">
+                    <div class="loading"></div> 加载研究记录中...
+                </td>
+            </tr>
+        `;
+        
+        const response = await fetch('/api/admin/research-records', {
+            headers: await getAuthHeaders(),
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load research records');
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+            adminState.researchRecords = data.records;
+            renderResearchRecords(data.records);
+        } else {
+            throw new Error(data.error || 'Failed to load research records');
+        }
+    } catch (error) {
+        console.error('Error loading research records:', error);
+        document.getElementById('research-records-tbody').innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-red-500">
+                    加载研究记录失败: ${error.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// 渲染研究记录表格
+function renderResearchRecords(records) {
+    const tableBody = document.getElementById('research-records-tbody');
+    
+    if (!records || records.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center">没有找到研究记录</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    records.forEach(record => {
+        const createdAt = formatDate(record.created_at);
+        html += `
+            <tr>
+                <td>${record.id}</td>
+                <td>${escapeHtml(record.title || '无标题')}</td>
+                <td>${escapeHtml(record.username || '未知用户')}</td>
+                <td>${escapeHtml(record.query || '无查询')}</td>
+                <td>${createdAt}</td>
+                <td>
+                    <button class="btn btn-small btn-info" onclick="viewResearchContent(${record.id})">
+                        查看
+                    </button>
+                    <button class="btn btn-small btn-primary" onclick="downloadResearchContent(${record.id}, '${escapeHtml(record.title || 'research')}')">
+                        下载
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// 搜索研究记录
+function searchResearchRecords() {
+    const searchTerm = document.getElementById('researchSearchInput').value.toLowerCase();
+    
+    if (!searchTerm) {
+        renderResearchRecords(adminState.researchRecords);
+        return;
+    }
+    
+    const filteredRecords = adminState.researchRecords.filter(record => {
+        return (
+            (record.title && record.title.toLowerCase().includes(searchTerm)) ||
+            (record.query && record.query.toLowerCase().includes(searchTerm)) ||
+            (record.username && record.username.toLowerCase().includes(searchTerm))
+        );
+    });
+    
+    renderResearchRecords(filteredRecords);
+}
+
+// 查看研究内容
+async function viewResearchContent(recordId) {
+    try {
+        document.getElementById('research-content-container').innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div class="loading"></div>
+                <p>加载研究内容中...</p>
+            </div>
+        `;
+        document.getElementById('research-content-modal').style.display = 'block';
+        
+        const response = await fetch(`/api/admin/research-records/${recordId}/content`, {
+            headers: await getAuthHeaders(),
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load research content');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 设置标题
+            document.getElementById('research-content-title').textContent = data.title || '研究内容';
+            
+            // 使用marked.js渲染Markdown内容
+            const renderedContent = marked.parse(data.content || '');
+            document.getElementById('research-content-container').innerHTML = renderedContent;
+            
+            // 设置下载按钮
+            const blob = new Blob([data.content || ''], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const downloadBtn = document.getElementById('download-research-btn');
+            downloadBtn.href = url;
+            downloadBtn.download = `${data.title || 'research'}.md`;
+        } else {
+            throw new Error(data.error || 'Failed to load research content');
+        }
+    } catch (error) {
+        console.error('Error viewing research content:', error);
+        document.getElementById('research-content-container').innerHTML = `
+            <div class="alert alert-danger">
+                加载研究内容失败: ${error.message}
+            </div>
+        `;
+    }
+}
+
+// 下载研究内容
+async function downloadResearchContent(recordId, title) {
+    try {
+        const response = await fetch(`/api/admin/research-records/${recordId}/content`, {
+            headers: await getAuthHeaders(),
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to download research content');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 创建下载链接
+            const blob = new Blob([data.content || ''], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title || 'research'}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } else {
+            throw new Error(data.error || 'Failed to download research content');
+        }
+    } catch (error) {
+        console.error('Error downloading research content:', error);
+        showError(`下载研究内容失败: ${error.message}`);
+    }
+}
+
+// HTML转义函数
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Document ready
 document.addEventListener('DOMContentLoaded', initAdminPanel);
 
 // Expose functions to window for onclick handlers
-window.editPackage = openPackageModal;
+window.openEditCreditsModal = openEditCreditsModal;
+window.openPackageModal = openPackageModal;
+window.editPackage = openPackageModal; // 添加别名，使editPackage指向openPackageModal
 window.deletePackage = deletePackage;
+window.viewResearchContent = viewResearchContent;
+window.downloadResearchContent = downloadResearchContent;

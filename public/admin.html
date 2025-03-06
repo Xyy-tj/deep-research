@@ -190,6 +190,74 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* 添加研究内容预览样式 */
+        .markdown-body {
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        
+        .markdown-body h3 {
+            font-size: 1.25em;
+        }
+        
+        .markdown-body p {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        
+        .markdown-body code {
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+        }
+        
+        .markdown-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: #f6f8fa;
+            border-radius: 3px;
+        }
+        
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin: 0 0 16px 0;
+        }
     </style>
 </head>
 <body>
@@ -220,6 +288,7 @@
                 <div class="admin-tab" data-tab="payments">Payments</div>
                 <div class="admin-tab" data-tab="credit-packages">Credit Packages</div>
                 <div class="admin-tab" data-tab="system">System</div>
+                <div class="admin-tab" data-tab="research-records">研究记录</div>
             </div>
             
             <div class="admin-content">
@@ -358,6 +427,33 @@
                     
                     <button id="saveSystemSettingsBtn" class="btn">Save Settings</button>
                 </div>
+                
+                <!-- Research Records Tab -->
+                <div class="tab-content" id="research-records-tab">
+                    <h3>研究记录管理</h3>
+                    <div class="search-box">
+                        <input type="text" id="researchSearchInput" placeholder="搜索研究记录...">
+                        <button id="searchResearchBtn" class="btn">搜索</button>
+                    </div>
+                    
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>用户</th>
+                                <th>查询</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="research-records-tbody">
+                            <tr>
+                                <td colspan="6" class="text-center">加载研究记录中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
@@ -439,6 +535,24 @@
         </div>
     </div>
 
+    <!-- Research Content Modal -->
+    <div class="modal" id="research-content-modal">
+        <div class="modal-content" style="width: 80%; max-width: 800px;">
+            <span class="close-modal" id="closeResearchModal">&times;</span>
+            <h3 id="research-content-title">研究内容</h3>
+            
+            <div id="research-content-container" class="markdown-body">
+                <!-- 研究内容将在这里动态加载 -->
+            </div>
+            
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" class="btn" data-dismiss="modal" id="closeResearchBtn">关闭</button>
+                <a id="download-research-btn" href="#" class="btn" download>下载文件</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>

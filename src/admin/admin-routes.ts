@@ -7,6 +7,7 @@ import { InvitationCodeService } from '../services/invitation-code-service';
 import { SystemSettingsService } from '../services/system-settings-service';
 import { generateRandomCode } from '../utils/string-utils';
 import { CreditPackageService } from '../services/credit-package-service';
+import { DB } from '../db/database'; // 添加DB导入
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.get('/users', async (req, res) => {
 router.post('/users/credits', async (req, res) => {
     try {
         const { userId, operation, amount, note } = req.body;
-        
+
         if (!userId || !operation || !amount) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -42,7 +43,7 @@ router.post('/users/credits', async (req, res) => {
 
         const userService = await UserService.getInstance();
         const creditManager = await CreditManager.getInstance();
-        
+
         // Get current user
         const user = await userService.getUserById(userId);
         if (!user) {
@@ -52,7 +53,7 @@ router.post('/users/credits', async (req, res) => {
 
         console.log('Current user credits:', user.credits);
         let newBalance = user.credits;
-        
+
         try {
             // Perform credit operation
             switch (operation) {
@@ -90,11 +91,11 @@ router.post('/users/credits', async (req, res) => {
             return res.status(404).json({ error: 'User not found after update' });
         }
 
-        res.json({ 
-            success: true, 
-            userId, 
-            operation, 
-            amount, 
+        res.json({
+            success: true,
+            userId,
+            operation,
+            amount,
             previousBalance: user.credits,
             newBalance: updatedUser.credits
         });
@@ -109,7 +110,7 @@ router.get('/invitation-codes', async (req, res) => {
     try {
         const invitationCodeService = await InvitationCodeService.getInstance();
         const codes = await invitationCodeService.getAllCodes();
-        
+
         // Get usernames for used codes
         const userService = await UserService.getInstance();
         const codesWithUsernames = await Promise.all(codes.map(async (code) => {
@@ -125,7 +126,7 @@ router.get('/invitation-codes', async (req, res) => {
                 used_by_username: null
             };
         }));
-        
+
         res.json({ codes: codesWithUsernames });
     } catch (error) {
         console.error('Error fetching invitation codes:', error);
@@ -137,7 +138,7 @@ router.get('/invitation-codes', async (req, res) => {
 router.post('/generate-invitation-codes', async (req, res) => {
     try {
         const { count = 1 } = req.body;
-        
+
         if (isNaN(count) || count < 1 || count > 50) {
             return res.status(400).json({ error: 'Count must be between 1 and 50' });
         }
@@ -163,7 +164,7 @@ router.get('/payments', async (req, res) => {
     try {
         const paymentService = await PaymentService.getInstance();
         const payments = await paymentService.getAllPayments();
-        
+
         // Get usernames for payments
         const userService = await UserService.getInstance();
         const paymentsWithUsernames = await Promise.all(payments.map(async (payment) => {
@@ -173,7 +174,7 @@ router.get('/payments', async (req, res) => {
                 username: user ? user.username : 'Unknown'
             };
         }));
-        
+
         res.json({ payments: paymentsWithUsernames });
     } catch (error) {
         console.error('Error fetching payments:', error);
@@ -197,7 +198,7 @@ router.get('/credit-packages', async (req, res) => {
 router.post('/credit-packages', async (req, res) => {
     try {
         const { credits, price, description, isActive, displayOrder } = req.body;
-        
+
         if (isNaN(credits) || isNaN(price) || credits <= 0 || price < 0) {
             return res.status(400).json({ error: 'Credits and price must be valid numbers' });
         }
@@ -223,13 +224,13 @@ router.put('/credit-packages/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const { credits, price, description, isActive, displayOrder } = req.body;
-        
+
         if (isNaN(id)) {
             return res.status(400).json({ error: 'Invalid package ID' });
         }
 
         const packageService = await CreditPackageService.getInstance();
-        
+
         // Check if package exists
         const existingPackage = await packageService.getPackageById(id);
         if (!existingPackage) {
@@ -238,32 +239,32 @@ router.put('/credit-packages/:id', async (req, res) => {
 
         // Update package
         const updateData: any = {};
-        
+
         if (credits !== undefined && !isNaN(credits)) {
             updateData.credits = Number(credits);
         }
-        
+
         if (price !== undefined && !isNaN(price)) {
             updateData.price = Number(price);
         }
-        
+
         if (description !== undefined) {
             updateData.description = description;
         }
-        
+
         if (isActive !== undefined) {
             updateData.is_active = isActive === true;
         }
-        
+
         if (displayOrder !== undefined && !isNaN(displayOrder)) {
             updateData.display_order = Number(displayOrder);
         }
 
         await packageService.updatePackage(id, updateData);
-        
+
         // Get updated package
         const updatedPackage = await packageService.getPackageById(id);
-        
+
         res.json({ success: true, package: updatedPackage });
     } catch (error) {
         console.error('Error updating credit package:', error);
@@ -275,13 +276,13 @@ router.put('/credit-packages/:id', async (req, res) => {
 router.delete('/credit-packages/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
-        
+
         if (isNaN(id)) {
             return res.status(400).json({ error: 'Invalid package ID' });
         }
 
         const packageService = await CreditPackageService.getInstance();
-        
+
         // Check if package exists
         const existingPackage = await packageService.getPackageById(id);
         if (!existingPackage) {
@@ -290,7 +291,7 @@ router.delete('/credit-packages/:id', async (req, res) => {
 
         // Delete package
         await packageService.deletePackage(id);
-        
+
         res.json({ success: true, id });
     } catch (error) {
         console.error('Error deleting credit package:', error);
@@ -314,7 +315,7 @@ router.get('/system/settings', async (req, res) => {
 router.post('/system/settings', async (req, res) => {
     try {
         const { baseCredits, depthMultiplier, breadthMultiplier, creditExchangeRate } = req.body;
-        
+
         if (isNaN(baseCredits) || isNaN(depthMultiplier) || isNaN(breadthMultiplier)) {
             return res.status(400).json({ error: 'All settings must be valid numbers' });
         }
@@ -326,7 +327,7 @@ router.post('/system/settings', async (req, res) => {
             breadthMultiplier,
             creditExchangeRate: creditExchangeRate !== undefined ? Number(creditExchangeRate) : undefined
         });
-        
+
         res.json({ success: true, settings });
     } catch (error) {
         console.error('Error updating system settings:', error);
@@ -350,18 +351,75 @@ router.get('/system/exchange-rate', async (req, res) => {
 router.post('/system/exchange-rate', async (req, res) => {
     try {
         const { rate } = req.body;
-        
+
         if (isNaN(rate) || rate <= 0) {
             return res.status(400).json({ error: 'Exchange rate must be a positive number' });
         }
 
         const paymentService = await PaymentService.getInstance();
         const newRate = await paymentService.updateCreditExchangeRate(Number(rate));
-        
+
         res.json({ success: true, exchangeRate: newRate });
     } catch (error) {
         console.error('Error updating credit exchange rate:', error);
         res.status(500).json({ error: 'Failed to update credit exchange rate' });
+    }
+});
+
+// 获取所有研究记录
+router.get('/research-records', async (req, res) => {
+    try {
+        const db = await DB.getInstance();
+        const records = await db.all(`
+        SELECT r.*, u.username 
+        FROM research_records r
+        LEFT JOIN users u ON r.user_id = u.id
+        ORDER BY r.start_time DESC
+      `);
+
+        res.json({ success: true, records });
+    } catch (error) {
+        console.error('Error fetching research records:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch research records' });
+    }
+});
+
+// 获取研究记录的文件内容
+router.get('/research-records/:id/content', async (req, res) => {
+    try {
+        const recordId = req.params.id;
+        const db = await DB.getInstance();
+
+        const record = await db.get('SELECT * FROM research_records WHERE id = ?', [recordId]);
+
+        if (!record) {
+            return res.status(404).json({ success: false, error: 'Research record not found' });
+        }
+
+        // 检查文件路径是否存在
+        if (!record.output_path) {
+            return res.status(404).json({ success: false, error: 'Research file path not found' });
+        }
+
+        // 从文件系统读取研究内容
+        const fs = require('fs');
+        const path = require('path');
+        
+        try {
+            const content = fs.readFileSync(record.output_path, 'utf8');
+            res.json({
+                success: true,
+                content: content,
+                title: record.output_filename || record.query,
+                query: record.query
+            });
+        } catch (fileError) {
+            console.error('Error reading research file:', fileError);
+            res.status(404).json({ success: false, error: 'Research file could not be read' });
+        }
+    } catch (error) {
+        console.error('Error fetching research record content:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch research record content' });
     }
 });
 
