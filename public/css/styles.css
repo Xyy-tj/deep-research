@@ -1012,69 +1012,73 @@ button:active::after {
 
 /* PDF Preview Modal Styles */
 .pdf-preview-modal {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
     justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Ensure it's above all other content */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .pdf-preview-modal.active {
-    display: flex;
-    animation: fadeIn 0.3s ease;
+    opacity: 1;
+    visibility: visible;
 }
 
-.modal-content {
+.pdf-preview-modal .modal-content {
     background-color: white;
-    border-radius: 0.5rem;
+    border-radius: 8px;
     width: 90%;
-    max-width: 800px;
+    max-width: 900px;
     max-height: 90vh;
     overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.modal-header {
+.pdf-preview-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 15px 20px;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.modal-header h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.close-modal-btn {
-    color: #6b7280;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    transition: color 0.2s ease;
-}
-
-.close-modal-btn:hover {
-    color: #ef4444;
-}
-
-.modal-body {
-    padding: 1rem;
+.pdf-preview-modal .modal-body {
+    padding: 20px;
     overflow-y: auto;
     flex: 1;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.pdf-preview-modal .close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: color 0.2s ease;
+}
+
+.pdf-preview-modal .close-modal-btn:hover {
+    color: #111827;
+}
+
+#pdfViewer {
+    width: 100%;
+    height: 70vh;
+    overflow: auto;
+}
+
+#pdfViewer iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
 }

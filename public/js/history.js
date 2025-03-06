@@ -373,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pdfPreviewModal) {
                     pdfPreviewModal.classList.remove('active');
                     pdfPreviewModal.classList.add('hidden');
-                    pdfPreviewModal.style.display = 'none';
                     
                     // Clear the PDF viewer content
                     const pdfViewer = document.getElementById('pdfViewer');
@@ -394,16 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (filename) {
                     try {
-                        // First ensure we're in the history tab
-                        const historyTab = document.querySelector('.sidebar-item[data-tab="history"]');
-                        if (historyTab && !historyTab.classList.contains('active')) {
-                            console.log('Activating history tab before showing PDF');
-                            historyTab.click();
-                            
-                            // Small delay to ensure tab switch is complete
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        }
-                        
                         const pdfPreviewModal = document.getElementById('pdfPreviewModal');
                         const pdfViewer = document.getElementById('pdfViewer');
                         const closePdfModalButton = document.getElementById('closePdfModal');
@@ -418,8 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Show modal - using both active class (for CSS) and removing hidden class
                             pdfPreviewModal.classList.add('active');
                             pdfPreviewModal.classList.remove('hidden');
-                            pdfPreviewModal.style.display = 'flex'; // Force display flex
-        
+                            
                             // Update debug info
                             if (pdfDebugStatus) {
                                 pdfDebugStatus.textContent = '正在加载PDF: ' + filename;
