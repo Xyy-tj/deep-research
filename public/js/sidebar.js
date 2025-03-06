@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebarHeader = document.querySelector('.sidebar-header');
     
     // 已实现的标签页
-    const implementedTabs = ['research', 'caseLibrary'];
+    const implementedTabs = ['research', 'caseLibrary', 'history'];
 
     // 添加水墨效果
     function createInkEffect(e, element) {
@@ -82,10 +82,18 @@ document.addEventListener('DOMContentLoaded', function () {
             // 获取对应的tab
             const tab = this.getAttribute('data-tab');
             
+            // 触发自定义事件通知相关模块
+            const event = new CustomEvent('tabActivated', { 
+                detail: { tabId: tab } 
+            });
+            document.dispatchEvent(event);
+            console.log(`Tab activated: ${tab}, event dispatched`);
+            
             // 获取所有内容区域
             const contentAreas = [
                 document.querySelector('#researchForm')?.closest('.max-w-4xl'),
                 document.querySelector('#caseLibraryTab'),
+                document.querySelector('#historyTab'),
                 document.querySelector('#constructionContainer')
             ];
             
@@ -106,6 +114,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             el.style.opacity = '1';
                         }, 50);
                     } else if (tab === 'caseLibrary' && el === document.querySelector('#caseLibraryTab')) {
+                        el.classList.remove('hidden');
+                        el.style.display = 'block';
+                        // 添加淡入效果
+                        setTimeout(() => {
+                            el.style.opacity = '1';
+                        }, 50);
+                    } else if (tab === 'history' && el === document.querySelector('#historyTab')) {
+                        el.classList.remove('hidden');
+                        el.style.display = 'block';
+                        // 添加淡入效果
+                        setTimeout(() => {
+                            el.style.opacity = '1';
+                        }, 50); 
+                    } else if (tab === 'construction' && el === document.querySelector('#constructionContainer')) {
                         el.classList.remove('hidden');
                         el.style.display = 'block';
                         // 添加淡入效果

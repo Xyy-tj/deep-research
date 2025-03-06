@@ -388,6 +388,7 @@ app.post('/api/answer/:researchId', (req, res) => {
 
 // 用户管理API
 app.get('/api/user/:userId', async (req, res) => {
+    console.log('Fetching user details for:', req.params.userId);
     try {
         const creditManager = await CreditManager.getInstance();
         const user = await creditManager.getUser(req.params.userId);
@@ -642,6 +643,16 @@ app.post('/api/research', authenticateToken, async (req, res) => {
     }
 });
 
+app.post('/api/test', authenticateToken, async (req, res) => {
+    try {
+        console.log('Test request received:', req.body);
+        res.json({ success: true, message: 'Test request received' });
+    } catch (error) {
+        logger.error('Error in test request handler:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Save research results
 app.post('/api/save', async (req, res) => {
     const { researchId } = req.body;
@@ -821,8 +832,6 @@ async function startServer() {
     }
 }
 
-startServer();
-
 // Save report to disk
 function saveReportToDisk(researchId: string, report: string) {
     try {
@@ -939,8 +948,9 @@ app.post('/api/research/:id/partial', authenticateToken, async (req, res) => {
     }
 });
 
-// Get user research history
-app.get('/api/user/research', authenticateToken, async (req, res) => {
+// Post user research history
+app.post('/api/research/list', authenticateToken, async (req, res) => {
+    logger.info('[Research History] Fetching research history');
     try {
         const userId = (req as any).user.id;
         logger.info(`[Research History] Fetching research history for user ID: ${userId}`);
@@ -1007,3 +1017,5 @@ app.get('/api/admin/research', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch research records' });
     }
 });
+
+startServer();

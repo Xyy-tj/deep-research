@@ -1209,6 +1209,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Make saveResults globally accessible
     window.saveResults = saveResults;
 
+    // Make downloadMarkdown globally accessible
+    window.downloadMarkdown = downloadMarkdown;
+
     // Load markdown preview
     async function loadMarkdownPreview(filename) {
         const previewContainer = document.getElementById('markdown-preview');
@@ -1256,6 +1259,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>`;
         }
     }
+
+    // Make loadMarkdownPreview globally accessible
+    window.loadMarkdownPreview = loadMarkdownPreview;
 
     // Handle markdown download
     async function downloadMarkdown(filename) {

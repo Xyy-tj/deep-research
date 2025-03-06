@@ -1,0 +1,106 @@
+/* Research History Styles */
+
+.research-history-container {
+    padding: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(10px);
+}
+
+.research-history-list {
+    margin-top: 1rem;
+}
+
+.date-group h3 {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.research-record {
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.research-record:hover {
+    border-left-color: var(--primary-color, #4f46e5);
+    transform: translateY(-2px);
+}
+
+.stat-item {
+    padding: 0.25rem 0.5rem;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 0.25rem;
+}
+
+.view-report-btn, .download-report-btn {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.view-report-btn:hover, .download-report-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Ink effect for buttons */
+.view-report-btn::after, .download-report-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%, -50%);
+    transform-origin: 50% 50%;
+}
+
+.view-report-btn:active::after, .download-report-btn:active::after {
+    animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    20% {
+        transform: scale(25, 25);
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(40, 40);
+    }
+}
+
+/* Empty state styling */
+.empty-history {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-history svg {
+    margin: 0 auto 1rem auto;
+    color: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .research-record {
+        padding: 0.75rem;
+    }
+    
+    .stat-item {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .grid-cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
