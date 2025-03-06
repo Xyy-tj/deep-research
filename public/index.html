@@ -84,15 +84,15 @@
 
     <!-- Main Content -->
     <div id="app" class="main-content container mx-auto px-4 py-2 mt-4">
-        <div class="absolute top-4 right-4 flex items-center space-x-4">
+        <div class="absolute top-1 right-4 flex items-center space-x-2 top-nav-container px-4 py-2 fade-in-down">
             <!-- Balance Display -->
-            <div id="balanceDisplay" class="hidden px-4 py-2 bg-white rounded-lg shadow text-gray-800 flex items-center">
+            <div id="balanceDisplay" class="hidden px-4 py-2 bg-white bg-opacity-80 rounded-lg text-gray-800 flex items-center top-nav-item pulse-on-hover">
                 <i class="fas fa-coins text-yellow-500 mr-2"></i>
-                <span data-i18n="balance">Balance</span>: <span id="userBalance" class="font-semibold">0</span>
+                <span data-i18n="balance">Balance</span>: <span id="userBalance" class="font-semibold ml-1">0</span>
                 <button id="refreshBalance" class="ml-2 text-blue-500 hover:text-blue-700" title="刷新余额">
                     <i class="fas fa-sync-alt"></i>
                 </button>
-                <button id="rechargeBtn" class="ml-2 recharge-button" title="充值">
+                <button id="rechargeBtn" class="ml-2 recharge-button text-blue-600 hover:text-blue-800" title="充值">
                     <i class="fas fa-plus-circle"></i>
                     <span data-i18n="recharge">Recharge</span>
                 </button>
@@ -100,27 +100,27 @@
 
             <!-- Language Selector -->
             <select id="languageSelector"
-                class="pl-2 pr-8 py-2 text-sm rounded-lg bg-white border border-gray-200 hover:border-gray-300 transition-colors appearance-none language-selector">
+                class="pl-2 pr-8 py-2 text-sm rounded-lg bg-white bg-opacity-80 border border-gray-200 hover:border-gray-300 transition-colors appearance-none language-selector top-nav-item">
                 <option value="en" data-flag="🇺🇸">🇺🇸 English</option>
                 <option value="zh" data-flag="🇨🇳">🇨🇳 简体中文</option>
             </select>
 
-            <div id="userSection" class="hidden">
-                <span id="userGreeting" class="text-gray-700 mr-2"></span>
+            <div id="userSection" class="hidden flex items-center top-nav-item">
+                <span id="userGreeting" class="text-gray-700 mr-3 bg-white bg-opacity-80 px-3 py-1 rounded-lg"></span>
                 <button id="logoutBtn"
-                    class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow z-50">
+                    class="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-1 px-4 border border-gray-300 rounded-lg shadow-sm z-50 transition-all duration-300">
                     <i class="fas fa-sign-out-alt mr-2"></i>
                     <span data-i18n="logout">Logout</span>
                 </button>
             </div>
 
-            <div id="authSection">
+            <div id="authSection" class="flex items-center space-x-2">
                 <button id="loginBtn"
-                    class="w-28 px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                    class="w-28 px-4 py-2 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm">
                     <i class="fas fa-sign-in-alt mr-1"></i> <span data-i18n="login">Login</span>
                 </button>
                 <button id="registerBtn"
-                    class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors ml-2">
+                    class="w-28 px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors shadow-sm">
                     <i class="fas fa-user-plus mr-1"></i> <span data-i18n="register">Register</span>
                 </button>
             </div>
@@ -232,7 +232,7 @@
         </div>
 
         <div id="mainContent" class="hidden mt-9">
-            <div class="bg-white bg-opacity-50 backdrop-blur-sm rounded-xl p-0 mb-1 relative z-10">
+            <div class="bg-white bg-opacity-50 backdrop-blur-sm rounded-xl p-1 mb-1 relative z-10">
                 <div class="title-area mb-0">
                     <div class="flex flex-col items-center py-3">
                         <div class="relative mb-1 flex flex-col items-center">
