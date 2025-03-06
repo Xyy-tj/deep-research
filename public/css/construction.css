@@ -1,0 +1,153 @@
+.construction-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 2rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    margin: 2rem auto;
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.8s ease-out;
+}
+
+.construction-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #818cf8, #c7d2fe, #6366f1);
+    background-size: 300% 100%;
+    animation: gradient-slide 3s linear infinite;
+}
+
+.construction-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+    color: #6366f1;
+    animation: bounce 2s ease infinite;
+}
+
+.construction-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    font-family: 'Ma Shan Zheng', cursive;
+}
+
+.construction-message {
+    font-size: 1.1rem;
+    color: #475569;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    font-family: 'Noto Serif SC', serif;
+}
+
+.construction-footer {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-top: 2rem;
+}
+
+.construction-decoration {
+    position: absolute;
+    opacity: 0.1;
+    z-index: -1;
+}
+
+.decoration-1 {
+    top: 10%;
+    left: 10%;
+    font-size: 8rem;
+    transform: rotate(-15deg);
+}
+
+.decoration-2 {
+    bottom: 10%;
+    right: 10%;
+    font-size: 6rem;
+    transform: rotate(10deg);
+}
+
+/* Animations */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes gradient-slide {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 300% 50%;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .construction-container {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .construction-icon {
+        font-size: 4rem;
+    }
+    
+    .construction-title {
+        font-size: 1.8rem;
+    }
+    
+    .construction-message {
+        font-size: 1rem;
+    }
+}
+
+/* Ink effect for buttons */
+.construction-button {
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+}
+
+.construction-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4);
+}
+
+.construction-button:active {
+    transform: translateY(1px);
+}
