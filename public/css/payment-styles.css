@@ -4,8 +4,8 @@
 .recharge-button {
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f0ad4e;
+  padding: 0.2rem 1rem;
+  background-color: hsl(209, 100%, 76%);
   color: white;
   border: none;
   border-radius: 0.375rem;
