@@ -275,8 +275,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to calculate and update the cost preview
     function updateCostPreview() {
-        const depth = parseInt(depthInput.value);
-        const breadth = parseInt(breadthInput.value);
+        const depth = parseInt(depthInput.value) || 2;
+        const breadth = parseInt(breadthInput.value) || 4;
         
         // Use the credit configuration from the server
         const baseCredits = window.creditConfig?.baseCredits || 2;
@@ -683,17 +683,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 referencesHTML += `<div class="reference-author"><span class="reference-year">${year}</span></div>`;
             }
             
-            // 只添加期刊信息（如果存在）
+            // 添加标题信息（如果存在）
+            if (title) {
+                referencesHTML += `<div class="reference-title">
+                    ${title}
+                </div>`;
+            }
+            
+            // 只添加期刊信息（如果存在）- 确保期刊信息不包含链接部分
             if (journal) {
+                // 移除可能混入期刊信息的链接文本
+                const cleanJournal = journal.replace(/\[Link\]\(.*?\)/g, '').trim();
                 referencesHTML += `<div class="reference-details">
-                    <span class="reference-journal">${journal}</span>
+                    <span class="reference-journal">${cleanJournal}</span>
                 </div>`;
             }
                         
             if (url) {
                 referencesHTML += `
                     <div class="reference-link-container">
-                        <a href="${url}" class="reference-link" onclick="return openReferenceModal('${url.replace(/'/g, "\\'")}', '${(author || '').replace(/'/g, "\\'")}${year ? ' (' + year + ')' : ''}', event);">
+                        <a href="${url}" class="reference-link" onclick="return openReferenceModal('${url.replace(/'/g, "\\'")}', '${(title || '').replace(/'/g, "\\'")}', event);">
                             <svg xmlns="http://www.w3.org/2000/svg" class="reference-link-icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
                                 <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
@@ -898,6 +907,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
         document.getElementById('results').appendChild(progressSection);
+
+        // Scroll to the progress section with smooth animation
+        progressSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         try {
             // Start research

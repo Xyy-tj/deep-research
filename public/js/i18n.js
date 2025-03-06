@@ -106,6 +106,8 @@ export const translations = {
         breadthRule: 'Breadth cost: 1 credit per breadth level',
         currentCost: 'Current Cost:',
         costFormula: `Expected cost = Base(${window.creditConfig?.baseCredits || 2}) + Depth × ${window.creditConfig?.depthMultiplier || 1} + Breadth × ${window.creditConfig?.breadthMultiplier || 0.5}`,
+        transparentPricing: 'Transparent pricing, no hidden fees',
+        worthTheValue: 'Worth every credit!',
     },
     zh: {
         // Title and introduction
@@ -367,6 +369,8 @@ export const translations = {
         breadthRule: '广度费用: 每级广度1积分',
         currentCost: '当前费用:',
         costFormula: `预期消耗 = 基础(${window.creditConfig?.baseCredits || 2}) + 深度 × ${window.creditConfig?.depthMultiplier || 1} + 广度 × ${window.creditConfig?.breadthMultiplier || 0.5}`,
+        transparentPricing: '透明定价，无隐藏费用',
+        worthTheValue: '物超所值！',
     }
 };
 

@@ -437,7 +437,7 @@ button:active::after {
 .ink-divider {
     height: 1px;
     background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent);
-    margin: 1.5rem 0;
+    margin:     rem 0;
 }
 
 .ink-title {
@@ -575,6 +575,17 @@ button:active::after {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+.reference-title {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0.25rem 0;
+    white-space: normal;
+    word-break: break-word;
+    padding-right: 6rem; /* 为右侧按钮留出空间 */
 }
 
 .reference-details {
