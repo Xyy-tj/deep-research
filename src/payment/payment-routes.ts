@@ -16,7 +16,7 @@ const logger = {
 router.get('/packages', async (req, res) => {
   try {
     const paymentService = await PaymentService.getInstance();
-    const packages = paymentService.getCreditPackages();
+    const packages = await paymentService.getCreditPackages();
     res.json({ packages });
   } catch (error: any) {
     logger.error('Error fetching credit packages:', error);
@@ -47,7 +47,7 @@ router.post('/create-order', async (req, res) => {
     
     // Determine amount and credits based on package or custom amount
     if (packageId) {
-      const creditPackage = paymentService.getCreditPackage(Number(packageId));
+      const creditPackage = await paymentService.getCreditPackage(Number(packageId));
       if (!creditPackage) {
         return res.status(400).json({ error: 'Invalid package ID' });
       }

@@ -1,6 +1,8 @@
 import axios from 'axios';
 import md5 from 'md5';
 import { v4 as uuidv4 } from 'uuid';
+import { CreditPackageService } from '../services/credit-package-service';
+import { SystemSettingsService } from '../services/system-settings-service';
 
 // Payment configuration
 const PAYMENT_CONFIG = {
@@ -15,21 +17,39 @@ const PAYMENT_CONFIG = {
 
 // Credit pricing configuration
 const CREDIT_PRICING = {
-  // Define credit packages
-  packages: [
-    { id: 1, credits: 1, price: 0.1 },   // 10 元 = 100 credits
-    { id: 2, credits: 5, price: 10 },   // 25 元 = 300 credits (16.7% discount)
-    { id: 3, credits: 20, price: 30 },   // 45 元 = 600 credits (25% discount)
-    { id: 4, credits: 50, price: 50 },  // 80 元 = 1200 credits (33.3% discount)
-  ],
-  // Get package by ID
-  getPackage: (id: number) => {
-    return CREDIT_PRICING.packages.find(pkg => pkg.id === id);
-  },
   // Calculate credits for custom amount
-  calculateCredits: (amount: number) => {
-    // Base rate: 10 credits per yuan
-    return Math.floor(amount * 10);
+  calculateCredits: async (amount: number) => {
+    // Get the current exchange rate from system settings
+    const settingsService = await SystemSettingsService.getInstance();
+    const exchangeRate = await settingsService.getCreditExchangeRate();
+    
+    // Calculate credits based on the exchange rate
+    return Math.floor(amount * exchangeRate);
+  },
+  
+  // Get all active packages
+  getPackages: async () => {
+    const service = await CreditPackageService.getInstance();
+    return service.getActivePackages();
+  },
+  
+  // Get package by ID
+  getPackage: async (id: number) => {
+    const service = await CreditPackageService.getInstance();
+    return service.getPackageById(id);
+  },
+  
+  // Get current credit exchange rate
+  getExchangeRate: async () => {
+    const settingsService = await SystemSettingsService.getInstance();
+    return settingsService.getCreditExchangeRate();
+  },
+  
+  // Update credit exchange rate
+  updateExchangeRate: async (rate: number) => {
+    const settingsService = await SystemSettingsService.getInstance();
+    await settingsService.updateSettings({ creditExchangeRate: rate });
+    return rate;
   }
 };
 

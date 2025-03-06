@@ -73,6 +73,28 @@ CREATE TABLE IF NOT EXISTS payment_records (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Credit packages table
+CREATE TABLE IF NOT EXISTS credit_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    credits INTEGER NOT NULL,
+    price REAL NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT 1,
+    display_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- System settings table
+CREATE TABLE IF NOT EXISTS system_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    base_credits INTEGER DEFAULT 2,
+    depth_multiplier REAL DEFAULT 1,
+    breadth_multiplier REAL DEFAULT 0.5,
+    credit_exchange_rate REAL DEFAULT 10,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -82,3 +104,4 @@ CREATE INDEX IF NOT EXISTS idx_payment_records_user_id ON payment_records(user_i
 CREATE INDEX IF NOT EXISTS idx_payment_records_order_id ON payment_records(order_id);
 CREATE INDEX IF NOT EXISTS idx_research_records_user_id ON research_records(user_id);
 CREATE INDEX IF NOT EXISTS idx_research_records_research_id ON research_records(research_id);
+CREATE INDEX IF NOT EXISTS idx_credit_packages_is_active ON credit_packages(is_active);

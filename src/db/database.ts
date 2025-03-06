@@ -128,6 +128,28 @@ export class DB {
                 console.log("Migration: 'research_records' table created.");
                 this.saveDatabase();
             }
+            
+            // Check if credit_packages table exists
+            const creditPackagesCheck = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='credit_packages';");
+            if (!creditPackagesCheck.length) {
+                // Create credit_packages table if it doesn't exist
+                const creditPackagesSchema = `
+                    CREATE TABLE credit_packages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        credits INTEGER NOT NULL,
+                        price REAL NOT NULL,
+                        description TEXT,
+                        is_active BOOLEAN DEFAULT 1,
+                        display_order INTEGER DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE INDEX idx_credit_packages_is_active ON credit_packages(is_active);
+                `;
+                this.db.exec(creditPackagesSchema);
+                console.log("Migration: 'credit_packages' table created.");
+                this.saveDatabase();
+            }
         }
     }
 

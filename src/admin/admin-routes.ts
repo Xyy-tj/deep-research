@@ -6,6 +6,7 @@ import { authenticateJWT, isAdmin } from '../middleware/auth-middleware';
 import { InvitationCodeService } from '../services/invitation-code-service';
 import { SystemSettingsService } from '../services/system-settings-service';
 import { generateRandomCode } from '../utils/string-utils';
+import { CreditPackageService } from '../services/credit-package-service';
 
 const router = express.Router();
 
@@ -180,6 +181,123 @@ router.get('/payments', async (req, res) => {
     }
 });
 
+// Get credit packages
+router.get('/credit-packages', async (req, res) => {
+    try {
+        const packageService = await CreditPackageService.getInstance();
+        const packages = await packageService.getAllPackages();
+        res.json({ packages });
+    } catch (error) {
+        console.error('Error fetching credit packages:', error);
+        res.status(500).json({ error: 'Failed to fetch credit packages' });
+    }
+});
+
+// Create credit package
+router.post('/credit-packages', async (req, res) => {
+    try {
+        const { credits, price, description, isActive, displayOrder } = req.body;
+        
+        if (isNaN(credits) || isNaN(price) || credits <= 0 || price < 0) {
+            return res.status(400).json({ error: 'Credits and price must be valid numbers' });
+        }
+
+        const packageService = await CreditPackageService.getInstance();
+        const newPackage = await packageService.createPackage({
+            credits: Number(credits),
+            price: Number(price),
+            description: description || '',
+            is_active: isActive !== false,
+            display_order: Number(displayOrder) || 0
+        });
+
+        res.json({ success: true, package: newPackage });
+    } catch (error) {
+        console.error('Error creating credit package:', error);
+        res.status(500).json({ error: 'Failed to create credit package' });
+    }
+});
+
+// Update credit package
+router.put('/credit-packages/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { credits, price, description, isActive, displayOrder } = req.body;
+        
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid package ID' });
+        }
+
+        const packageService = await CreditPackageService.getInstance();
+        
+        // Check if package exists
+        const existingPackage = await packageService.getPackageById(id);
+        if (!existingPackage) {
+            return res.status(404).json({ error: 'Credit package not found' });
+        }
+
+        // Update package
+        const updateData: any = {};
+        
+        if (credits !== undefined && !isNaN(credits)) {
+            updateData.credits = Number(credits);
+        }
+        
+        if (price !== undefined && !isNaN(price)) {
+            updateData.price = Number(price);
+        }
+        
+        if (description !== undefined) {
+            updateData.description = description;
+        }
+        
+        if (isActive !== undefined) {
+            updateData.is_active = isActive === true;
+        }
+        
+        if (displayOrder !== undefined && !isNaN(displayOrder)) {
+            updateData.display_order = Number(displayOrder);
+        }
+
+        await packageService.updatePackage(id, updateData);
+        
+        // Get updated package
+        const updatedPackage = await packageService.getPackageById(id);
+        
+        res.json({ success: true, package: updatedPackage });
+    } catch (error) {
+        console.error('Error updating credit package:', error);
+        res.status(500).json({ error: 'Failed to update credit package' });
+    }
+});
+
+// Delete credit package
+router.delete('/credit-packages/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid package ID' });
+        }
+
+        const packageService = await CreditPackageService.getInstance();
+        
+        // Check if package exists
+        const existingPackage = await packageService.getPackageById(id);
+        if (!existingPackage) {
+            return res.status(404).json({ error: 'Credit package not found' });
+        }
+
+        // Delete package
+        await packageService.deletePackage(id);
+        
+        res.json({ success: true, id });
+    } catch (error) {
+        console.error('Error deleting credit package:', error);
+        res.status(500).json({ error: 'Failed to delete credit package' });
+    }
+});
+
 // Get system settings
 router.get('/system/settings', async (req, res) => {
     try {
@@ -195,7 +313,7 @@ router.get('/system/settings', async (req, res) => {
 // Update system settings
 router.post('/system/settings', async (req, res) => {
     try {
-        const { baseCredits, depthMultiplier, breadthMultiplier } = req.body;
+        const { baseCredits, depthMultiplier, breadthMultiplier, creditExchangeRate } = req.body;
         
         if (isNaN(baseCredits) || isNaN(depthMultiplier) || isNaN(breadthMultiplier)) {
             return res.status(400).json({ error: 'All settings must be valid numbers' });
@@ -205,13 +323,45 @@ router.post('/system/settings', async (req, res) => {
         const settings = await systemSettingsService.updateSettings({
             baseCredits,
             depthMultiplier,
-            breadthMultiplier
+            breadthMultiplier,
+            creditExchangeRate: creditExchangeRate !== undefined ? Number(creditExchangeRate) : undefined
         });
         
         res.json({ success: true, settings });
     } catch (error) {
         console.error('Error updating system settings:', error);
         res.status(500).json({ error: 'Failed to update system settings' });
+    }
+});
+
+// Get credit exchange rate
+router.get('/system/exchange-rate', async (req, res) => {
+    try {
+        const paymentService = await PaymentService.getInstance();
+        const exchangeRate = await paymentService.getCreditExchangeRate();
+        res.json({ exchangeRate });
+    } catch (error) {
+        console.error('Error fetching credit exchange rate:', error);
+        res.status(500).json({ error: 'Failed to fetch credit exchange rate' });
+    }
+});
+
+// Update credit exchange rate
+router.post('/system/exchange-rate', async (req, res) => {
+    try {
+        const { rate } = req.body;
+        
+        if (isNaN(rate) || rate <= 0) {
+            return res.status(400).json({ error: 'Exchange rate must be a positive number' });
+        }
+
+        const paymentService = await PaymentService.getInstance();
+        const newRate = await paymentService.updateCreditExchangeRate(Number(rate));
+        
+        res.json({ success: true, exchangeRate: newRate });
+    } catch (error) {
+        console.error('Error updating credit exchange rate:', error);
+        res.status(500).json({ error: 'Failed to update credit exchange rate' });
     }
 });
 

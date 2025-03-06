@@ -1,6 +1,8 @@
 import { DB } from '../db/database';
 import { CreditManager } from '../user/credit-manager';
 import { generateOrderId, CREDIT_PRICING } from '../utils/payment-utils';
+import { CreditPackageService, CreditPackage } from './credit-package-service';
+import { SystemSettingsService } from '../services/system-settings-service';
 
 // Payment record interface
 export interface PaymentRecord {
@@ -147,22 +149,42 @@ export class PaymentService {
   /**
    * Calculate credits for a given amount
    */
-  calculateCreditsForAmount(amount: number): number {
-    return CREDIT_PRICING.calculateCredits(amount);
+  async calculateCreditsForAmount(amount: number): Promise<number> {
+    return await CREDIT_PRICING.calculateCredits(amount);
   }
 
   /**
    * Get credit packages
    */
-  getCreditPackages() {
-    return CREDIT_PRICING.packages;
+  async getCreditPackages(): Promise<CreditPackage[]> {
+    const packageService = await CreditPackageService.getInstance();
+    return packageService.getActivePackages();
   }
 
   /**
    * Get credit package by ID
    */
-  getCreditPackage(packageId: number) {
-    return CREDIT_PRICING.getPackage(packageId);
+  async getCreditPackage(packageId: number): Promise<CreditPackage | undefined> {
+    const packageService = await CreditPackageService.getInstance();
+    return packageService.getPackageById(packageId);
+  }
+
+  /**
+   * Get credit exchange rate
+   */
+  async getCreditExchangeRate(): Promise<number> {
+    return await CREDIT_PRICING.getExchangeRate();
+  }
+
+  /**
+   * Update credit exchange rate
+   * @param rate New exchange rate (credits per yuan)
+   */
+  async updateCreditExchangeRate(rate: number): Promise<number> {
+    if (rate <= 0) {
+      throw new Error('Exchange rate must be greater than zero');
+    }
+    return await CREDIT_PRICING.updateExchangeRate(rate);
   }
 
   /**

@@ -218,6 +218,7 @@
                 <div class="admin-tab active" data-tab="users">Users</div>
                 <div class="admin-tab" data-tab="invitations">Invitation Codes</div>
                 <div class="admin-tab" data-tab="payments">Payments</div>
+                <div class="admin-tab" data-tab="credit-packages">Credit Packages</div>
                 <div class="admin-tab" data-tab="system">System</div>
             </div>
             
@@ -305,6 +306,33 @@
                     </table>
                 </div>
                 
+                <!-- Credit Packages Tab -->
+                <div class="tab-content" id="credit-packages-tab">
+                    <h3>Credit Package Management</h3>
+                    <div class="action-bar">
+                        <button id="addPackageBtn" class="btn">Add New Package</button>
+                    </div>
+                    
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Credits</th>
+                                <th>Price ($)</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Display Order</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="packagesTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading packages...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
                 <!-- System Tab -->
                 <div class="tab-content" id="system-tab">
                     <h3>System Settings</h3>
@@ -321,6 +349,11 @@
                     <div class="form-group">
                         <label for="breadthMultiplierInput">Breadth Multiplier:</label>
                         <input type="number" id="breadthMultiplierInput" class="form-control" min="0.1" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="creditExchangeRateInput">Credit Exchange Rate (credits per yuan):</label>
+                        <input type="number" id="creditExchangeRateInput" class="form-control" min="0.1" step="0.1">
                     </div>
                     
                     <button id="saveSystemSettingsBtn" class="btn">Save Settings</button>
@@ -362,6 +395,47 @@
             
             <input type="hidden" id="editUserId">
             <button id="saveCreditsBtn" class="btn">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Package Modal -->
+    <div id="packageModal" class="modal">
+        <div class="modal-content">
+            <span id="closePackageModal" class="close-modal">&times;</span>
+            <h3 id="packageModalTitle">Add Credit Package</h3>
+            
+            <div id="packageAlert" class="alert alert-danger" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="packageCredits">Credits:</label>
+                <input type="number" id="packageCredits" class="form-control" min="1" step="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="packagePrice">Price ($):</label>
+                <input type="number" id="packagePrice" class="form-control" min="0.01" step="0.01">
+            </div>
+            
+            <div class="form-group">
+                <label for="packageDescription">Description:</label>
+                <input type="text" id="packageDescription" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="packageActive">Status:</label>
+                <select id="packageActive" class="form-control">
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="packageOrder">Display Order:</label>
+                <input type="number" id="packageOrder" class="form-control" min="0" step="1">
+            </div>
+            
+            <input type="hidden" id="packageId">
+            <button id="savePackageBtn" class="btn">Save Package</button>
         </div>
     </div>
 

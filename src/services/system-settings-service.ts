@@ -4,6 +4,7 @@ interface SystemSettings {
     baseCredits: number;
     depthMultiplier: number;
     breadthMultiplier: number;
+    creditExchangeRate: number;
 }
 
 export class SystemSettingsService {
@@ -39,6 +40,7 @@ export class SystemSettingsService {
             const baseCredits = await this.getSetting('baseCredits');
             const depthMultiplier = await this.getSetting('depthMultiplier');
             const breadthMultiplier = await this.getSetting('breadthMultiplier');
+            const creditExchangeRate = await this.getSetting('creditExchangeRate');
 
             // Insert default settings if they don't exist
             if (baseCredits === null) {
@@ -49,6 +51,9 @@ export class SystemSettingsService {
             }
             if (breadthMultiplier === null) {
                 await this.setSetting('breadthMultiplier', '0.5');
+            }
+            if (creditExchangeRate === null) {
+                await this.setSetting('creditExchangeRate', '10');
             }
         } catch (error) {
             console.error('Error initializing system settings:', error);
@@ -96,6 +101,25 @@ export class SystemSettingsService {
     }
 
     /**
+     * Get credit exchange rate
+     * @returns Credit exchange rate (credits per yuan)
+     */
+    public async getCreditExchangeRate(): Promise<number> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        try {
+            // Make sure settings are initialized
+            await this.initSettings();
+
+            const exchangeRate = await this.getSetting('creditExchangeRate');
+            return parseFloat(exchangeRate || '10');
+        } catch (error) {
+            console.error('Error getting credit exchange rate:', error);
+            return 10; // Default value if error
+        }
+    }
+
+    /**
      * Get all system settings
      * @returns SystemSettings object with all settings
      */
@@ -110,11 +134,13 @@ export class SystemSettingsService {
             const baseCredits = await this.getSetting('baseCredits');
             const depthMultiplier = await this.getSetting('depthMultiplier');
             const breadthMultiplier = await this.getSetting('breadthMultiplier');
+            const creditExchangeRate = await this.getSetting('creditExchangeRate');
 
             return {
                 baseCredits: parseFloat(baseCredits || '2'),
                 depthMultiplier: parseFloat(depthMultiplier || '1'),
-                breadthMultiplier: parseFloat(breadthMultiplier || '0.5')
+                breadthMultiplier: parseFloat(breadthMultiplier || '0.5'),
+                creditExchangeRate: parseFloat(creditExchangeRate || '10')
             };
         } catch (error) {
             console.error('Error getting system settings:', error);
@@ -143,6 +169,9 @@ export class SystemSettingsService {
             }
             if (settings.breadthMultiplier !== undefined) {
                 await this.setSetting('breadthMultiplier', settings.breadthMultiplier.toString());
+            }
+            if (settings.creditExchangeRate !== undefined) {
+                await this.setSetting('creditExchangeRate', settings.creditExchangeRate.toString());
             }
 
             // Return updated settings

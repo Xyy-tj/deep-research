@@ -8,10 +8,12 @@ const adminState = {
     users: [],
     invitationCodes: [],
     payments: [],
+    creditPackages: [],
     systemSettings: {
         baseCredits: 2,
         depthMultiplier: 1,
-        breadthMultiplier: 0.5
+        breadthMultiplier: 0.5,
+        creditExchangeRate: 10
     }
 };
 
@@ -78,6 +80,7 @@ async function initAdminPanel() {
         await loadInvitationCodes();
         await loadPayments();
         await loadSystemSettings();
+        await loadCreditPackages();
 
         // Add event listeners
         addEventListeners();
@@ -140,11 +143,24 @@ function addEventListeners() {
 
     // Close modal when clicking outside
     window.addEventListener('click', event => {
-        const modal = document.getElementById('editCreditsModal');
-        if (event.target === modal) {
-            modal.style.display = 'none';
+        const editCreditsModal = document.getElementById('editCreditsModal');
+        const packageModal = document.getElementById('packageModal');
+        
+        if (event.target === editCreditsModal) {
+            editCreditsModal.style.display = 'none';
+        }
+        
+        if (event.target === packageModal) {
+            packageModal.style.display = 'none';
         }
     });
+
+    // Credit package management
+    document.getElementById('addPackageBtn').addEventListener('click', () => openPackageModal());
+    document.getElementById('closePackageModal').addEventListener('click', () => {
+        document.getElementById('packageModal').style.display = 'none';
+    });
+    document.getElementById('savePackageBtn').addEventListener('click', savePackage);
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -516,6 +532,7 @@ async function loadSystemSettings() {
         document.getElementById('baseCreditsInput').value = adminState.systemSettings.baseCredits;
         document.getElementById('depthMultiplierInput').value = adminState.systemSettings.depthMultiplier;
         document.getElementById('breadthMultiplierInput').value = adminState.systemSettings.breadthMultiplier;
+        document.getElementById('creditExchangeRateInput').value = adminState.systemSettings.creditExchangeRate || 10;
     } catch (error) {
         console.error('Error loading system settings:', error);
         showError('Failed to load system settings');
@@ -528,8 +545,9 @@ async function saveSystemSettings() {
         const baseCredits = parseFloat(document.getElementById('baseCreditsInput').value);
         const depthMultiplier = parseFloat(document.getElementById('depthMultiplierInput').value);
         const breadthMultiplier = parseFloat(document.getElementById('breadthMultiplierInput').value);
+        const creditExchangeRate = parseFloat(document.getElementById('creditExchangeRateInput').value);
 
-        if (isNaN(baseCredits) || isNaN(depthMultiplier) || isNaN(breadthMultiplier)) {
+        if (isNaN(baseCredits) || isNaN(depthMultiplier) || isNaN(breadthMultiplier) || isNaN(creditExchangeRate)) {
             showError('Please enter valid numbers for all fields');
             return;
         }
@@ -545,7 +563,8 @@ async function saveSystemSettings() {
             body: JSON.stringify({
                 baseCredits,
                 depthMultiplier,
-                breadthMultiplier
+                breadthMultiplier,
+                creditExchangeRate
             })
         });
 
@@ -565,6 +584,218 @@ async function saveSystemSettings() {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Settings';
     }
+}
+
+// Load credit packages
+async function loadCreditPackages() {
+    try {
+        const response = await fetch('/api/admin/credit-packages', {
+            headers: await getAuthHeaders(),
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load credit packages');
+        }
+
+        const data = await response.json();
+        adminState.creditPackages = data.packages;
+        renderCreditPackages(adminState.creditPackages);
+    } catch (error) {
+        console.error('Error loading credit packages:', error);
+        document.getElementById('packagesTableBody').innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-red-500">
+                    Failed to load credit packages. ${error.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Render credit packages table
+function renderCreditPackages(packages) {
+    const tableBody = document.getElementById('packagesTableBody');
+    
+    if (!packages || packages.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center">No credit packages found</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = packages.map(pkg => `
+        <tr>
+            <td>${pkg.id}</td>
+            <td>${pkg.credits}</td>
+            <td>${pkg.price.toFixed(2)}</td>
+            <td>${pkg.description || ''}</td>
+            <td>${pkg.is_active ? '<span class="status-badge status-available">Active</span>' : '<span class="status-badge status-used">Inactive</span>'}</td>
+            <td>${pkg.display_order}</td>
+            <td>
+                <button class="btn btn-small" onclick="window.editPackage(${pkg.id})">Edit</button>
+                <button class="btn btn-small" onclick="window.deletePackage(${pkg.id})">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Open package modal for adding or editing
+function openPackageModal(packageId = null) {
+    const modal = document.getElementById('packageModal');
+    const modalTitle = document.getElementById('packageModalTitle');
+    const packageIdInput = document.getElementById('packageId');
+    const creditsInput = document.getElementById('packageCredits');
+    const priceInput = document.getElementById('packagePrice');
+    const descriptionInput = document.getElementById('packageDescription');
+    const activeInput = document.getElementById('packageActive');
+    const orderInput = document.getElementById('packageOrder');
+    
+    // Reset form
+    document.getElementById('packageAlert').style.display = 'none';
+    
+    if (packageId) {
+        // Edit mode
+        const pkg = adminState.creditPackages.find(p => p.id === packageId);
+        if (!pkg) {
+            showError('Package not found');
+            return;
+        }
+        
+        modalTitle.textContent = 'Edit Credit Package';
+        packageIdInput.value = pkg.id;
+        creditsInput.value = pkg.credits;
+        priceInput.value = pkg.price;
+        descriptionInput.value = pkg.description || '';
+        activeInput.value = pkg.is_active ? '1' : '0';
+        orderInput.value = pkg.display_order;
+    } else {
+        // Add mode
+        modalTitle.textContent = 'Add Credit Package';
+        packageIdInput.value = '';
+        creditsInput.value = '';
+        priceInput.value = '';
+        descriptionInput.value = '';
+        activeInput.value = '1';
+        orderInput.value = '0';
+    }
+    
+    modal.style.display = 'block';
+}
+
+// Save package
+async function savePackage() {
+    try {
+        const packageId = document.getElementById('packageId').value;
+        const credits = parseInt(document.getElementById('packageCredits').value);
+        const price = parseFloat(document.getElementById('packagePrice').value);
+        const description = document.getElementById('packageDescription').value;
+        const isActive = document.getElementById('packageActive').value === '1';
+        const displayOrder = parseInt(document.getElementById('packageOrder').value);
+        
+        // Validate inputs
+        if (isNaN(credits) || credits <= 0) {
+            showPackageAlert('Credits must be a positive number', 'alert-danger');
+            return;
+        }
+        
+        if (isNaN(price) || price <= 0) {
+            showPackageAlert('Price must be a positive number', 'alert-danger');
+            return;
+        }
+        
+        const packageData = {
+            credits,
+            price,
+            description,
+            isActive,
+            displayOrder: isNaN(displayOrder) ? 0 : displayOrder
+        };
+        
+        let url = '/api/admin/credit-packages';
+        let method = 'POST';
+        
+        if (packageId) {
+            // Update existing package
+            url = `/api/admin/credit-packages/${packageId}`;
+            method = 'PUT';
+        }
+        
+        const response = await fetch(url, {
+            method,
+            headers: await getAuthHeaders(),
+            credentials: 'include',
+            body: JSON.stringify(packageData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to save package');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reload packages
+            await loadCreditPackages();
+            
+            // Close modal
+            document.getElementById('packageModal').style.display = 'none';
+            
+            // Show success message
+            showSuccess(packageId ? 'Package updated successfully' : 'Package created successfully');
+        } else {
+            throw new Error(data.error || 'Failed to save package');
+        }
+    } catch (error) {
+        console.error('Error saving package:', error);
+        showPackageAlert(error.message, 'alert-danger');
+    }
+}
+
+// Delete package
+async function deletePackage(packageId) {
+    if (!confirm('Are you sure you want to delete this package?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/credit-packages/${packageId}`, {
+            method: 'DELETE',
+            headers: await getAuthHeaders(),
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete package');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reload packages
+            await loadCreditPackages();
+            
+            // Show success message
+            showSuccess('Package deleted successfully');
+        } else {
+            throw new Error(data.error || 'Failed to delete package');
+        }
+    } catch (error) {
+        console.error('Error deleting package:', error);
+        showError(error.message);
+    }
+}
+
+// Show alert in package modal
+function showPackageAlert(message, type) {
+    const alert = document.getElementById('packageAlert');
+    alert.textContent = message;
+    alert.className = `alert ${type}`;
+    alert.style.display = 'block';
 }
 
 // Format date
@@ -589,3 +820,7 @@ function showSuccess(message) {
 
 // Document ready
 document.addEventListener('DOMContentLoaded', initAdminPanel);
+
+// Expose functions to window for onclick handlers
+window.editPackage = openPackageModal;
+window.deletePackage = deletePackage;

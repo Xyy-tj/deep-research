@@ -13,6 +13,7 @@ import cookieParser from 'cookie-parser';
 import { DB } from './db/database';
 import { setupSwagger } from './swagger';
 import { ResearchManager } from './research/research-manager';
+import { PaymentService } from './services/payment-service';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -92,6 +93,18 @@ app.use('/api/payment', authenticateToken, paymentRoutes);
 // 注意：admin-routes.ts中已经包含了authenticateJWT和isAdmin中间件
 app.use('/api/admin', adminRoutes);
 
+// Get credit exchange rate endpoint (public)
+app.get('/api/system/exchange-rate', async (req, res) => {
+    try {
+        const paymentService = await PaymentService.getInstance();
+        const exchangeRate = await paymentService.getCreditExchangeRate();
+        res.json({ exchangeRate });
+    } catch (error) {
+        logger.error('Error fetching credit exchange rate:', error);
+        res.status(500).json({ error: 'Failed to fetch credit exchange rate' });
+    }
+});
+
 // Get user balance endpoint
 app.get('/api/user/balance', authenticateToken, async (req, res) => {
     try {
@@ -133,6 +146,18 @@ app.get('/api/config/credits', (req, res) => {
     } catch (error) {
         logger.error('Error fetching credit configuration:', error);
         res.status(500).json({ error: 'Failed to fetch credit configuration' });
+    }
+});
+
+// Get credit packages
+app.get('/api/payment/packages', async (req, res) => {
+    try {
+        const paymentService = await PaymentService.getInstance();
+        const packages = await paymentService.getCreditPackages();
+        res.json({ packages });
+    } catch (error) {
+        logger.error('Error fetching credit packages:', error);
+        res.status(500).json({ error: 'Failed to fetch credit packages' });
     }
 });
 

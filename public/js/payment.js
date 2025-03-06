@@ -10,7 +10,8 @@ const paymentState = {
   customAmount: null,
   paymentMethod: 'wxpay',
   currentOrder: null,
-  paymentInterval: null
+  paymentInterval: null,
+  exchangeRate: 10, // 默认汇率，将从服务器获取
 };
 
 // Initialize payment functionality
@@ -24,6 +25,10 @@ async function initPayment() {
     });
     const data = await response.json();
     paymentState.packages = data.packages;
+    
+    // 获取当前汇率
+    await fetchExchangeRate();
+    
     renderCreditPackages();
   } catch (error) {
     console.error('Failed to fetch credit packages:', error);
@@ -37,6 +42,28 @@ async function initPayment() {
 
   // Initialize recharge modal
   initRechargeModal();
+}
+
+// 获取当前汇率
+async function fetchExchangeRate() {
+  try {
+    const response = await fetch('/api/admin/system/exchange-rate', {
+      headers: {
+        'Authorization': `Bearer ${await Auth.getInstance().getTokenAsync()}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.exchangeRate && !isNaN(data.exchangeRate)) {
+        paymentState.exchangeRate = data.exchangeRate;
+        console.log('Current exchange rate:', paymentState.exchangeRate);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch exchange rate:', error);
+    // 使用默认汇率
+  }
 }
 
 // Render credit packages
@@ -126,8 +153,8 @@ function updatePaymentSummary() {
     }
   } else if (paymentState.customAmount) {
     amount = paymentState.customAmount;
-    // Estimate credits (10 credits per yuan)
-    credits = Math.floor(amount * 10);
+    // 使用当前汇率计算积分，而不是硬编码的10
+    credits = Math.floor(amount * paymentState.exchangeRate);
   }
   
   if (amount > 0) {
@@ -245,6 +272,8 @@ async function handlePaymentSubmit(event) {
       paymentData.packageId = paymentState.selectedPackage;
     } else if (paymentState.customAmount) {
       paymentData.customAmount = paymentState.customAmount;
+      // 添加当前汇率信息，确保服务器使用正确的汇率
+      paymentData.exchangeRate = paymentState.exchangeRate;
     } else {
       throw new Error('Please select a package or enter a custom amount');
     }
