@@ -1,14 +1,16 @@
 import { CreditConfig, User, UsageRecord } from './types';
 import { DB } from '../db/database';
+import { SystemSettingsService } from '../services/system-settings-service';
 
 export class CreditManager {
   private static instance: CreditManager;
   private db?: DB;
+  private systemSettingsService?: SystemSettingsService;
   
   private config: CreditConfig = {
-    baseCredits: process.env.CREDITS_BASE_PRICE ? Number(process.env.CREDITS_BASE_PRICE) : 2,
-    depthMultiplier: process.env.CREDITS_DEPTH_MULTIPLIER ? Number(process.env.CREDITS_DEPTH_MULTIPLIER) : 1,
-    breadthMultiplier: process.env.CREDITS_BREADTH_MULTIPLIER ? Number(process.env.CREDITS_BREADTH_MULTIPLIER) : 0.5,
+    baseCredits: 2,
+    depthMultiplier: 1,
+    breadthMultiplier: 0.5,
   };
 
   private constructor() {}
@@ -17,8 +19,33 @@ export class CreditManager {
     if (!CreditManager.instance) {
       CreditManager.instance = new CreditManager();
       CreditManager.instance.db = await DB.getInstance();
+      CreditManager.instance.systemSettingsService = await SystemSettingsService.getInstance();
+      await CreditManager.instance.loadSettingsFromDatabase();
     }
     return CreditManager.instance;
+  }
+
+  /**
+   * Load credit configuration settings from the database
+   */
+  private async loadSettingsFromDatabase(): Promise<void> {
+    try {
+      if (!this.systemSettingsService) {
+        throw new Error('SystemSettingsService not initialized');
+      }
+      
+      const settings = await this.systemSettingsService.getSettings();
+      this.config = {
+        baseCredits: settings.baseCredits,
+        depthMultiplier: settings.depthMultiplier,
+        breadthMultiplier: settings.breadthMultiplier
+      };
+      
+      console.log('[CreditManager] Loaded settings from database:', this.config);
+    } catch (error) {
+      console.error('[CreditManager] Error loading settings from database:', error);
+      // Keep default values if there's an error
+    }
   }
 
   calculateQueryCost(depth: number, breadth: number): number {
@@ -155,7 +182,19 @@ export class CreditManager {
     );
   }
 
+  /**
+   * Update the credit configuration
+   * This method is primarily used for testing or manual overrides
+   */
   updateConfig(config: Partial<CreditConfig>): void {
     this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * Reload settings from the database
+   * This can be called when settings are updated in the admin panel
+   */
+  async reloadSettings(): Promise<void> {
+    await this.loadSettingsFromDatabase();
   }
 }

@@ -292,14 +292,14 @@
                             <div class="ink-divider"></div>
 
                             <!-- Billing Information Section -->
-                            <div class="p-4 gradient-billing-bg rounded-lg border border-gradient-start-light shadow-sm hover:shadow-md transition-all duration-300">
+                            <div class="p-4 bg-white/80 backdrop-blur-sm rounded-lg border border-primary-200 shadow-sm hover:shadow-md transition-all duration-300 mb-4">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center">
-                                        <div class="gradient-bg text-white p-2 rounded-lg mr-3">
+                                        <div class="bg-primary-600 text-white p-2 rounded-lg mr-3">
                                             <i class="fas fa-coins text-yellow-300"></i>
                                         </div>
                                         <div>
-                                            <h3 class="text-sm font-semibold text-gray-800" data-i18n="billingRules">Billing Rules</h3>
+                                            <h3 class="text-sm font-semibold text-gray-800" data-i18n="billingRules">Billing Details</h3>
                                             <p class="text-xs text-gray-600">
                                                 <i class="fas fa-shield-alt text-green-600 mr-1"></i>
                                                 <span data-i18n="transparentPricing">Transparent pricing, no hidden fees</span>
@@ -307,7 +307,7 @@
                                         </div>
                                     </div>
                                     <div class="flex flex-col items-end">
-                                        <div class="flex items-center bg-white px-4 py-2 rounded-lg border border-yellow-300 shadow-sm">
+                                        <div class="flex items-center bg-white px-4 py-2 rounded-lg border border-primary-200 shadow-sm">
                                             <i class="fas fa-coins text-yellow-500 mr-2"></i>
                                             <span id="costPreview" class="font-bold text-xl text-primary-700 transition-all duration-300">5</span>
                                             <span class="ml-1 text-sm text-gray-700" data-i18n="credits">credits</span>
@@ -319,29 +319,40 @@
                                     </div>
                                 </div>
                                 
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                                    <div class="bg-white p-2 rounded border border-gray-200 text-xs flex items-center">
-                                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                                            <span class="text-primary-700 font-bold">1</span>
-                                        </div>
-                                        <span data-i18n="baseCreditsRule">Base cost: 2 credits per research</span>
-                                    </div>
-                                    <div class="bg-white p-2 rounded border border-gray-200 text-xs flex items-center">
-                                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                                            <span class="text-primary-700 font-bold">2</span>
-                                        </div>
-                                        <span data-i18n="depthRule">Depth cost: 1 credit per depth level</span>
-                                    </div>
-                                    <div class="bg-white p-2 rounded border border-gray-200 text-xs flex items-center">
-                                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                                            <span class="text-primary-700 font-bold">3</span>
-                                        </div>
-                                        <span data-i18n="breadthRule">Breadth cost: 0.5 credits per breadth level</span>
-                                    </div>
+                                <!-- Billing Details Toggle Button -->
+                                <div class="mb-2">
+                                    <button id="showBillingInfo" class="text-xs flex items-center text-primary-600 hover:text-primary-800 transition-all duration-300">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        <span data-i18n="showBillingRules">Show billing details</span>
+                                    </button>
                                 </div>
                                 
-                                <div class="text-center bg-white p-2 rounded border border-gray-200 text-xs font-mono">
-                                    <span data-i18n="costFormula">Expected cost = Base(2) + Depth × 1 + Breadth × 0.5</span>
+                                <!-- Detailed Billing Rules (Hidden by default) -->
+                                <div id="billingInfoSection" class="hidden">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                                        <div class="bg-white/90 p-2 rounded border border-primary-100 text-xs flex items-center">
+                                            <div class="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mr-2">
+                                                <span class="text-primary-700 font-bold">1</span>
+                                            </div>
+                                            <span data-i18n="baseCreditsRule">Base cost: 2 credits per research</span>
+                                        </div>
+                                        <div class="bg-white/90 p-2 rounded border border-primary-100 text-xs flex items-center">
+                                            <div class="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mr-2">
+                                                <span class="text-primary-700 font-bold">2</span>
+                                            </div>
+                                            <span data-i18n="depthRule">Depth cost: 1 credit per depth level</span>
+                                        </div>
+                                        <div class="bg-white/90 p-2 rounded border border-primary-100 text-xs flex items-center">
+                                            <div class="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mr-2">
+                                                <span class="text-primary-700 font-bold">3</span>
+                                            </div>
+                                            <span data-i18n="breadthRule">Breadth cost: 0.5 credits per breadth level</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-center bg-white/90 p-2 rounded border border-primary-100 text-xs font-mono">
+                                        <span data-i18n="costFormula">Expected cost = Base(2) + Depth × 1 + Breadth × 0.5</span>
+                                    </div>
                                 </div>
                             </div>
 

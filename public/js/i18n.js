@@ -100,7 +100,7 @@ export const translations = {
         learnMore: 'Learn More',
         
         // Billing related translations
-        billingRules: 'Billing Rules',
+        billingRules: 'Billing Details',
         baseCreditsRule: 'Base cost: 2 credits per research',
         depthRule: 'Depth cost: 0.5 credits per depth level',
         breadthRule: 'Breadth cost: 1 credit per breadth level',
@@ -108,6 +108,8 @@ export const translations = {
         costFormula: `Expected cost = Base(${window.creditConfig?.baseCredits || 2}) + Depth × ${window.creditConfig?.depthMultiplier || 1} + Breadth × ${window.creditConfig?.breadthMultiplier || 0.5}`,
         transparentPricing: 'Transparent pricing, no hidden fees',
         worthTheValue: 'Worth every credit!',
+        showBillingRules: 'Show billing details',
+        hideBillingRules: 'Hide billing details',
         
         welcomeDescription: 'Use AI to conduct comprehensive research on any topic. Our system combines academic sources with web content to provide you with the most thorough research results.',
         // New Academic Features Section
@@ -364,6 +366,7 @@ export const translations = {
         depthLevel3: '深度',
 
         welcomeDescription: '让AI帮助您进行深入的研究，发现新的见解，探索学术资源，并生成带有规范引用的综合报告。',
+
         aboutDescription: '深度报告助手是一款先进的AI驱动研究工具，旨在帮助您深入探索各种主题。我们的平台结合了最先进的语言模型和专业的研究方法，为任何主题提供全面的见解。',
         keyFeatures: '主要特点',
         featureAI: 'AI驱动研究',
@@ -393,13 +396,19 @@ export const translations = {
         breadthExplanation: '控制研究范围的广度。高值探索多种来源和观点。',
         depthExplanation: '控制研究深度的深度。高值探索更多的详细信息和见解。',
         
+        // New Academic Features Section
+        academicFeatures: '学术研究功能',
+        googleScholar: 'Google Scholar集成',
+        googleScholarDesc: '访问Google Scholar的学术论文和研究出版物，以学术资源丰富您的研究。',
+        citations: '规范学术引用',
+        citationsDesc: '自动为所有引用的资源生成APA、MLA等学术风格的格式化引用。',
         multiLingual: '多语言支持',
         multiLingualDesc: '将非英语查询翻译成英语，以访问更全面的学术资源，同时保留原始语言结果。',
         academicTip: '专业研究提示',
         academicTipDesc: '对于学术研究，增加"深度"参数可以更彻底地探索学术资源，并使系统能够更详细地分析复杂的学术论文。',
         
         // Billing related translations
-        billingRules: '计费规则',
+        billingRules: '计费详情',
         baseCreditsRule: '基础费用: 每次研究2积分',
         depthRule: '深度费用: 每级深度0.5积分',
         breadthRule: '广度费用: 每级广度1积分',
@@ -407,6 +416,20 @@ export const translations = {
         costFormula: `预期消耗 = 基础(${window.creditConfig?.baseCredits || 2}) + 深度 × ${window.creditConfig?.depthMultiplier || 1} + 广度 × ${window.creditConfig?.breadthMultiplier || 0.5}`,
         transparentPricing: '透明定价，无隐藏费用',
         worthTheValue: '物超所值！',
+        showBillingRules: '显示计费详情',
+        hideBillingRules: '隐藏计费详情',
+        
+        // Call to Action Section
+        startResearchingNow: '立即开始研究',
+        startResearchingDesc: '在AI的协助下开始您的深入研究之旅。发现新见解，探索学术资源，并生成带有规范引用的综合报告。',
+        academicSources: '学术资源',
+        properCitations: '规范引用',
+        multiLanguage: '多语言',
+        getStarted: '开始使用',
+        
+        // FAQ Section
+        faq: '常见问题',
+        faq1: 'AI研究的准确性如何？',
         faq1Answer: '我们的AI研究系统结合了Google Scholar的学术资源和网络内容，提供全面准确的结果。所有资源都有引用，允许您验证信息。系统设计为在复杂主题上呈现多种视角。',
         faq2: '我可以进行哪些类型的研究？',
         faq2Answer: '您可以对几乎任何主题进行研究，从科学、历史和文学等学术主题到商业主题、时事和技术主题。系统灵活多变，能够适应您的特定研究需求。',

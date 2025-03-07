@@ -150,4 +150,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+    
+    // Handle show/hide billing information button
+    const billingInfoToggle = document.getElementById('toggleBillingInfo');
+    if (billingInfoToggle) {
+        billingInfoToggle.addEventListener('click', () => {
+            const billingInfoSection = document.getElementById('billingInfoSection');
+            if (billingInfoSection) {
+                billingInfoSection.classList.toggle('hidden');
+                if (billingInfoSection.classList.contains('hidden')) {
+                    billingInfoToggle.textContent = t('showBillingInfo');
+                } else {
+                    billingInfoToggle.textContent = t('hideBillingInfo');
+                }
+            }
+        });
+    }
 });

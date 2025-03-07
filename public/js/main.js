@@ -304,6 +304,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize cost preview on page load
     updateCostPreview();
 
+    // Handle billing information toggle
+    const showBillingInfoBtn = document.getElementById('showBillingInfo');
+    const billingInfoSection = document.getElementById('billingInfoSection');
+    
+    if (showBillingInfoBtn && billingInfoSection) {
+        showBillingInfoBtn.addEventListener('click', function() {
+            billingInfoSection.classList.toggle('hidden');
+            if (billingInfoSection.classList.contains('hidden')) {
+                showBillingInfoBtn.innerHTML = '<i class="fas fa-info-circle mr-1"></i><span data-i18n="showBillingRules">' + t('showBillingRules') + '</span>';
+            } else {
+                showBillingInfoBtn.innerHTML = '<i class="fas fa-times-circle mr-1"></i><span data-i18n="hideBillingRules">' + t('hideBillingRules') + '</span>';
+            }
+        });
+    }
+
     // Handle answer submission
     submitAnswer.addEventListener('click', async (e) => {
         e.preventDefault();
