@@ -683,12 +683,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 referencesHTML += `<div class="reference-author"><span class="reference-year">${year}</span></div>`;
             }
             
-            // 添加标题信息（如果存在）
-            if (title) {
-                referencesHTML += `<div class="reference-title">
-                    ${title}
-                </div>`;
-            }
+            // // 添加标题信息（如果存在）
+            // if (title) {
+            //     referencesHTML += `<div class="reference-title">
+            //         ${title}
+            //     </div>`;
+            // }
             
             // 只添加期刊信息（如果存在）- 确保期刊信息不包含链接部分
             if (journal) {

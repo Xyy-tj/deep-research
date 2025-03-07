@@ -41,11 +41,14 @@ export class ResearchManager {
 
         console.log('Creating research record:', record);
         
+        // Format current date in MySQL compatible format (YYYY-MM-DD HH:MM:SS)
+        const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        
         const { lastID } = await this.db.run(
             `INSERT INTO research_records (
                 user_id, research_id, query, query_depth, query_breadth, 
-                language, credits_used, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                language, credits_used, status, start_time
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 record.user_id, 
                 record.research_id, 
@@ -54,7 +57,8 @@ export class ResearchManager {
                 record.query_breadth,
                 record.language, 
                 record.credits_used, 
-                record.status
+                record.status,
+                startTime
             ]
         );
 
@@ -107,7 +111,9 @@ export class ResearchManager {
 
         console.log('Completing research record:', { researchId, data });
         
-        const endTime = new Date().toISOString();
+        // Format date in MySQL compatible format (YYYY-MM-DD HH:MM:SS)
+        const now = new Date();
+        const endTime = now.toISOString().slice(0, 19).replace('T', ' ');
         
         // Get the start time to calculate execution time
         const record = await this.getResearchRecord(researchId);
@@ -119,8 +125,7 @@ export class ResearchManager {
         let executionTimeMs = 0;
         if (record.start_time) {
             const startTime = new Date(record.start_time);
-            const endTimeDate = new Date(endTime);
-            executionTimeMs = endTimeDate.getTime() - startTime.getTime();
+            executionTimeMs = now.getTime() - startTime.getTime();
         }
         
         await this.updateResearchRecord(researchId, {

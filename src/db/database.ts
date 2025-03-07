@@ -218,4 +218,23 @@ export class DB {
             this.transactionActive = false;
         });
     }
+
+    /**
+     * Execute a callback function within a transaction
+     * @param callback Function to execute within the transaction
+     * @returns Result of the callback function
+     */
+    async transaction<T>(callback: () => Promise<T>): Promise<T> {
+        try {
+            await this.beginTransaction();
+            const result = await callback();
+            await this.commitTransaction();
+            return result;
+        } catch (error) {
+            if (this.transactionActive) {
+                await this.rollbackTransaction();
+            }
+            throw error;
+        }
+    }
 }
