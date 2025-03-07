@@ -381,46 +381,41 @@ Required sections:
 1. Executive Abstract
    - Provide a concise but comprehensive overview of the entire report
    - Highlight key findings and their significance
-   - Include 2-3 paragraphs with the most important insights
 
 2. Introduction and Background
    - Provide extensive context about the topic's history and significance
    - Explain why this topic matters and to whom
    - Define all key terms and concepts thoroughly
-   - Include at least 3-4 paragraphs of detailed background information
+   - Include at least 2-3 paragraphs of detailed background information
 
 3. Key Findings and Analysis
-   - Present each major finding in its own paragraph with supporting evidence
-   - Include at least 5-7 distinct findings with detailed explanations
-   - Analyze the significance of each finding
+   - Present each major finding in its own paragraph with supporting evidence, key conclution should be bold
+   - Include at least 3-5 distinct findings with detailed explanations
    - Compare and contrast different findings when relevant
 
 4. Detailed Discussion
-   - Dedicate at least 2-3 paragraphs to each subtopic
+   - Dedicate 1-3 paragraphs to each subtopic
    - Include specific examples and case studies with detailed descriptions
    - Provide comprehensive data and evidence for each point
    - Address different perspectives and approaches with in-depth analysis
    - Explore nuances and complexities of each subtopic
-   - Include at least 10-15 paragraphs of detailed discussion
+   - Include at least 5-12 paragraphs of detailed discussion
 
 5. Implications and Impact Analysis
-   - Analyze short-term and long-term implications separately
    - Examine impacts across different domains (economic, social, technological, etc.)
    - Include specific scenarios and their potential outcomes
-   - Provide at least 4-5 paragraphs of detailed impact analysis
+   - Provide at least 2-4 paragraphs of detailed impact analysis
 
 6. Recommendations and Future Directions
    - Provide specific, actionable recommendations with implementation details
    - Explain the rationale behind each recommendation
    - Discuss potential challenges and how to overcome them
    - Outline future research directions with specific questions to explore
-   - Include at least 5-6 detailed recommendations
+   - Include at least 2-4 detailed recommendations
 
 7. Conclusion
-   - Synthesize all key points from the report
-   - Emphasize the most important insights and their significance
+   - Synthesize key points from the report, emphasize the most important insights and their significance
    - End with thought-provoking implications
-   - Include at least 2-3 paragraphs
 
 Guidelines:
 - Aim for at least 8+ pages of detailed content (approximately 4000+ words)
