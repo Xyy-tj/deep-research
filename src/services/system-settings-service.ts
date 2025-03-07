@@ -17,6 +17,7 @@ export class SystemSettingsService {
         if (!SystemSettingsService.instance) {
             SystemSettingsService.instance = new SystemSettingsService();
             SystemSettingsService.instance.db = await DB.getInstance();
+            await SystemSettingsService.instance.initSettings();
         }
         return SystemSettingsService.instance;
     }
@@ -31,7 +32,7 @@ export class SystemSettingsService {
             // Create settings table if it doesn't exist
             await this.db.run(`
                 CREATE TABLE IF NOT EXISTS system_settings (
-                    key TEXT PRIMARY KEY,
+                    \`key\` VARCHAR(255) PRIMARY KEY,
                     value TEXT NOT NULL
                 )
             `);
@@ -44,16 +45,16 @@ export class SystemSettingsService {
 
             // Insert default settings if they don't exist
             if (baseCredits === null) {
-                await this.setSetting('baseCredits', '2');
+                await this.setSetting('baseCredits', '1');
             }
             if (depthMultiplier === null) {
                 await this.setSetting('depthMultiplier', '1');
             }
             if (breadthMultiplier === null) {
-                await this.setSetting('breadthMultiplier', '0.5');
+                await this.setSetting('breadthMultiplier', '1');
             }
             if (creditExchangeRate === null) {
-                await this.setSetting('creditExchangeRate', '10');
+                await this.setSetting('creditExchangeRate', '10'); // 10 credits per yuan
             }
         } catch (error) {
             console.error('Error initializing system settings:', error);
@@ -71,7 +72,7 @@ export class SystemSettingsService {
 
         try {
             const result = await this.db.get(
-                'SELECT value FROM system_settings WHERE key = ?',
+                'SELECT value FROM system_settings WHERE `key` = ?',
                 [key]
             );
             return result ? result.value : null;
@@ -90,9 +91,10 @@ export class SystemSettingsService {
         if (!this.db) throw new Error('Database not initialized');
 
         try {
+            // Use MySQL's INSERT ... ON DUPLICATE KEY UPDATE instead of SQLite's INSERT OR REPLACE
             await this.db.run(
-                'INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)',
-                [key, value]
+                'INSERT INTO system_settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?',
+                [key, value, value]
             );
         } catch (error) {
             console.error(`Error setting ${key}:`, error);

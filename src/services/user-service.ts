@@ -27,6 +27,7 @@ export class UserService {
         if (!UserService.instance) {
             UserService.instance = new UserService();
             UserService.instance.db = await DB.getInstance();
+            await UserService.instance.initTable();
         }
         return UserService.instance;
     }
@@ -40,11 +41,11 @@ export class UserService {
         try {
             await this.db.run(`
                 CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL UNIQUE,
-                    email TEXT NOT NULL UNIQUE,
-                    password TEXT NOT NULL,
-                    credits REAL NOT NULL DEFAULT 0,
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    username VARCHAR(255) NOT NULL UNIQUE,
+                    email VARCHAR(255) NOT NULL UNIQUE,
+                    password VARCHAR(255) NOT NULL,
+                    credits DECIMAL(10,2) NOT NULL DEFAULT 0,
                     is_admin BOOLEAN NOT NULL DEFAULT 0,
                     is_verified BOOLEAN NOT NULL DEFAULT 0,
                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

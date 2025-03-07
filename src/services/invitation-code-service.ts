@@ -19,6 +19,7 @@ export class InvitationCodeService {
         if (!InvitationCodeService.instance) {
             InvitationCodeService.instance = new InvitationCodeService();
             InvitationCodeService.instance.db = await DB.getInstance();
+            await InvitationCodeService.instance.initTable();
         }
         return InvitationCodeService.instance;
     }
@@ -32,10 +33,10 @@ export class InvitationCodeService {
         try {
             await this.db.run(`
                 CREATE TABLE IF NOT EXISTS invitation_codes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    code TEXT NOT NULL UNIQUE,
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    code VARCHAR(255) NOT NULL UNIQUE,
                     is_used BOOLEAN NOT NULL DEFAULT 0,
-                    used_by INTEGER,
+                    used_by INT,
                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     used_at DATETIME,
                     FOREIGN KEY (used_by) REFERENCES users(id)

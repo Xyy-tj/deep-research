@@ -1,311 +1,221 @@
-import initSqlJs, { Database } from 'sql.js';
-import { readFileSync, existsSync, writeFileSync } from 'fs';
+import mysql from 'mysql2/promise';
+import { config } from 'dotenv';
 import path from 'path';
+import fs from 'fs';
+
+// Load environment variables
+config();
 
 export class DB {
     private static instance: DB;
-    private db: Database;
-    private dbPath: string;
+    private pool: mysql.Pool;
     private transactionActive: boolean = false;
     private transactionQueue: Promise<any> = Promise.resolve();
 
     private constructor() {
-        // Use absolute path for database file
-        this.dbPath = path.join(process.cwd(), 'research.db');
+        // Create a connection pool using environment variables
+        this.pool = mysql.createPool({
+            host: process.env.DB_HOST || 'localhost',
+            port: parseInt(process.env.DB_PORT || '3306'),
+            user: process.env.DB_USER || 'root',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.DB_NAME || 'deep_research',
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
+        });
     }
 
     private async initializeDatabase() {
-        if (this.db) {
+        if (this.pool) {
             return; // Already initialized
         }
         
-        const SQL = await initSqlJs();
-        
-        let data: Buffer | null = null;
-        if (existsSync(this.dbPath)) {
-            data = readFileSync(this.dbPath);
-        }
-        
-        this.db = new SQL.Database(data);
+        // Create a connection pool using environment variables
+        this.pool = mysql.createPool({
+            host: process.env.DB_HOST || 'localhost',
+            port: parseInt(process.env.DB_PORT || '3306'),
+            user: process.env.DB_USER || 'root',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.DB_NAME || 'deep_research',
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
+        });
 
-        // Initialize schema if new database
-        if (!data) {
-            // Use absolute path for schema file, looking in both source and compiled locations
-            const possibleSchemaLocations = [
-                path.join(process.cwd(), 'src', 'db', 'schema.sql'),
-                path.join(process.cwd(), 'dist', 'db', 'schema.sql'),
-                path.join(__dirname, 'schema.sql')
-            ];
+        // Check if we need to initialize the schema
+        try {
+            const connection = await this.pool.getConnection();
             
-            let schemaContent: string | null = null;
-            for (const schemaPath of possibleSchemaLocations) {
-                if (existsSync(schemaPath)) {
-                    console.log('Found schema at:', schemaPath);
-                    schemaContent = readFileSync(schemaPath, 'utf-8');
-                    break;
-                }
-            }
+            // Check if users table exists
+            const [rows] = await connection.query("SHOW TABLES LIKE 'users'");
+            const tablesExist = Array.isArray(rows) && rows.length > 0;
             
-            if (!schemaContent) {
-                throw new Error('Could not find schema.sql file in any expected location');
-            }
-
-            this.db.exec(schemaContent);
-            this.saveDatabase();
-        } else {
-            // Check if 'updated_at' column exists in users table
-            const result = this.db.exec('PRAGMA table_info(users);');
-            let hasUpdatedAt = false;
-            if (result.length && result[0].values) {
-                for (const row of result[0].values) {
-                    // row structure: [cid, name, type, notnull, dflt_value, pk]
-                    if (row[1] === 'updated_at') {
-                        hasUpdatedAt = true;
+            if (!tablesExist) {
+                console.log('Initializing database schema...');
+                
+                // Use absolute path for schema file, looking in both source and compiled locations
+                const possibleSchemaLocations = [
+                    path.join(process.cwd(), 'src', 'db', 'mysql_schema.sql'),
+                    path.join(process.cwd(), 'dist', 'db', 'mysql_schema.sql'),
+                    path.join(__dirname, 'mysql_schema.sql')
+                ];
+                
+                let schemaContent: string | null = null;
+                for (const schemaPath of possibleSchemaLocations) {
+                    if (fs.existsSync(schemaPath)) {
+                        console.log('Found schema at:', schemaPath);
+                        schemaContent = fs.readFileSync(schemaPath, 'utf-8');
                         break;
                     }
                 }
-            }
-            if (!hasUpdatedAt) {
-                // Add column without default value first
-                this.db.run('ALTER TABLE users ADD COLUMN updated_at DATETIME;');
-                // Update existing rows with current timestamp
-                this.db.run('UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL;');
-                console.log("Migration: 'updated_at' column added to users table and initialized.");
-                this.saveDatabase();
-            }
+                
+                if (!schemaContent) {
+                    throw new Error('Could not find mysql_schema.sql file in any expected location');
+                }
 
-            // Check if usage_records table exists
-            const tableCheck = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='usage_records';");
-            if (!tableCheck.length) {
-                // Create usage_records table if it doesn't exist
-                const usageRecordsSchema = `
-                    CREATE TABLE usage_records (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id TEXT NOT NULL,
-                        query TEXT NOT NULL,
-                        query_depth INTEGER NOT NULL,
-                        query_breadth INTEGER NOT NULL,
-                        credits_used INTEGER NOT NULL,
-                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id)
-                    );`;
-                this.db.exec(usageRecordsSchema);
-                console.log("Migration: 'usage_records' table created.");
-                this.saveDatabase();
+                // Split schema into individual statements and execute them
+                const statements = schemaContent
+                    .split(';')
+                    .map(statement => statement.trim())
+                    .filter(statement => statement.length > 0);
+
+                for (const statement of statements) {
+                    await connection.query(statement);
+                }
+                
+                console.log('Database schema initialized successfully');
             }
             
-            // Check if research_records table exists
-            const researchRecordsCheck = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='research_records';");
-            if (!researchRecordsCheck.length) {
-                // Create research_records table if it doesn't exist
-                const researchRecordsSchema = `
-                    CREATE TABLE research_records (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id INTEGER NOT NULL,
-                        research_id TEXT UNIQUE NOT NULL,
-                        query TEXT NOT NULL,
-                        query_depth INTEGER NOT NULL,
-                        query_breadth INTEGER NOT NULL,
-                        language TEXT NOT NULL,
-                        credits_used INTEGER NOT NULL,
-                        output_filename TEXT,
-                        output_path TEXT,
-                        num_references INTEGER DEFAULT 0,
-                        num_learnings INTEGER DEFAULT 0,
-                        visited_urls_count INTEGER DEFAULT 0,
-                        config_json TEXT,
-                        status TEXT DEFAULT 'completed',
-                        error_message TEXT,
-                        start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        end_time DATETIME,
-                        execution_time_ms INTEGER,
-                        FOREIGN KEY (user_id) REFERENCES users(id)
-                    );
-                    CREATE INDEX idx_research_records_user_id ON research_records(user_id);
-                    CREATE INDEX idx_research_records_research_id ON research_records(research_id);
-                `;
-                this.db.exec(researchRecordsSchema);
-                console.log("Migration: 'research_records' table created.");
-                this.saveDatabase();
-            }
-            
-            // Check if credit_packages table exists
-            const creditPackagesCheck = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='credit_packages';");
-            if (!creditPackagesCheck.length) {
-                // Create credit_packages table if it doesn't exist
-                const creditPackagesSchema = `
-                    CREATE TABLE credit_packages (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        credits INTEGER NOT NULL,
-                        price REAL NOT NULL,
-                        description TEXT,
-                        is_active BOOLEAN DEFAULT 1,
-                        display_order INTEGER DEFAULT 0,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    );
-                    CREATE INDEX idx_credit_packages_is_active ON credit_packages(is_active);
-                `;
-                this.db.exec(creditPackagesSchema);
-                console.log("Migration: 'credit_packages' table created.");
-                this.saveDatabase();
-            }
+            connection.release();
+        } catch (error) {
+            console.error('Error initializing database:', error);
+            throw error;
         }
-    }
-
-    private saveDatabase() {
-        const data = Buffer.from(this.db.export());
-        writeFileSync(this.dbPath, data);
     }
 
     static async getInstance(): Promise<DB> {
         if (!DB.instance) {
             DB.instance = new DB();
             await DB.instance.initializeDatabase();
-        } else if (!DB.instance.db) {
+        } else if (!DB.instance.pool) {
             await DB.instance.initializeDatabase();
         }
         return DB.instance;
     }
 
+    /**
+     * Helper function to convert MySQL results to proper types
+     * MySQL2 returns some numeric fields as strings, this converts them back to numbers
+     */
+    private convertTypes<T>(rows: any[]): T[] {
+        return rows.map(row => {
+            const converted: any = {};
+            for (const key in row) {
+                // Convert numeric strings to numbers
+                if (typeof row[key] === 'string' && !isNaN(Number(row[key])) && 
+                    // Don't convert IDs that are strings or dates
+                    !key.includes('_id') && 
+                    !key.includes('id') && 
+                    !key.includes('_at') && 
+                    !key.includes('time')) {
+                    converted[key] = Number(row[key]);
+                } else {
+                    converted[key] = row[key];
+                }
+            }
+            return converted as T;
+        });
+    }
+
     async run(sql: string, params: any[] = []): Promise<{ lastID?: number }> {
-        if (!this.db) throw new Error('Database not initialized');
-        console.log('Executing SQL:', sql, 'with params:', params);
-        const result = this.db.run(sql, params);
-        
-        // Return an object with lastID if it's an INSERT statement
-        let lastID;
-        if (sql.trim().toUpperCase().startsWith('INSERT')) {
-            const lastIdResult = this.db.exec('SELECT last_insert_rowid()');
-            lastID = lastIdResult[0].values[0][0];
-            console.log('Generated last insert ID:', lastID);
+        try {
+            console.log('Executing SQL:', sql, 'with params:', params);
+            const [result] = await this.pool.execute(sql, params);
+            
+            // Return an object with lastID if it's an INSERT statement
+            let lastID;
+            if (sql.trim().toUpperCase().startsWith('INSERT')) {
+                if ('insertId' in result) {
+                    lastID = result.insertId;
+                    console.log('Generated last insert ID:', lastID);
+                }
+            }
+            
+            if (lastID !== undefined) {
+                return { lastID };
+            }
+            return {};
+        } catch (error) {
+            console.error('Error executing SQL:', error);
+            throw error;
         }
-        
-        // Save database after any modification
-        this.saveDatabase();
-        console.log('Database saved after operation');
-        
-        if (lastID !== undefined) {
-            return { lastID };
-        }
-        return {};
     }
 
     async get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
-        if (!this.db) throw new Error('Database not initialized');
-        console.log('Executing SQL:', sql, 'with params:', params);
-        const stmt = this.db.prepare(sql);
-        stmt.bind(params);
-        const result = stmt.step();
-        if (!result) {
-            stmt.free();
+        try {
+            console.log('Executing SQL:', sql, 'with params:', params);
+            const [rows] = await this.pool.execute(sql, params);
+            
+            if (Array.isArray(rows) && rows.length > 0) {
+                return this.convertTypes<T>(rows)[0];
+            }
             return undefined;
+        } catch (error) {
+            console.error('Error executing SQL:', error);
+            throw error;
         }
-        const row = stmt.getAsObject();
-        stmt.free();
-        console.log('SQL result:', row);
-        return row as T;
     }
 
     async all<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-        if (!this.db) throw new Error('Database not initialized');
-        console.log('Executing SQL:', sql, 'with params:', params);
-        const stmt = this.db.prepare(sql);
-        stmt.bind(params);
-        const results: T[] = [];
-        while (stmt.step()) {
-            results.push(stmt.getAsObject() as T);
+        try {
+            console.log('Executing SQL:', sql, 'with params:', params);
+            const [rows] = await this.pool.execute(sql, params);
+            
+            if (Array.isArray(rows)) {
+                return this.convertTypes<T>(rows);
+            }
+            return [];
+        } catch (error) {
+            console.error('Error executing SQL:', error);
+            throw error;
         }
-        stmt.free();
-        console.log('SQL results:', results);
-        return results;
     }
 
-    async exec(sql: string): Promise<void> {
-        if (!this.db) throw new Error('Database not initialized');
-        console.log('Executing SQL:', sql);
-        this.db.run(sql);
-        this.saveDatabase();
-    }
-
-    runSync(sql: string, params: any[] = []): { lastID?: number } {
-        if (!this.db) throw new Error('Database not initialized');
-        console.log('Executing SQL:', sql, 'with params:', params);
-        const result = this.db.run(sql, params);
-        
-        // Return an object with lastID if it's an INSERT statement
-        let lastID;
-        if (sql.trim().toUpperCase().startsWith('INSERT')) {
-            const lastIdResult = this.db.exec('SELECT last_insert_rowid()');
-            lastID = lastIdResult[0].values[0][0];
-            console.log('Generated last insert ID (sync):', lastID);
+    async beginTransaction(): Promise<void> {
+        if (this.transactionActive) {
+            throw new Error('Transaction already active');
         }
         
-        // Save database after any modification
-        this.saveDatabase();
-        console.log('Database saved after sync operation');
-        
-        if (lastID !== undefined) {
-            return { lastID };
+        this.transactionActive = true;
+        this.transactionQueue = this.transactionQueue.then(async () => {
+            const connection = await this.pool.getConnection();
+            await connection.beginTransaction();
+            return connection;
+        });
+    }
+
+    async commitTransaction(): Promise<void> {
+        if (!this.transactionActive) {
+            throw new Error('No active transaction to commit');
         }
-        return {};
-    }
-
-    getSync<T = any>(sql: string, params: any[] = []): T | undefined {
-        if (!this.db) throw new Error('Database not initialized');
-        console.log('Executing SQL:', sql, 'with params:', params);
-        const stmt = this.db.prepare(sql);
-        stmt.bind(params);
-        const result = stmt.step();
-        if (!result) {
-            stmt.free();
-            return undefined;
-        }
-        const row = stmt.getAsObject();
-        stmt.free();
-        console.log('SQL result:', row);
-        return row as T;
-    }
-
-    public getLastChanges(): number {
-        return this.db.getRowsModified();
-    }
-
-    async transaction<T>(fn: () => Promise<T>): Promise<T> {
-        if (!this.db) throw new Error('Database not initialized');
         
-        // Use a queue to ensure transactions run sequentially
-        return new Promise((resolve, reject) => {
-            this.transactionQueue = this.transactionQueue.then(async () => {
-                try {
-                    // Manual transaction handling without relying on SQL.js transactions
-                    let result: T;
-                    
-                    try {
-                        // Start transaction manually
-                        this.transactionActive = true;
-                        
-                        // Execute function
-                        result = await fn();
-                        
-                        // Commit by saving database
-                        this.saveDatabase();
-                        this.transactionActive = false;
-                        
-                        resolve(result);
-                        return result;
-                    } catch (error) {
-                        console.error('Transaction error:', error);
-                        this.transactionActive = false;
-                        reject(error);
-                        throw error;
-                    }
-                } catch (error) {
-                    // This catch is for errors in the transaction queue itself
-                    console.error('Transaction queue error:', error);
-                    return null; // Allow queue to continue
-                }
-            });
+        this.transactionQueue = this.transactionQueue.then(async (connection) => {
+            await connection.commit();
+            connection.release();
+            this.transactionActive = false;
+        });
+    }
+
+    async rollbackTransaction(): Promise<void> {
+        if (!this.transactionActive) {
+            throw new Error('No active transaction to rollback');
+        }
+        
+        this.transactionQueue = this.transactionQueue.then(async (connection) => {
+            await connection.rollback();
+            connection.release();
+            this.transactionActive = false;
         });
     }
 }

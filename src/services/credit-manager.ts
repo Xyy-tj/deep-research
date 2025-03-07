@@ -29,10 +29,10 @@ export class CreditManager {
         try {
             await this.db.run(`
                 CREATE TABLE IF NOT EXISTS credit_transactions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    amount REAL NOT NULL,
-                    type TEXT NOT NULL,
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    user_id INT NOT NULL,
+                    amount DECIMAL(10,2) NOT NULL,
+                    type VARCHAR(255) NOT NULL,
                     description TEXT,
                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id)
