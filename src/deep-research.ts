@@ -378,19 +378,52 @@ export async function writeFinalReport({
     prompt: `Given the following prompt from the user, write a comprehensive and detailed report on the topic using the learnings from research. The report should be thorough, well-structured, and academically rigorous.
 
 Required sections:
-1. Executive Summary
+1. Executive Abstract
+   - Provide a concise but comprehensive overview of the entire report
+   - Highlight key findings and their significance
+   - Include 2-3 paragraphs with the most important insights
+
 2. Introduction and Background
+   - Provide extensive context about the topic's history and significance
+   - Explain why this topic matters and to whom
+   - Define all key terms and concepts thoroughly
+   - Include at least 3-4 paragraphs of detailed background information
+
 3. Key Findings and Analysis
+   - Present each major finding in its own paragraph with supporting evidence
+   - Include at least 5-7 distinct findings with detailed explanations
+   - Analyze the significance of each finding
+   - Compare and contrast different findings when relevant
+
 4. Detailed Discussion
-   - Include specific examples and case studies
-   - Provide data and evidence where available
-   - Address different perspectives and approaches
+   - Dedicate at least 2-3 paragraphs to each subtopic
+   - Include specific examples and case studies with detailed descriptions
+   - Provide comprehensive data and evidence for each point
+   - Address different perspectives and approaches with in-depth analysis
+   - Explore nuances and complexities of each subtopic
+   - Include at least 10-15 paragraphs of detailed discussion
+
 5. Implications and Impact Analysis
+   - Analyze short-term and long-term implications separately
+   - Examine impacts across different domains (economic, social, technological, etc.)
+   - Include specific scenarios and their potential outcomes
+   - Provide at least 4-5 paragraphs of detailed impact analysis
+
 6. Recommendations and Future Directions
+   - Provide specific, actionable recommendations with implementation details
+   - Explain the rationale behind each recommendation
+   - Discuss potential challenges and how to overcome them
+   - Outline future research directions with specific questions to explore
+   - Include at least 5-6 detailed recommendations
+
 7. Conclusion
+   - Synthesize all key points from the report
+   - Emphasize the most important insights and their significance
+   - End with thought-provoking implications
+   - Include at least 2-3 paragraphs
 
 Guidelines:
-- Aim for at least 8+ pages of detailed content
+- Aim for at least 8+ pages of detailed content (approximately 4000+ words)
 - Include ALL relevant learnings from the research
 - Support claims with specific examples and data points
 - IMPORTANT: When citing information from sources, use reference numbers in square brackets [X] that correspond to the references provided below
@@ -399,6 +432,8 @@ Guidelines:
 - Provide actionable insights and recommendations
 - Use clear section headings and subheadings
 - Maintain a professional and analytical tone
+- Avoid generalizations and vague statements - be specific and detailed
+- Expand on each point with examples, evidence, and analysis
 - IMPORTANT: Write the entire report in ${language === 'zh-CN' ? 'Chinese (Simplified)' : language} language
 
 <prompt>${prompt}</prompt>
