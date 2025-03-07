@@ -32,12 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize image fallbacks
         const setupImageFallbacks = () => {
             const previewImages = document.querySelectorAll('.preview-image img');
-            console.log('Found preview images:', previewImages.length);
             
             previewImages.forEach(img => {
                 // Set the error handler
                 img.onerror = function() {
-                    console.log('Image failed to load:', this.src);
                     this.style.display = 'none';
                     this.parentNode.classList.add('no-image');
                     
@@ -67,13 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Category tab switching
         const categoryTabs = document.querySelectorAll('.category-tab');
         const categoryContents = document.querySelectorAll('.category-content');
-        console.log('Found category tabs:', categoryTabs.length);
-        console.log('Found category contents:', categoryContents.length);
-
         categoryTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const category = tab.getAttribute('data-category');
-                console.log('Category tab clicked:', category);
                 
                 // Update active tab
                 categoryTabs.forEach(t => t.classList.remove('active'));
@@ -96,21 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const pdfViewer = document.getElementById('pdfViewer');
         const closePdfModalButton = document.getElementById('closePdfModal');
         const pdfDebugStatus = document.getElementById('pdfDebugStatus');
-        
-        console.log('Found PDF buttons:', viewPdfButtons.length);
-        console.log('PDF modal exists:', !!pdfPreviewModal);
-        console.log('PDF viewer exists:', !!pdfViewer);
-        console.log('Close PDF button exists:', !!closePdfModalButton);
 
         viewPdfButtons.forEach((button, index) => {
-            console.log(`Button ${index} URL:`, button.getAttribute('data-pdf'));
             button.addEventListener('click', (e) => {
-                console.log('PDF button clicked');
                 const pdfUrl = button.getAttribute('data-pdf');
-                console.log('PDF URL:', pdfUrl);
                 
                 if (pdfUrl && pdfViewer) {
-                    console.log('Showing modal and loading PDF');
                     // Show modal - using both active class (for CSS) and removing hidden class
                     pdfPreviewModal.classList.add('active');
                     pdfPreviewModal.classList.remove('hidden');
@@ -123,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Load PDF in container
                     pdfViewer.innerHTML = `<iframe src="${pdfUrl}" width="100%" height="100%" frameborder="0"></iframe>`;
-                    console.log('PDF iframe added to viewer');
                 } else {
                     console.error('PDF viewer element or PDF URL not found');
                 }
@@ -133,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close modal when clicking close button
         if (closePdfModalButton) {
             closePdfModalButton.addEventListener('click', () => {
-                console.log('Close PDF button clicked');
                 pdfPreviewModal.classList.remove('active');
                 pdfPreviewModal.classList.add('hidden');
                 pdfPreviewModal.style.display = 'none';

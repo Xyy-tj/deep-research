@@ -42,18 +42,14 @@ window.downloadMarkdown = async (filename) => {
 // Function to update user balance
 async function updateBalance() {
     try {
-        console.log('🔄 Starting balance update process...');
         // 获取Auth实例
         const auth = Auth.getInstance();
-        console.log('👤 Auth state:', { isAuthenticated: auth.isAuthenticated });
         
         const balanceDisplay = document.getElementById('balanceDisplay');
         
         // 首先检查认证状态
         if (!auth.isAuthenticated) {
-            console.log('🔑 User not authenticated, checking auth...');
             await auth.checkAuth();
-            console.log('🔑 Auth check completed, new state:', { isAuthenticated: auth.isAuthenticated });
             
             // Hide balance display if not authenticated
             if (balanceDisplay) {
@@ -65,7 +61,6 @@ async function updateBalance() {
         // 使用异步方法获取令牌
         const token = await auth.getTokenAsync();
         
-        console.log('📡 Sending balance request...');
         const response = await fetch('/api/user/balance', {
             headers: {
                 'Authorization': token ? `Bearer ${token}` : '',
@@ -74,11 +69,8 @@ async function updateBalance() {
             credentials: 'include' // 包含cookies，确保HTTP-only cookie被发送
         });
         
-        console.log('📫 Balance response status:', response.status);
-        
         if (response.ok) {
             const data = await response.json();
-            console.log('💰 Balance data received:', data);
             
             const userBalance = document.getElementById('userBalance');
             
@@ -86,13 +78,11 @@ async function updateBalance() {
                 // Show balance display for authenticated users
                 balanceDisplay.classList.remove('hidden');
                 userBalance.textContent = data.balance;
-                console.log('✅ Balance display updated to:', data.balance);
             } else {
                 console.error('❌ Balance display elements not found');
             }
             return data.balance; // Return the balance for other functions to use
         } else {
-            console.error('❌ Failed to fetch balance:', response.status, response.statusText);
             // 如果是授权错误，尝试重新验证身份
             if (response.status === 401 || response.status === 403) {
                 console.log('🔄 Auth error, attempting to refresh auth...');

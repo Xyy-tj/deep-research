@@ -359,7 +359,6 @@ export class Auth {
 
     async getTokenAsync() {
         try {
-            console.log('Getting token async...');
             // 尝试从API获取令牌
             const response = await fetch('/api/verify-token', {
                 method: 'GET',
@@ -369,14 +368,11 @@ export class Auth {
                 credentials: 'include' // Include cookies for auth
             });
             
-            console.log('Token API response status:', response.status);
-            
             if (response.ok) {
                 const data = await response.json();
-                console.log('Token API response data:', data);
+                // console.log('Token API response data:', data);
                 
                 if (data.authenticated && data.token) {
-                    console.log('🔑 Retrieved token from API');
                     // 更新localStorage
                     localStorage.setItem('token', data.token);
                     return data.token;
@@ -388,14 +384,12 @@ export class Auth {
         
         // 如果API获取失败，尝试从localStorage获取
         const token = localStorage.getItem('token');
-        console.log('🔑 Retrieved token from localStorage:', !!token ? 'Token exists' : 'No token found');
         return token;
     }
 
     // 同步方法，用于向后兼容
     getToken() {
         const token = localStorage.getItem('token');
-        console.log('🔑 Retrieved token from localStorage:', !!token ? 'Token exists' : 'No token found');
         return token;
     }
 
@@ -449,7 +443,6 @@ export class Auth {
     }
 
     get isAuthenticated() {
-        console.log('🔒 Auth state check:', this.#isAuthenticated);
         return this.#isAuthenticated;
     }
 
