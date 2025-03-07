@@ -108,6 +108,35 @@ export const translations = {
         costFormula: `Expected cost = Base(${window.creditConfig?.baseCredits || 2}) + Depth × ${window.creditConfig?.depthMultiplier || 1} + Breadth × ${window.creditConfig?.breadthMultiplier || 0.5}`,
         transparentPricing: 'Transparent pricing, no hidden fees',
         worthTheValue: 'Worth every credit!',
+        
+        welcomeDescription: 'Use AI to conduct comprehensive research on any topic. Our system combines academic sources with web content to provide you with the most thorough research results.',
+        // New Academic Features Section
+        academicFeatures: 'Academic Research Features',
+        googleScholar: 'Google Scholar Integration',
+        googleScholarDesc: 'Access academic papers and research publications from Google Scholar to enhance your research with scholarly sources.',
+        citations: 'Proper Academic Citations',
+        citationsDesc: 'Automatically generate properly formatted citations in APA, MLA and other academic styles for all referenced sources.',
+        multiLingual: 'Multi-Language Support',
+        multiLingualDesc: 'Translate non-English queries to English to access more comprehensive academic sources while maintaining original language results.',
+        academicTip: 'Pro Research Tip',
+        academicTipDesc: 'For academic research, increase the "Depth" parameter to explore scholarly sources more thoroughly and enable the system to analyze complex academic papers in greater detail.',
+        
+        // Call to Action Section
+        startResearchingNow: 'Start Researching Now',
+        startResearchingDesc: 'Begin your in-depth research journey with AI assistance. Discover new insights, explore academic sources, and generate comprehensive reports with proper citations.',
+        academicSources: 'Academic Sources',
+        properCitations: 'Proper Citations',
+        multiLanguage: 'Multi-Language',
+        getStarted: 'Get Started',
+        
+        // FAQ Section
+        faq: 'Frequently Asked Questions',
+        faq1: 'How accurate is the AI research?',
+        faq1Answer: 'Our AI research system combines academic sources from Google Scholar with web content to provide comprehensive and accurate results. All sources are cited, allowing you to verify the information. The system is designed to present multiple perspectives on complex topics.',
+        faq2: 'What types of research can I conduct?',
+        faq2Answer: 'You can conduct research on virtually any topic, from academic subjects like science, history, and literature to business topics, current events, and technical subjects. The system is versatile and adapts to your specific research needs.',
+        faq3: 'How do the depth and breadth parameters work?',
+        faq3Answer: 'The depth parameter controls how deeply the AI analyzes each source, with higher values resulting in more detailed analysis. The breadth parameter determines how many different sources and perspectives the AI explores. Adjusting these parameters helps you customize the research to your specific needs.',
     },
     zh: {
         // Title and introduction
@@ -196,6 +225,7 @@ export const translations = {
         completed: '已完成',
         error: '错误',
         success: '成功',
+        
         warning: '警告',
         info: '信息',
         close: '关闭',
@@ -332,7 +362,8 @@ export const translations = {
         depthLevel1: '通读',
         depthLevel2: '标准',
         depthLevel3: '深度',
-        
+
+        welcomeDescription: '让AI帮助您进行深入的研究，发现新的见解，探索学术资源，并生成带有规范引用的综合报告。',
         aboutDescription: '深度报告助手是一款先进的AI驱动研究工具，旨在帮助您深入探索各种主题。我们的平台结合了最先进的语言模型和专业的研究方法，为任何主题提供全面的见解。',
         keyFeatures: '主要特点',
         featureAI: 'AI驱动研究',
@@ -362,6 +393,11 @@ export const translations = {
         breadthExplanation: '控制研究范围的广度。高值探索多种来源和观点。',
         depthExplanation: '控制研究深度的深度。高值探索更多的详细信息和见解。',
         
+        multiLingual: '多语言支持',
+        multiLingualDesc: '将非英语查询翻译成英语，以访问更全面的学术资源，同时保留原始语言结果。',
+        academicTip: '专业研究提示',
+        academicTipDesc: '对于学术研究，增加"深度"参数可以更彻底地探索学术资源，并使系统能够更详细地分析复杂的学术论文。',
+        
         // Billing related translations
         billingRules: '计费规则',
         baseCreditsRule: '基础费用: 每次研究2积分',
@@ -371,6 +407,11 @@ export const translations = {
         costFormula: `预期消耗 = 基础(${window.creditConfig?.baseCredits || 2}) + 深度 × ${window.creditConfig?.depthMultiplier || 1} + 广度 × ${window.creditConfig?.breadthMultiplier || 0.5}`,
         transparentPricing: '透明定价，无隐藏费用',
         worthTheValue: '物超所值！',
+        faq1Answer: '我们的AI研究系统结合了Google Scholar的学术资源和网络内容，提供全面准确的结果。所有资源都有引用，允许您验证信息。系统设计为在复杂主题上呈现多种视角。',
+        faq2: '我可以进行哪些类型的研究？',
+        faq2Answer: '您可以对几乎任何主题进行研究，从科学、历史和文学等学术主题到商业主题、时事和技术主题。系统灵活多变，能够适应您的特定研究需求。',
+        faq3: '深度和广度参数如何工作？',
+        faq3Answer: '深度参数控制AI分析每个资源的深度，较高的值会产生更详细的分析。广度参数决定AI探索的不同资源和视角的数量。调整这些参数有助于您根据特定需求定制研究。',
     }
 };
 

@@ -99,8 +99,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const emailVerification = document.getElementById('emailVerification');
             
             if (authModal && authModalTitle && authSubmitBtnText) {
+                // 使用i18n系统获取文本
+                authModalTitle.setAttribute('data-i18n', 'login');
+                authSubmitBtnText.setAttribute('data-i18n', 'login');
+                
+                // 更新元素的文本内容
                 authModalTitle.textContent = t('login');
                 authSubmitBtnText.textContent = t('login');
+                
                 invitationCodeSection.style.display = 'none';
                 emailVerification.style.display = 'none';
                 authModal.classList.remove('hidden');
@@ -119,8 +125,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const emailVerification = document.getElementById('emailVerification');
             
             if (authModal && authModalTitle && authSubmitBtnText) {
+                // 使用i18n系统获取文本
+                authModalTitle.setAttribute('data-i18n', 'register');
+                authSubmitBtnText.setAttribute('data-i18n', 'register');
+                
+                // 更新元素的文本内容
                 authModalTitle.textContent = t('register');
                 authSubmitBtnText.textContent = t('register');
+                
                 invitationCodeSection.style.display = 'block';
                 emailVerification.style.display = 'block';
                 authModal.classList.remove('hidden');

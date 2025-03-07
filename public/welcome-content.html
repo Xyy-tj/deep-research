@@ -1,105 +1,419 @@
-<div class="text-center mb-12">
-    <h1 class="text-5xl font-bold text-gray-800 mb-4" data-i18n="appTitle">Deep Research Assistant</h1>
-    <p class="text-xl text-gray-600 mb-8" data-i18n="welcomeTitle">Your Intelligent Research Companion</p>
+<!-- Modern Hero Section with Animated Elements -->
+<div class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg mb-16">
+    <div class="absolute top-0 right-0 w-1/2 h-full opacity-10">
+        <div class="absolute top-10 right-10 w-64 h-64 rounded-full bg-primary-600 animate-pulse-slow"></div>
+        <div class="absolute bottom-20 right-20 w-40 h-40 rounded-full bg-blue-400 animate-float"></div>
+    </div>
+    
+    <div class="relative z-10 px-8 py-16 md:py-24 text-center md:text-left md:flex md:items-center md:justify-between">
+        <div class="md:w-3/5">
+            <h1 class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-blue-500 to-indigo-600 text-5xl md:text-6xl font-extrabold mb-4 tracking-tight animate-fade-in leading-tight" data-i18n="appTitle">Deep Research Assistant</h1>
+            
+            <p class="text-xl md:text-2xl font-light text-gray-700 mb-6 animate-fade-in-delay relative">
+                <span class="relative z-10" data-i18n="welcomeTitle">Your Intelligent Research Companion</span>
+                <span class="absolute bottom-0 left-0 w-24 h-1 bg-gradient-to-r from-primary-500 to-blue-400 md:block hidden"></span>
+            </p>
+            
+            <p class="text-gray-600 mb-8 max-w-2xl animate-fade-in-delay-2 leading-relaxed">
+                <span class="font-light" data-i18n="welcomeDescription">Leverage the power of AI to conduct comprehensive research on any topic. Our system combines academic sources with web content to provide you with the most thorough research results.</span>
+            </p>
+            
+            <div class="flex flex-col sm:flex-row justify-center md:justify-start gap-4 animate-fade-in-delay-3">
+                <button onclick="window.toggleMainContent(true)" class="px-6 py-3 bg-gradient-to-r from-primary-600 to-blue-500 text-white font-medium rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                    <span class="absolute top-0 left-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+                    <i class="fas fa-search mr-2"></i> <span data-i18n="startResearch">Start Researching</span>
+                </button>
+                
+                <a href="#how-it-works" class="px-6 py-3 bg-white text-primary-600 font-medium rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-primary-200">
+                    <i class="fas fa-info-circle mr-2"></i> <span data-i18n="learnMore">Learn More</span>
+                </a>
+            </div>
+        </div>
+        <div class="hidden md:block md:w-2/5 animate-float">
+            <img src="/images/research-illustration.svg" alt="Research Illustration" class="w-full h-auto" 
+                 onerror="this.onerror=null; this.src='/images/research-illustration.png'; if(!this.src.includes('.png')) this.src='/images/logo.png';">
+        </div>
+    </div>
+    
+    <!-- Animated Wave Divider -->
+    <div class="absolute bottom-0 left-0 w-full">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" class="w-full h-auto">
+            <path fill="#ffffff" fill-opacity="1" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
+        </svg>
+    </div>
 </div>
 
+<!-- Feature Cards Section with Interactive Hover Effects -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-    <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
-        <div class="text-primary-600 text-4xl mb-4">
+    <div class="bg-white rounded-xl shadow-md p-8 transform transition-all hover:shadow-xl hover:-translate-y-2 duration-300 border-t-4 border-primary-600 group">
+        <div class="text-primary-600 text-4xl mb-4 group-hover:scale-110 transform transition-all duration-300">
             <i class="fas fa-brain"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="aiResearch">AI-Powered Research</h3>
-        <p class="text-gray-600" data-i18n="aiResearchDescription">
+        <h3 class="text-xl font-bold text-gray-800 mb-4 group-hover:text-primary-600 transition-colors" data-i18n="aiResearch">AI-Powered Research</h3>
+        <p class="text-gray-600 group-hover:text-gray-700 transition-colors" data-i18n="aiResearchDescription">
             Leverage advanced AI technology to conduct comprehensive research on any topic. Our system
             explores multiple perspectives and digs deep into the subject matter.
         </p>
+        <div class="mt-4 h-1 w-0 bg-gradient-to-r from-primary-600 to-blue-400 group-hover:w-full transition-all duration-500"></div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
-        <div class="text-primary-600 text-4xl mb-4">
+    <div class="bg-white rounded-xl shadow-md p-8 transform transition-all hover:shadow-xl hover:-translate-y-2 duration-300 border-t-4 border-blue-500 group">
+        <div class="text-blue-500 text-4xl mb-4 group-hover:scale-110 transform transition-all duration-300">
             <i class="fas fa-project-diagram"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="interactiveResearch">Interactive
+        <h3 class="text-xl font-bold text-gray-800 mb-4 group-hover:text-blue-500 transition-colors" data-i18n="interactiveResearch">Interactive
             Research Process</h3>
-        <p class="text-gray-600" data-i18n="interactiveResearchDescription">
+        <p class="text-gray-600 group-hover:text-gray-700 transition-colors" data-i18n="interactiveResearchDescription">
             Engage in an interactive research journey where you can guide the AI through your specific
             interests and requirements.
         </p>
+        <div class="mt-4 h-1 w-0 bg-gradient-to-r from-blue-500 to-blue-300 group-hover:w-full transition-all duration-500"></div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
-        <div class="text-primary-600 text-4xl mb-4">
+    <div class="bg-white rounded-xl shadow-md p-8 transform transition-all hover:shadow-xl hover:-translate-y-2 duration-300 border-t-4 border-indigo-500 group">
+        <div class="text-indigo-500 text-4xl mb-4 group-hover:scale-110 transform transition-all duration-300">
             <i class="fas fa-sliders-h"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="customizableDepthBreadth">Customizable
+        <h3 class="text-xl font-bold text-gray-800 mb-4 group-hover:text-indigo-500 transition-colors" data-i18n="customizableDepthBreadth">Customizable
             Depth & Breadth</h3>
-        <p class="text-gray-600" data-i18n="customizableDepthBreadthDescription">
+        <p class="text-gray-600 group-hover:text-gray-700 transition-colors" data-i18n="customizableDepthBreadthDescription">
             Control your research scope with adjustable parameters for both breadth and depth, ensuring you
             get exactly the level of detail you need.
         </p>
+        <div class="mt-4 h-1 w-0 bg-gradient-to-r from-indigo-500 to-indigo-300 group-hover:w-full transition-all duration-500"></div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
-        <div class="text-primary-600 text-4xl mb-4">
+    <div class="bg-white rounded-xl shadow-md p-8 transform transition-all hover:shadow-xl hover:-translate-y-2 duration-300 border-t-4 border-teal-500 group">
+        <div class="text-teal-500 text-4xl mb-4 group-hover:scale-110 transform transition-all duration-300">
             <i class="fas fa-file-alt"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-800 mb-4" data-i18n="comprehensiveResults">Comprehensive
+        <h3 class="text-xl font-bold text-gray-800 mb-4 group-hover:text-teal-500 transition-colors" data-i18n="comprehensiveResults">Comprehensive
             Results</h3>
-        <p class="text-gray-600" data-i18n="comprehensiveResultsDescription">
+        <p class="text-gray-600 group-hover:text-gray-700 transition-colors" data-i18n="comprehensiveResultsDescription">
             Receive well-structured research results with citations, summaries, and the ability to export
             your findings in various formats.
         </p>
+        <div class="mt-4 h-1 w-0 bg-gradient-to-r from-teal-500 to-teal-300 group-hover:w-full transition-all duration-500"></div>
     </div>
 </div>
 
-<div class="bg-gray-50 rounded-xl p-8 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center" data-i18n="howItWorks">How It Works</h3>
-    <div class="space-y-6">
-        <div class="flex items-start">
-            <div
-                class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
-                1</div>
-            <div>
-                <h4 class="text-lg font-semibold text-gray-800" data-i18n="signUpLogin">Sign Up & Login</h4>
-                <p class="text-gray-600" data-i18n="signUpLoginDescription">
-                    Create your account to get started with AI-powered research
-                </p>
+<!-- How It Works Section with Modern Timeline -->
+<div id="how-it-works" class="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-8 border border-gray-200 shadow-md mb-16">
+    <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center relative" data-i18n="howItWorks">
+        <span class="relative z-10">How It Works</span>
+        <span class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-primary-600 to-blue-400"></span>
+    </h3>
+    
+    <div class="relative">
+        <!-- Vertical Timeline Line -->
+        <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary-600 via-blue-400 to-teal-400 transform md:-translate-x-1/2"></div>
+        
+        <!-- Timeline Steps -->
+        <div class="space-y-12">
+            <!-- Step 1 -->
+            <div class="relative flex flex-col md:flex-row items-center md:justify-between">
+                <div class="flex items-center md:w-1/2 md:justify-end md:pr-8 mb-4 md:mb-0">
+                    <div class="order-1 md:order-1 w-full md:w-auto">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2" data-i18n="signUpLogin">Sign Up & Login</h4>
+                        <p class="text-gray-600 md:text-right" data-i18n="signUpLoginDescription">
+                            Create your account to get started with AI-powered research
+                        </p>
+                    </div>
+                </div>
+                <div class="absolute left-4 md:left-1/2 flex items-center justify-center z-10 transform md:-translate-x-1/2">
+                    <div class="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg animate-pulse-slow">
+                        1
+                    </div>
+                </div>
+                <div class="md:w-1/2 md:pl-8 hidden md:block">
+                    <div class="bg-white p-4 rounded-lg shadow-md transform transition-all hover:shadow-lg hover:-translate-y-1 duration-300">
+                        <i class="fas fa-user-plus text-primary-600 text-xl mb-2"></i>
+                        <p class="text-sm text-gray-500">Secure authentication ensures your research is saved and accessible anytime</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2 -->
+            <div class="relative flex flex-col md:flex-row items-center md:justify-between">
+                <div class="md:w-1/2 md:pr-8 hidden md:block md:text-right">
+                    <div class="bg-white p-4 rounded-lg shadow-md transform transition-all hover:shadow-lg hover:-translate-y-1 duration-300">
+                        <i class="fas fa-lightbulb text-blue-500 text-xl mb-2"></i>
+                        <p class="text-sm text-gray-500">Be specific with your research topic for the best results</p>
+                    </div>
+                </div>
+                <div class="absolute left-4 md:left-1/2 flex items-center justify-center z-10 transform md:-translate-x-1/2">
+                    <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg animate-pulse-slow">
+                        2
+                    </div>
+                </div>
+                <div class="flex items-center md:w-1/2 md:justify-start md:pl-8 mb-4 md:mb-0">
+                    <div class="order-1 md:order-1 w-full md:w-auto">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2" data-i18n="enterTopic">Enter Your Topic</h4>
+                        <p class="text-gray-600" data-i18n="enterTopicDescription">
+                            Input your research topic and customize the research parameters
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3 -->
+            <div class="relative flex flex-col md:flex-row items-center md:justify-between">
+                <div class="flex items-center md:w-1/2 md:justify-end md:pr-8 mb-4 md:mb-0">
+                    <div class="order-1 md:order-1 w-full md:w-auto">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2" data-i18n="guideResearch">Guide the Research</h4>
+                        <p class="text-gray-600 md:text-right" data-i18n="guideResearchDescription">
+                            Interact with the AI to refine and direct the research process
+                        </p>
+                    </div>
+                </div>
+                <div class="absolute left-4 md:left-1/2 flex items-center justify-center z-10 transform md:-translate-x-1/2">
+                    <div class="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg animate-pulse-slow">
+                        3
+                    </div>
+                </div>
+                <div class="md:w-1/2 md:pl-8 hidden md:block">
+                    <div class="bg-white p-4 rounded-lg shadow-md transform transition-all hover:shadow-lg hover:-translate-y-1 duration-300">
+                        <i class="fas fa-comments text-indigo-500 text-xl mb-2"></i>
+                        <p class="text-sm text-gray-500">Answer questions from the AI to help it focus on what matters most to you</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 4 -->
+            <div class="relative flex flex-col md:flex-row items-center md:justify-between">
+                <div class="md:w-1/2 md:pr-8 hidden md:block md:text-right">
+                    <div class="bg-white p-4 rounded-lg shadow-md transform transition-all hover:shadow-lg hover:-translate-y-1 duration-300">
+                        <i class="fas fa-file-export text-teal-500 text-xl mb-2"></i>
+                        <p class="text-sm text-gray-500">Download your research in markdown or PDF format with proper academic citations</p>
+                    </div>
+                </div>
+                <div class="absolute left-4 md:left-1/2 flex items-center justify-center z-10 transform md:-translate-x-1/2">
+                    <div class="w-8 h-8 bg-teal-500 text-white rounded-full flex items-center justify-center shadow-lg animate-pulse-slow">
+                        4
+                    </div>
+                </div>
+                <div class="flex items-center md:w-1/2 md:justify-start md:pl-8">
+                    <div class="order-1 md:order-1 w-full md:w-auto">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2" data-i18n="reviewResults">Review Results</h4>
+                        <p class="text-gray-600" data-i18n="reviewResultsDescription">
+                            Get comprehensive research results and export them in your preferred format
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="flex items-start">
-            <div
-                class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
-                2</div>
-            <div>
-                <h4 class="text-lg font-semibold text-gray-800" data-i18n="enterTopic">Enter Your Topic</h4>
-                <p class="text-gray-600" data-i18n="enterTopicDescription">
-                    Input your research topic and customize the research parameters
-                </p>
+    </div>
+</div>
+
+<!-- Academic Features Section -->
+<div class="bg-white rounded-xl shadow-lg p-8 mb-16">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center relative" data-i18n="academicFeatures">
+        <span class="relative z-10">Academic Research Features</span>
+        <span class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-indigo-500 to-blue-400"></span>
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div class="p-5 border border-gray-100 rounded-lg hover:border-blue-200 transition-all duration-300 hover:shadow-md">
+            <div class="flex items-center mb-4">
+                <div class="bg-indigo-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-graduation-cap text-indigo-600"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800" data-i18n="googleScholar">Google Scholar Integration</h4>
             </div>
+            <p class="text-gray-600 text-sm" data-i18n="googleScholarDesc">
+                Access academic papers and research publications from Google Scholar to enhance your research with scholarly sources.
+            </p>
         </div>
-        <div class="flex items-start">
-            <div
-                class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
-                3</div>
-            <div>
-                <h4 class="text-lg font-semibold text-gray-800" data-i18n="guideResearch">Guide the Research
-                </h4>
-                <p class="text-gray-600" data-i18n="guideResearchDescription">
-                    Interact with the AI to refine and direct the research process
-                </p>
+        
+        <div class="p-5 border border-gray-100 rounded-lg hover:border-blue-200 transition-all duration-300 hover:shadow-md">
+            <div class="flex items-center mb-4">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-quote-right text-blue-600"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800" data-i18n="citations">Proper Academic Citations</h4>
             </div>
+            <p class="text-gray-600 text-sm" data-i18n="citationsDesc">
+                Automatically generate properly formatted citations in APA, MLA and other academic styles for all referenced sources.
+            </p>
         </div>
-        <div class="flex items-start">
-            <div
-                class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center mr-4">
-                4</div>
+        
+        <div class="p-5 border border-gray-100 rounded-lg hover:border-blue-200 transition-all duration-300 hover:shadow-md">
+            <div class="flex items-center mb-4">
+                <div class="bg-teal-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-language text-teal-600"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800" data-i18n="multiLingual">Multi-Language Support</h4>
+            </div>
+            <p class="text-gray-600 text-sm" data-i18n="multiLingualDesc">
+                Translate non-English queries to English to access more comprehensive academic sources while maintaining original language results.
+            </p>
+        </div>
+    </div>
+    
+    <div class="mt-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+        <div class="flex flex-col md:flex-row items-start md:items-center">
+            <div class="text-blue-600 text-4xl mr-5 hidden md:block">
+                <i class="fas fa-lightbulb"></i>
+            </div>
             <div>
-                <h4 class="text-lg font-semibold text-gray-800" data-i18n="reviewResults">Review Results
-                </h4>
-                <p class="text-gray-600" data-i18n="reviewResultsDescription">
-                    Get comprehensive research results and export them in your preferred format
+                <h4 class="font-semibold text-gray-800 mb-2" data-i18n="academicTip">Pro Research Tip</h4>
+                <p class="text-gray-600 text-sm" data-i18n="academicTipDesc">
+                    For academic research, increase the "Depth" parameter to explore scholarly sources more thoroughly and enable the system to analyze complex academic papers in greater detail.
                 </p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Call to Action Section -->
+<div class="relative bg-gradient-to-r from-primary-600 to-blue-500 rounded-xl p-8 mb-16 overflow-hidden text-white">
+    <!-- Decorative Elements -->
+    <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full transform translate-x-1/3 -translate-y-1/3"></div>
+    <div class="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full transform -translate-x-1/3 translate-y-1/3"></div>
+    
+    <div class="relative z-10 text-center md:text-left md:flex md:items-center md:justify-between">
+        <div class="md:w-2/3 mb-6 md:mb-0">
+            <h3 class="text-2xl font-bold mb-4" data-i18n="startResearchingNow">Start Researching Now</h3>
+            <p class="text-blue-100 mb-4" data-i18n="startResearchingDesc">
+                Begin your in-depth research journey with AI assistance. Discover new insights, explore academic sources, and generate comprehensive reports with proper citations.
+            </p>
+            <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                <span class="inline-flex items-center px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm">
+                    <i class="fas fa-check-circle mr-2"></i> <span data-i18n="academicSources">Academic Sources</span>
+                </span>
+                <span class="inline-flex items-center px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm">
+                    <i class="fas fa-check-circle mr-2"></i> <span data-i18n="properCitations">Proper Citations</span>
+                </span>
+                <span class="inline-flex items-center px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm">
+                    <i class="fas fa-check-circle mr-2"></i> <span data-i18n="multiLanguage">Multi-Language</span>
+                </span>
+            </div>
+        </div>
+        <div class="md:w-1/3 flex justify-center md:justify-end">
+            <button onclick="window.toggleMainContent(true)" class="px-8 py-4 bg-white text-primary-600 font-bold rounded-lg shadow-lg hover:shadow-xl transform transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50">
+                <i class="fas fa-rocket mr-2"></i> <span data-i18n="getStarted">Get Started</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- FAQ Section with Accordion -->
+<div class="bg-white rounded-xl shadow-lg p-8 mb-16">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center relative" data-i18n="faq">
+        <span class="relative z-10">Frequently Asked Questions</span>
+        <span class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-primary-600 to-blue-400"></span>
+    </h3>
+    
+    <div class="mt-8 space-y-4" id="faqAccordion">
+        <!-- FAQ Item 1 -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <button class="faq-toggle w-full px-6 py-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between">
+                <span class="font-medium text-gray-800" data-i18n="faq1">How accurate is the AI research?</span>
+                <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+            </button>
+            <div class="faq-content px-6 py-4 bg-white hidden">
+                <p class="text-gray-600" data-i18n="faq1Answer">
+                    Our AI research system combines academic sources from Google Scholar with web content to provide comprehensive and accurate results. All sources are cited, allowing you to verify the information. The system is designed to present multiple perspectives on complex topics.
+                </p>
+            </div>
+        </div>
+        
+        <!-- FAQ Item 2 -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <button class="faq-toggle w-full px-6 py-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between">
+                <span class="font-medium text-gray-800" data-i18n="faq2">What types of research can I conduct?</span>
+                <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+            </button>
+            <div class="faq-content px-6 py-4 bg-white hidden">
+                <p class="text-gray-600" data-i18n="faq2Answer">
+                    You can conduct research on virtually any topic, from academic subjects like science, history, and literature to business topics, current events, and technical subjects. The system is versatile and adapts to your specific research needs.
+                </p>
+            </div>
+        </div>
+        
+        <!-- FAQ Item 3 -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <button class="faq-toggle w-full px-6 py-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between">
+                <span class="font-medium text-gray-800" data-i18n="faq3">How do the depth and breadth parameters work?</span>
+                <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
+            </button>
+            <div class="faq-content px-6 py-4 bg-white hidden">
+                <p class="text-gray-600" data-i18n="faq3Answer">
+                    The depth parameter controls how deeply the AI analyzes each source, with higher values resulting in more detailed analysis. The breadth parameter determines how many different sources and perspectives the AI explores. Adjusting these parameters helps you customize the research to your specific needs.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add JavaScript for FAQ Accordion -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize FAQ accordion
+        const faqToggles = document.querySelectorAll('.faq-toggle');
+        
+        faqToggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                const icon = this.querySelector('i');
+                
+                // Toggle content visibility
+                if (content.classList.contains('hidden')) {
+                    content.classList.remove('hidden');
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    icon.classList.add('transform', 'rotate-180');
+                } else {
+                    content.classList.add('hidden');
+                    content.style.maxHeight = null;
+                    icon.classList.remove('transform', 'rotate-180');
+                }
+            });
+        });
+        
+        // Add animation classes if they don't exist
+        if (!document.querySelector('.animate-pulse-slow')) {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 0.8; transform: scale(1); }
+                    50% { opacity: 1; transform: scale(1.05); }
+                }
+                .animate-pulse-slow {
+                    animation: pulse-slow 3s ease-in-out infinite;
+                }
+                
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+                .animate-float {
+                    animation: float 6s ease-in-out infinite;
+                }
+                
+                @keyframes fade-in {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                    animation: fade-in 0.6s ease-out forwards;
+                }
+                
+                .animate-fade-in-delay {
+                    animation: fade-in 0.6s ease-out 0.2s forwards;
+                    opacity: 0;
+                }
+                
+                .animate-fade-in-delay-2 {
+                    animation: fade-in 0.6s ease-out 0.4s forwards;
+                    opacity: 0;
+                }
+                
+                .animate-fade-in-delay-3 {
+                    animation: fade-in 0.6s ease-out 0.6s forwards;
+                    opacity: 0;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    });
+</script>
