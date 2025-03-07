@@ -232,10 +232,10 @@
             </div>
         </div>
 
-        <div id="mainContent" class="hidden mt-9">
-            <div class="bg-white bg-opacity-50 backdrop-blur-sm rounded-xl p-1 mb-1 relative z-10">
+        <div id="mainContent" class="hidden mt-10">
+            <div class="bg-white bg-opacity-95 backdrop-blur-sm rounded-xl p-1 mb-1 relative z-10">
                 <div class="title-area mb-0">
-                    <div class="flex flex-col items-center py-3">
+                    <div class="flex flex-col items-center py-3 z-10">
                         <div class="relative mb-1 flex flex-col items-center">
                             <img src="/images/logo.png" alt="Logo" class="h-16 opacity-90 mx-auto">
                             <div class="mt-6 text-center">
@@ -250,7 +250,7 @@
                 </div>
 
                 <div class="max-w-4xl mx-auto">
-                    <div class="ink-card p-6 mb-6 transform transition-all hover:shadow-2xl ink-fade-in">
+                    <div class="ink-card p-6 mb-6 transform transition-all hover:shadow-2xl ink-fade-in ">
                         <form id="researchForm" method="post" onsubmit="return false;" class="space-y-4">
                             <div class="relative">
                                 <label for="query" class="block text-sm font-medium text-gray-700 mb-1 ink-title"
@@ -293,10 +293,10 @@
                             <div class="ink-divider"></div>
 
                             <!-- Billing Information Section -->
-                            <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-all duration-300">
+                            <div class="p-4 gradient-billing-bg rounded-lg border border-gradient-start-light shadow-sm hover:shadow-md transition-all duration-300">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center">
-                                        <div class="bg-primary-600 text-white p-2 rounded-lg mr-3">
+                                        <div class="gradient-bg text-white p-2 rounded-lg mr-3">
                                             <i class="fas fa-coins text-yellow-300"></i>
                                         </div>
                                         <div>
@@ -380,10 +380,10 @@
                     </div>
 
                     <div id="interactiveDialog" class="hidden">
-                        <div class="ink-card p-6 animate-pulse-slow">
+                        <div class="ink-card p-6 animate-pulse-slow gradient-border-left">
                             <div class="flex items-start">
                                 <div class="flex-shrink-0">
-                                    <i class="fas fa-robot text-2xl text-primary-400"></i>
+                                    <i class="fas fa-robot text-2xl gradient-text"></i>
                                 </div>
                                 <div class="ml-4 flex-1">
                                     <p id="questionText" class="text-lg font-medium text-primary-900 mb-4 ink-title">
@@ -407,18 +407,18 @@
                         <div class="relative pt-1">
                             <div class="flex mb-3 items-center justify-between">
                                 <div class="flex items-center">
-                                    <i class="fas fa-spinner fa-spin text-primary-600 mr-2"></i>
-                                    <span class="text-sm font-semibold text-primary-600 ink-title">
+                                    <i class="fas fa-spinner fa-spin gradient-text mr-2"></i>
+                                    <span class="text-sm font-semibold gradient-text ink-title">
                                         <span data-i18n="researching">Researching...</span>
                                     </span>
                                 </div>
                                 <div>
-                                    <span id="progressText" class="text-sm font-semibold text-primary-600">0%</span>
+                                    <span id="progressText" class="text-sm font-semibold gradient-text">0%</span>
                                 </div>
                             </div>
                             <div class="overflow-hidden h-3 rounded-full bg-primary-100">
                                 <div id="progressBar"
-                                    class="h-full rounded-full bg-primary-600 transition-all duration-500 ease-out"
+                                    class="h-full rounded-full transition-all duration-500 ease-out"
                                     style="width: 0%">
                                 </div>
                             </div>

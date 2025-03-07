@@ -14,6 +14,7 @@ import { DB } from './db/database';
 import { setupSwagger } from './swagger';
 import { ResearchManager } from './research/research-manager';
 import { PaymentService } from './services/payment-service';
+import { SystemSettingsService } from './services/system-settings-service';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -136,15 +137,18 @@ app.post('/api/research/cost', authenticateToken, async (req, res) => {
 });
 
 // Get credit pricing configuration
-app.get('/api/config/credits', (req, res) => {
+app.get('/api/config/credits', async (req, res) => {
     try {
+        const settingsService = await SystemSettingsService.getInstance();
+        const settings = await settingsService.getSettings();
+        
         res.json({
-            baseCredits: process.env.CREDITS_BASE_PRICE ? Number(process.env.CREDITS_BASE_PRICE) : 2,
-            depthMultiplier: process.env.CREDITS_DEPTH_MULTIPLIER ? Number(process.env.CREDITS_DEPTH_MULTIPLIER) : 1,
-            breadthMultiplier: process.env.CREDITS_BREADTH_MULTIPLIER ? Number(process.env.CREDITS_BREADTH_MULTIPLIER) : 0.5
+            baseCredits: settings.baseCredits,
+            depthMultiplier: settings.depthMultiplier,
+            breadthMultiplier: settings.breadthMultiplier
         });
     } catch (error) {
-        logger.error('Error fetching credit configuration:', error);
+        logger.error('Error fetching credit configuration from database:', error);
         res.status(500).json({ error: 'Failed to fetch credit configuration' });
     }
 });
