@@ -438,6 +438,14 @@ export const translations = {
     }
 };
 
+/**
+ * Get the current language setting
+ * @returns {string} The current language code ('en' or 'zh-CN')
+ */
+export function getCurrentLanguage() {
+    return localStorage.getItem('language') || 'zh';
+}
+
 // Function to update cost formula translations with current credit configuration
 export function updateCostFormulas() {
     if (window.creditConfig) {

@@ -15,6 +15,9 @@ import { setupSwagger } from './swagger';
 import { ResearchManager } from './research/research-manager';
 import { PaymentService } from './services/payment-service';
 import { SystemSettingsService } from './services/system-settings-service';
+import { o3MiniModel, trimPrompt } from './ai/providers';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -952,7 +955,67 @@ app.post('/api/research/:id/partial', authenticateToken, async (req, res) => {
     }
 });
 
-// Post user research history
+// Prompt optimization endpoint
+app.post('/api/optimize-prompt', authenticateToken, async (req, res) => {
+    try {
+        const { prompt, language = 'zh-CN' } = req.body;
+        const userId = (req as any).user.id;
+        
+        if (!prompt) {
+            return res.status(400).json({ error: 'Prompt is required' });
+        }
+        
+        logger.info(`[Optimize Prompt] User ${userId} requested prompt optimization for: ${prompt}`);
+        
+        const apiResponse = await generateObject({
+            model: o3MiniModel,
+            system: "You are a professional research assistant. Your task is to understand the user's research purpose and help optimize their research prompt to make it clearer. Use same language as user.",
+            prompt: prompt,
+            schema: z.object({
+                optimizedPrompt: z.string().describe('The optimized research prompt'),
+            }),
+        });
+        logger.info(`[Optimize Prompt] Generated optimization response for user ${userId}`);
+        
+        // Extract the optimized prompt from the response
+        let optimizedPrompt = apiResponse.object.optimizedPrompt;
+        
+        // If the response is long and likely contains explanation, try to extract just the prompt
+        if (optimizedPrompt.length > 200) {
+            // Look for patterns that might indicate the actual prompt
+            const promptPatterns = [
+                /优化后的提示词[：:]\s*["'](.+?)["']/s,
+                /优化提示词[：:]\s*["'](.+?)["']/s,
+                /建议的提示词[：:]\s*["'](.+?)["']/s,
+                /optimized prompt[：:]\s*["'](.+?)["']/s,
+                /suggested prompt[：:]\s*["'](.+?)["']/s,
+                /final prompt[：:]\s*["'](.+?)["']/s,
+                /["'](.+?)["']\s*作为您的研究提示词/s,
+                /["'](.+?)["']\s*as your research prompt/s
+            ];
+            
+            for (const pattern of promptPatterns) {
+                const match = optimizedPrompt.match(pattern);
+                if (match && match[1]) {
+                    optimizedPrompt = match[1].trim();
+                    break;
+                }
+            }
+        }
+        
+        res.json({ 
+            originalPrompt: prompt,
+            optimizedPrompt: optimizedPrompt,
+            fullResponse: optimizedPrompt
+        });
+        
+    } catch (error) {
+        logger.error('[Optimize Prompt] Error optimizing prompt:', error);
+        res.status(500).json({ error: 'Failed to optimize prompt' });
+    }
+});
+
+// Get user's research history
 app.post('/api/research/list', authenticateToken, async (req, res) => {
     logger.info('[Research History] Fetching research history');
     try {

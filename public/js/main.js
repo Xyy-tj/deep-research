@@ -1,5 +1,6 @@
 import { Auth, setUpdateBalanceFunction } from './auth.js';
 import { translations, updateCostFormulas } from './i18n.js';
+import { initPromptOptimizer } from './prompt-optimizer.js';
 
 // Global variables
 let currentLanguage = localStorage.getItem('language') || 'zh';
@@ -133,6 +134,9 @@ async function checkSufficientCredits(requiredCredits) {
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize auth and handle logout
     const auth = Auth.getInstance();
+    
+    // Initialize prompt optimizer
+    initPromptOptimizer();
     
     // Fetch credit configuration from server
     try {

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import axios from 'axios';
 
 import { o3MiniModel, trimPrompt } from './ai/providers';
-import { systemPrompt } from './prompt';
+import { systemPrompt, reportPrompt, academicSearchRefinementPrompt, domainDetectionPrompt, subdomainDetectionPrompt, keywordGenerationPrompt } from './prompt';
 import { OutputManager } from './output-manager';
 import { CreditManager } from './user/credit-manager';
 
@@ -182,16 +182,6 @@ async function processSerpResult({
     }
   });
 
-  // Update next available global index if global reference mapping exists
-  if (globalReferenceMapping) {
-    const oldNextIndex = globalReferenceMapping.nextIndex;
-    globalReferenceMapping.nextIndex = Math.max(
-      globalReferenceMapping.nextIndex,
-      ...Object.values(uniqueIndexes)
-    ) + 1;
-    log(`Updated next global reference index: ${oldNextIndex} → ${globalReferenceMapping.nextIndex}`);
-  }
-
   // Update contents with unique indexes
   const uniqueContents = contents.map(item => ({
     ...item,
@@ -347,7 +337,6 @@ export async function writeFinalReport({
     .join('\n');
   
   // Log reference statistics
-  log(`referencesMapping: ${referencesMapping}`);
   const refNumbers = uniqueUrls.map(url => referenceMapping[url] || 0);
   const validRefs = refNumbers.filter(num => num > 0);
 
@@ -375,74 +364,12 @@ export async function writeFinalReport({
   const res = await generateObject({
     model: o3MiniModel,
     system: systemPrompt(),
-    prompt: `Given the following prompt from the user, write a comprehensive and detailed report on the topic using the learnings from research. The report should be thorough, well-structured, and academically rigorous.
-
-Required sections:
-1. Executive Abstract
-   - Provide a concise but comprehensive overview of the entire report
-   - Highlight key findings and their significance
-
-2. Introduction and Background
-   - Provide extensive context about the topic's history and significance
-   - Explain why this topic matters and to whom
-   - Define all key terms and concepts thoroughly
-   - Include at least 2-3 paragraphs of detailed background information
-
-3. Key Findings and Analysis
-   - Present each major finding in its own paragraph with supporting evidence, key conclution should be bold
-   - Include at least 3-5 distinct findings with detailed explanations
-   - Compare and contrast different findings when relevant
-
-4. Detailed Discussion
-   - Dedicate 1-3 paragraphs to each subtopic
-   - Include specific examples and case studies with detailed descriptions
-   - Provide comprehensive data and evidence for each point
-   - Address different perspectives and approaches with in-depth analysis
-   - Explore nuances and complexities of each subtopic
-   - Include at least 5-12 paragraphs of detailed discussion
-
-5. Implications and Impact Analysis
-   - Examine impacts across different domains (economic, social, technological, etc.)
-   - Include specific scenarios and their potential outcomes
-   - Provide at least 2-4 paragraphs of detailed impact analysis
-
-6. Recommendations and Future Directions
-   - Provide specific, actionable recommendations with implementation details
-   - Explain the rationale behind each recommendation
-   - Discuss potential challenges and how to overcome them
-   - Outline future research directions with specific questions to explore
-   - Include at least 2-4 detailed recommendations
-
-7. Conclusion
-   - Synthesize key points from the report, emphasize the most important insights and their significance
-   - End with thought-provoking implications
-
-Guidelines:
-- Aim for at least 8+ pages of detailed content (approximately 4000+ words)
-- Include ALL relevant learnings from the research
-- Support claims with specific examples and data points
-- IMPORTANT: When citing information from sources, use reference numbers in square brackets [X] that correspond to the references provided below
-- CRITICAL: Maintain CONSISTENT global reference numbers throughout the entire document. DO NOT restart numbering in each section.
-- Each major claim or finding should be supported by at least one reference
-- Provide actionable insights and recommendations
-- Use clear section headings and subheadings
-- Maintain a professional and analytical tone
-- Avoid generalizations and vague statements - be specific and detailed
-- Expand on each point with examples, evidence, and analysis
-- IMPORTANT: Write the entire report in ${language === 'zh-CN' ? 'Chinese (Simplified)' : language} language
-
-<prompt>${prompt}</prompt>
-
-Here are all the learnings from previous research. Each learning includes reference numbers in square brackets that you should use in your report:
-
-<learnings>
-${learningsString}
-</learnings>
-
-Here are the references to use in your citations, but don't add reference at the end of the report:
-${referencesMapping}
-
-Note: Make sure to use the reference numbers in square brackets [X] consistently throughout the report when citing information from sources. Each citation should correspond to the reference numbers provided above. DO NOT restart numbering in each section - use the exact same reference numbers throughout the entire document.`,
+    prompt: reportPrompt({
+      prompt,
+      learningsString,
+      referencesMapping,
+      language
+    }),
     schema: z.object({
       reportMarkdown: z
         .string()
@@ -1081,23 +1008,7 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
 async function refineQueryForAcademicSearch(query: string): Promise<string> {
   try {
     // Use the AI model to refine the query
-    const prompt = `
-You are an academic research assistant helping to refine search queries for Google Scholar.
-Please refine the following query to make it more suitable for academic search:
-"${query}"
-
-Your refinement should:
-1. Make the query more specific and focused on academic concepts
-2. Use precise academic terminology
-3. Remove colloquial language
-4. Structure the query to match academic paper titles or keywords
-5. Do NOT add specific journal names or conferences (these will be added separately)
-6. Keep the refined query concise (under 10 words if possible)
-
-Return ONLY the refined query text with no additional explanation.
-`;
-
-    const refinedQuery = await callAI(prompt, 'query-refinement');
+    const refinedQuery = await callAI(academicSearchRefinementPrompt(query), 'query-refinement');
     
     // Clean up the response - remove quotes, newlines and extra spaces
     const cleanedQuery = refinedQuery.replace(/^["'\s]+|["'\s]+$/g, '').trim();
@@ -1117,31 +1028,7 @@ Return ONLY the refined query text with no additional explanation.
 async function detectDomainAndGetKeywords(query: string): Promise<{ domain: string, keywords: string }> {
   try {
     // First, detect the domain using AI
-    const domainPrompt = `
-Analyze this research query and determine which academic domain it belongs to.
-Query: "${query}"
-
-Choose ONE domain from this list:
-- Computer Science
-- Electrical Engineering
-- Physics
-- Mathematics
-- Biology
-- Medicine
-- Chemistry
-- Economics
-- Psychology
-- Social Sciences
-- Environmental Science
-- Materials Science
-- Mechanical Engineering
-- Civil Engineering
-- Other (specify)
-
-Return ONLY the domain name with no additional explanation.
-`;
-
-    const domain = await callAI(domainPrompt, 'domain-detection');
+    const domain = await callAI(domainDetectionPrompt(query), 'domain-detection');
     const cleanDomain = domain.replace(/^["'\s]+|["'\s]+$/g, '').trim();
     
     // Domain-specific keywords for top journals and conferences
@@ -1167,18 +1054,7 @@ Return ONLY the domain name with no additional explanation.
     };
 
     // Get more specific subdomain for better keyword matching
-    const subdomainPrompt = `
-Based on this research query: "${query}"
-And the general domain: "${cleanDomain}"
-
-Determine a more specific subdomain. For example:
-- If Computer Science, specify: Computer Vision, Machine Learning, Natural Language Processing, etc.
-- If Medicine, specify: Cardiology, Neurology, Oncology, etc.
-
-Return ONLY the specific subdomain with no additional explanation.
-`;
-
-    const subdomain = await callAI(subdomainPrompt, 'subdomain-detection');
+    const subdomain = await callAI(subdomainDetectionPrompt(query, cleanDomain), 'subdomain-detection');
     const cleanSubdomain = subdomain.replace(/^["'\s]+|["'\s]+$/g, '').trim();
     
     // Try to get keywords for the subdomain first, then fall back to the main domain
@@ -1186,16 +1062,7 @@ Return ONLY the specific subdomain with no additional explanation.
     
     // If no predefined keywords, try to generate some using AI
     if (!keywords && (cleanDomain !== 'Other' && !cleanDomain.includes('Other'))) {
-      const keywordPrompt = `
-Generate 3-5 keywords representing top journals or conferences in the field of ${cleanSubdomain || cleanDomain}.
-These should be abbreviations or short names commonly used in academic citations.
-For example, for Computer Vision: "CVPR ICCV ECCV"
-For Electrical Engineering: "IEEE Transactions"
-
-Return ONLY the keywords separated by spaces with no additional explanation.
-`;
-
-      keywords = await callAI(keywordPrompt, 'keyword-generation');
+      keywords = await callAI(keywordGenerationPrompt(cleanSubdomain || cleanDomain), 'keyword-generation');
       keywords = keywords.replace(/^["'\s]+|["'\s]+$/g, '').trim();
     }
     
