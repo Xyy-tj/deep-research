@@ -969,7 +969,7 @@ app.post('/api/optimize-prompt', authenticateToken, async (req, res) => {
         
         const apiResponse = await generateObject({
             model: o3MiniModel,
-            system: "You are a professional research assistant. Your task is to understand the user's research purpose and help optimize their research prompt to make it clearer. Use same language as user.",
+            system: "You are a professional research assistant. Your task is to understand the user's research query and enhance it to be more precise and focused, without making it verbose or overly specific. Clarify the core question while maintaining brevity.Use the same language as the user.",
             prompt: prompt,
             schema: z.object({
                 optimizedPrompt: z.string().describe('The optimized research prompt'),
