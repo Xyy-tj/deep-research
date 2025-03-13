@@ -2,7 +2,7 @@ import { Auth, setUpdateBalanceFunction } from './auth.js';
 import { translations, updateCostFormulas } from './i18n.js';
 
 // Global variables
-let currentLanguage = localStorage.getItem('language') || 'en';
+let currentLanguage = localStorage.getItem('language') || 'zh';
 let balanceUpdateInterval = null;
 
 // Global helper functions

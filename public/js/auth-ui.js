@@ -31,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showAuthModal(type) {
         authModal.classList.remove('hidden');
         authForm.dataset.type = type;
-        authModalTitle.textContent = type === 'login' ? 'Login' : 'Register';
+        authModalTitle.textContent = type === 'login' ? 
+            translations[currentLanguage].login : 
+            translations[currentLanguage].register;
         emailVerification.classList.toggle('hidden', type === 'login');
         
         // Reset form
@@ -41,7 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update button text
         if (authSubmitBtnText) {
-            authSubmitBtnText.textContent = type === 'login' ? 'Login' : 'Register';
+            authSubmitBtnText.textContent = type === 'login' ? 
+                translations[currentLanguage].login : 
+                translations[currentLanguage].register;
         }
         
         // Show/hide email verification section
@@ -188,6 +192,14 @@ async function updateAuthDisplay() {
     } else {
         // 触发用户登出事件，用于侧边栏折叠
         window.dispatchEvent(new Event('userLoggedOut'));
+
+        // 绑定充值按钮事件
+        const rechargeBtn = document.getElementById('rechargeBtn');
+        if (rechargeBtn) {
+            rechargeBtn.addEventListener('click', () => {
+                window.dispatchEvent(new Event('recharge'));
+            });
+        }
     }
 }
 

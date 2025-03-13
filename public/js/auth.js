@@ -87,6 +87,11 @@ export class Auth {
                 // 触发用户登录事件，用于侧边栏展开
                 window.dispatchEvent(new Event('userLoggedIn'));
                 
+                // 初始化支付功能 - 确保登录后支付按钮正常工作
+                if (typeof window.initPayment === 'function') {
+                    setTimeout(() => window.initPayment(), 100);
+                }
+                
                 return { success: true };
             } else {
                 // 处理不同的错误状态码

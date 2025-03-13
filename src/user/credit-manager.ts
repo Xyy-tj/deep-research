@@ -197,4 +197,39 @@ export class CreditManager {
   async reloadSettings(): Promise<void> {
     await this.loadSettingsFromDatabase();
   }
+
+  /**
+   * Refund credits to a user when research fails
+   * @param userId The user ID
+   * @param query The original query
+   * @param depth The research depth
+   * @param breadth The research breadth
+   * @param reason The reason for the refund
+   * @returns The number of credits refunded
+   */
+  async refundCredits(userId: string | number, query: string, depth: number, breadth: number, reason: string): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    const cost = this.calculateQueryCost(depth, breadth);
+    const numericUserId = Number(userId);
+    console.log(`[CreditManager] Refunding ${cost} credits to user ${numericUserId} due to: ${reason}`);
+    
+    // Run all operations inside a transaction
+    await this.db.transaction(async () => {
+      // Update credits
+      await this.db.run(
+        'UPDATE users SET credits = credits + ? WHERE id = ?',
+        [cost, numericUserId]
+      );
+      
+      // Record refund
+      await this.db.run(
+        'INSERT INTO usage_records (user_id, query, query_depth, query_breadth, credits_used, notes) VALUES (?, ?, ?, ?, ?, ?)',
+        [numericUserId, query, depth, breadth, -cost, `Refund: ${reason}`]
+      );
+    });
+
+    console.log(`[CreditManager] Credits refunded successfully to user ${numericUserId}`);
+    return cost;
+  }
 }

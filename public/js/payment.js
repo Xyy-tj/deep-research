@@ -44,6 +44,9 @@ async function initPayment() {
   initRechargeModal();
 }
 
+// Make initPayment globally accessible
+window.initPayment = initPayment;
+
 // 获取当前汇率
 async function fetchExchangeRate() {
   try {

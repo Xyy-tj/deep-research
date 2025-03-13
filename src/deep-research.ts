@@ -543,341 +543,366 @@ export async function deepResearch({
   };
 
   const creditManager = await CreditManager.getInstance();
+  let creditsUsed = 0;
 
-  // 检查用户额度是否足够
-  const hasEnoughCredits = await creditManager.checkUserCredits(userId, depth, breadth);
-  if (!hasEnoughCredits) {
-    throw new Error('Insufficient credits to perform this research');
-  }
+  try {
+    // 检查用户额度是否足够
+    const hasEnoughCredits = await creditManager.checkUserCredits(userId, depth, breadth);
+    if (!hasEnoughCredits) {
+      throw new Error('Insufficient credits to perform this research');
+    }
 
-  // 开始研究前扣除额度
-  const creditsUsed = await creditManager.deductCredits(userId, query, depth, breadth);
+    // 开始研究前扣除额度
+    creditsUsed = await creditManager.deductCredits(userId, query, depth, breadth);
 
-  log(`Starting deep research with depth ${depth} and breadth ${breadth}`);
-  log(`Credits used: ${creditsUsed}`);
+    log(`Starting deep research with depth ${depth} and breadth ${breadth}`);
+    log(`Credits used: ${creditsUsed}`);
+    const progress: ResearchProgress = {
+      currentDepth: 0,
+      totalDepth: depth,
+      currentBreadth: 0,
+      totalBreadth: breadth,
+      totalQueries: 0,
+      completedQueries: 0,
+      creditsUsed,
+    };
 
-  const progress: ResearchProgress = {
-    currentDepth: 0,
-    totalDepth: depth,
-    currentBreadth: 0,
-    totalBreadth: breadth,
-    totalQueries: 0,
-    completedQueries: 0,
-    creditsUsed,
-  };
+    const reportProgress = (update: Partial<ResearchProgress>) => {
+      Object.assign(progress, update);
+      onProgress?.(progress);
+    };
 
-  const reportProgress = (update: Partial<ResearchProgress>) => {
-    Object.assign(progress, update);
-    onProgress?.(progress);
-  };
+    // Generate initial SERP queries
+    const serpQueries = await generateSerpQueries({
+      query,
+      numQueries: breadth,
+      learnings,
+    });
 
-  // Generate initial SERP queries
-  const serpQueries = await generateSerpQueries({
-    query,
-    numQueries: breadth,
-    learnings,
-  });
+    reportProgress({
+      totalQueries: serpQueries.length,
+      currentQuery: serpQueries[0]?.query
+    });
 
-  reportProgress({
-    totalQueries: serpQueries.length,
-    currentQuery: serpQueries[0]?.query
-  });
+    // Process each query
+    const limit = pLimit(ConcurrencyLimit);
+    const newLearnings = [...learnings];
+    const newVisitedUrls = [...visitedUrls];
 
-  // Process each query
-  const limit = pLimit(ConcurrencyLimit);
-  const newLearnings = [...learnings];
-  const newVisitedUrls = [...visitedUrls];
+    // Initialize global reference mapping to track consistent reference numbers
+    const referenceMapping = {};
+    let nextGlobalIndex = 1;
+    const globalReferenceMapping = {
+      mapping: referenceMapping,
+      nextIndex: nextGlobalIndex
+    };
 
-  // Initialize global reference mapping to track consistent reference numbers
-  const referenceMapping = {};
-  let nextGlobalIndex = 1;
-  const globalReferenceMapping = {
-    mapping: referenceMapping,
-    nextIndex: nextGlobalIndex
-  };
+    log(`Initialized reference mapping system. Starting with empty mapping.`);
 
-  log(`Initialized reference mapping system. Starting with empty mapping.`);
+    for (let currentDepth = 1; currentDepth <= depth; currentDepth++) {
+      reportProgress({ currentDepth });
 
-  for (let currentDepth = 1; currentDepth <= depth; currentDepth++) {
-    reportProgress({ currentDepth });
-
-    for (let i = 0; i < serpQueries.length; i++) {
-      const serpQuery = serpQueries[i];
-      reportProgress({
-        currentBreadth: i + 1,
-        currentQuery: serpQuery.query,
-      });
-
-      // Ask user if they want to research this query
-      try {
-        const shouldResearch = await askQuestionWithTimeout(
-          output,
-          `Would you like to research more about: ${serpQuery.query}?`,
-          QuestionTimeoutMs
-        );
-
-        if (!shouldResearch) {
-          reportProgress({ completedQueries: progress.completedQueries + 1 });
-          log(`Skipping research for query: "${serpQuery.query}"`);
-          continue;
-        }
-      } catch (error) {
-        console.error('Error asking question:', error);
-        // If there's an error asking the question, continue with the research
-      }
-
-      try {
-        log(`Starting research for query: "${serpQuery.query}"`);
-
-        // Initialize default empty results
-        let webResult = { data: [] };
-        let scholarResult = { data: [] };
-
-        // Perform web search using Firecrawl
-        try {
-          webResult = await limit(() => firecrawl.search(serpQuery.query, {
-            limit: process.env.FIRECRAWL_LIMIT,
-            scrapeOptions: {
-              formats: ["markdown"]
-            }
-          }));
-          log(`Firecrawl search found ${webResult.data.length} results for query: "${serpQuery.query}"`);
-          log(`Web results: ${JSON.stringify(webResult)}`);
-        } catch (firecrawlError) {
-          log(`Firecrawl search failed for query "${serpQuery.query}": ${firecrawlError.message || 'Unknown error'}`);
-          log(`Continuing with empty web results. Will still attempt to use Google Scholar results.`);
-          // Keep webResult.data as empty array and continue
-        }
-
-        // Perform Google Scholar search with original query
-        try {
-          // Search with original query
-          scholarResult = await limit(() => searchGoogleScholar(serpQuery.query));
-          log(`Google Scholar search found ${scholarResult.data.length} results for original query: "${serpQuery.query}"`);
-          
-          // Search with translated query (if needed)
-          // Only translate if the language is not English
-          if (language && language.toLowerCase() !== 'en' && language.toLowerCase() !== 'en-us') {
-            log(`Language is ${language}, attempting to search with English translation`);
-            
-            try {
-              const translatedScholarResult = await limit(() => 
-                searchGoogleScholar(serpQuery.query, { translateToEnglish: true })
-              );
-              
-              const translatedResultCount = translatedScholarResult.data.length;
-              log(`Google Scholar search found ${translatedResultCount} results for translated query`);
-              
-              if (translatedResultCount > 0) {
-                // Combine results, removing duplicates based on URL
-                const allScholarUrls = new Set(scholarResult.data.map(item => item.url));
-                const uniqueTranslatedResults = translatedScholarResult.data.filter(
-                  item => !allScholarUrls.has(item.url)
-                );
-                
-                const uniqueCount = uniqueTranslatedResults.length;
-                if (uniqueCount > 0) {
-                  log(`Found ${uniqueCount} unique results from translated query that weren't in original results`);
-                  
-                  // Add a marker to indicate these came from translated query
-                  const markedTranslatedResults = uniqueTranslatedResults.map(result => ({
-                    ...result,
-                    fromTranslatedQuery: true,
-                    originalQuery: serpQuery.query
-                  }));
-                  
-                  // Combine with original results
-                  scholarResult.data = [...scholarResult.data, ...markedTranslatedResults];
-                  log(`Combined scholar results: ${scholarResult.data.length} total items (${scholarResult.data.length - uniqueCount} original + ${uniqueCount} from translation)`);
-                } else {
-                  log(`No unique results found from translated query`);
-                }
-              } else {
-                log(`No results found from translated query`);
-              }
-            } catch (translatedScholarError) {
-              log(`Google Scholar search failed for translated query: ${translatedScholarError.message || 'Unknown error'}`);
-              log(`Continuing with only original language results.`);
-            }
-          } else {
-            log(`Language is ${language}, skipping translation for Google Scholar search`);
-          }
-
-          // Process scholar results to include citation data in the URL
-          scholarResult.data = scholarResult.data.map(result => {
-            if (result.citations) {
-              // Encode citation data in the URL for later use in the final report
-              const citationData = {
-                formats: result.citations.formats,
-                links: result.citations.links
-              };
-
-              // Append citation data to URL with a special marker
-              const citationJson = JSON.stringify(citationData);
-              result.url = `${result.url}#citations#${citationJson}`;
-              
-              // Add note if this result came from a translated query
-              const translationNote = result.fromTranslatedQuery ? 
-                ` (from translated query: "${result.originalQuery}")` : '';
-              log(`Added citation data to URL${translationNote}: ${result.url.substring(0, 50)}...`);
-            }
-            return result;
-          });
-        } catch (scholarError) {
-          log(`Google Scholar search failed for query "${serpQuery.query}": ${scholarError.message || 'Unknown error'}`);
-          log(`Continuing with empty scholar results.`);
-          // Keep scholarResult.data as empty array and continue
-        }
-
-        // Combine results from both sources
-        const combinedResult = {
-          data: [...webResult.data, ...scholarResult.data]
-        };
-        
-        // Log combined results statistics
-        const webCount = webResult.data.length;
-        const scholarCount = scholarResult.data.length;
-        const translatedCount = scholarResult.data.filter(item => item.fromTranslatedQuery).length;
-        
-        log(`Combined search results: ${combinedResult.data.length} total items for query: "${serpQuery.query}" (${webCount} web + ${scholarCount} scholar, including ${translatedCount} from translated query)`);
-
-        // Skip processing if no results were found from either source
-        if (combinedResult.data.length === 0) {
-          log(`No results found from either Firecrawl or Google Scholar for query: "${serpQuery.query}". Skipping processing.`);
-          
-          // Add fallback content for this query to ensure we have some references
-          log(`Adding fallback content for query: "${serpQuery.query}"`);
-          
-          // Create a fallback URL and content
-          const fallbackUrl = `https://example.com/fallback?query=${encodeURIComponent(serpQuery.query)}`;
-          const fallbackContent = {
-            data: [{
-              description: `This is fallback content for the query: "${serpQuery.query}". No results were found from either Firecrawl or Google Scholar.`,
-              url: fallbackUrl,
-              title: `Fallback content for: ${serpQuery.query}`
-            }]
-          };
-          
-          // Process the fallback content
-          try {
-            const fallbackProcessed = await processSerpResult({
-              query: serpQuery.query,
-              result: fallbackContent,
-              globalReferenceMapping
-            });
-            
-            log(`Processed fallback content for query "${serpQuery.query}"`);
-            
-            if (fallbackProcessed.learnings) {
-              newLearnings.push(...fallbackProcessed.learnings);
-            }
-            if (fallbackProcessed.visitedUrls) {
-              newVisitedUrls.push(...fallbackProcessed.visitedUrls);
-            }
-            if (fallbackProcessed.referenceIndexes) {
-              Object.assign(referenceMapping, fallbackProcessed.referenceIndexes);
-            }
-          } catch (fallbackError) {
-            log(`Failed to process fallback content: ${fallbackError.message || 'Unknown error'}`);
-          }
-          
-          reportProgress({ completedQueries: progress.completedQueries + 1 });
-          continue;
-        }
-
-        // Log reference mapping state before processing
-        const refCountBefore = Object.keys(referenceMapping).length;
-        log(`Reference mapping before processing query "${serpQuery.query}": ${refCountBefore} entries`);
-
-        const processed = await processSerpResult({
-          query: serpQuery.query,
-          result: combinedResult,
-          globalReferenceMapping
+      for (let i = 0; i < serpQueries.length; i++) {
+        const serpQuery = serpQueries[i];
+        reportProgress({
+          currentBreadth: i + 1,
+          currentQuery: serpQuery.query,
         });
 
-        // Log detailed information about the processed results
-        log(`Processed results for query "${serpQuery.query}":
+        // Ask user if they want to research this query
+        try {
+          const shouldResearch = await askQuestionWithTimeout(
+            output,
+            `Would you like to research more about: ${serpQuery.query}?`,
+            QuestionTimeoutMs
+          );
+
+          if (!shouldResearch) {
+            reportProgress({ completedQueries: progress.completedQueries + 1 });
+            log(`Skipping research for query: "${serpQuery.query}"`);
+            continue;
+          }
+        } catch (error) {
+          console.error('Error asking question:', error);
+          // If there's an error asking the question, continue with the research
+        }
+
+        try {
+          log(`Starting research for query: "${serpQuery.query}"`);
+
+          // Initialize default empty results
+          let webResult = { data: [] };
+          let scholarResult = { data: [] };
+
+          // Perform web search using Firecrawl
+          try {
+            webResult = await limit(() => firecrawl.search(serpQuery.query, {
+              limit: process.env.FIRECRAWL_LIMIT,
+              scrapeOptions: {
+                formats: ["markdown"]
+              }
+            }));
+            log(`Firecrawl search found ${webResult.data.length} results for query: "${serpQuery.query}"`);
+            log(`Web results: ${JSON.stringify(webResult)}`);
+          } catch (firecrawlError) {
+            log(`Firecrawl search failed for query "${serpQuery.query}": ${firecrawlError instanceof Error ? firecrawlError.message : 'Unknown error'}`);
+            log(`Continuing with empty web results. Will still attempt to use Google Scholar results.`);
+            // Keep webResult.data as empty array and continue
+          }
+
+          // Perform Google Scholar search with original query
+          try {
+            // Search with original query
+            scholarResult = await limit(() => searchGoogleScholar(serpQuery.query));
+            log(`Google Scholar search found ${scholarResult.data.length} results for original query: "${serpQuery.query}"`);
+            
+            // Search with translated query (if needed)
+            // Only translate if the language is not English
+            if (language && language.toLowerCase() !== 'en' && language.toLowerCase() !== 'en-us') {
+              log(`Language is ${language}, attempting to search with English translation`);
+              
+              try {
+                const translatedScholarResult = await limit(() => 
+                  searchGoogleScholar(serpQuery.query, { translateToEnglish: true })
+                );
+                
+                const translatedResultCount = translatedScholarResult.data.length;
+                log(`Google Scholar search found ${translatedResultCount} results for translated query`);
+                
+                if (translatedResultCount > 0) {
+                  // Combine results, removing duplicates based on URL
+                  const allScholarUrls = new Set(scholarResult.data.map(item => item.url));
+                  const uniqueTranslatedResults = translatedScholarResult.data.filter(
+                    item => !allScholarUrls.has(item.url)
+                  );
+                  
+                  const uniqueCount = uniqueTranslatedResults.length;
+                  if (uniqueCount > 0) {
+                    log(`Found ${uniqueCount} unique results from translated query that weren't in original results`);
+                    
+                    // Add a marker to indicate these came from translated query
+                    const markedTranslatedResults = uniqueTranslatedResults.map(result => ({
+                      ...result,
+                      fromTranslatedQuery: true,
+                      originalQuery: serpQuery.query
+                    }));
+                    
+                    // Combine with original results
+                    scholarResult.data = [...scholarResult.data, ...markedTranslatedResults];
+                    log(`Combined scholar results: ${scholarResult.data.length} total items (${scholarResult.data.length - uniqueCount} original + ${uniqueCount} from translation)`);
+                  } else {
+                    log(`No unique results found from translated query`);
+                  }
+                } else {
+                  log(`No results found from translated query`);
+                }
+              } catch (translatedScholarError) {
+                log(`Google Scholar search failed for translated query: ${translatedScholarError instanceof Error ? translatedScholarError.message : 'Unknown error'}`);
+                log(`Continuing with only original language results.`);
+              }
+            } else {
+              log(`Language is ${language}, skipping translation for Google Scholar search`);
+            }
+
+            // Process scholar results to include citation data in the URL
+            scholarResult.data = scholarResult.data.map(result => {
+              if (result.citations) {
+                // Encode citation data in the URL for later use in the final report
+                const citationData = {
+                  formats: result.citations.formats,
+                  links: result.citations.links
+                };
+
+                // Append citation data to URL with a special marker
+                const citationJson = JSON.stringify(citationData);
+                result.url = `${result.url}#citations#${citationJson}`;
+                
+                // Add note if this result came from a translated query
+                const translationNote = result.fromTranslatedQuery ? 
+                  ` (from translated query: "${result.originalQuery}")` : '';
+                log(`Added citation data to URL${translationNote}: ${result.url.substring(0, 50)}...`);
+              }
+              return result;
+            });
+          } catch (scholarError) {
+            log(`Google Scholar search failed for query "${serpQuery.query}": ${scholarError instanceof Error ? scholarError.message : 'Unknown error'}`);
+            log(`Continuing with empty scholar results.`);
+            // Keep scholarResult.data as empty array and continue
+          }
+
+          // Combine results from both sources
+          const combinedResult = {
+            data: [...webResult.data, ...scholarResult.data]
+          };
+          
+          // Log combined results statistics
+          const webCount = webResult.data.length;
+          const scholarCount = scholarResult.data.length;
+          const translatedCount = scholarResult.data.filter(item => item.fromTranslatedQuery).length;
+          
+          log(`Combined search results: ${combinedResult.data.length} total items for query: "${serpQuery.query}" (${webCount} web + ${scholarCount} scholar, including ${translatedCount} from translated query)`);
+
+          // Skip processing if no results were found from either source
+          if (combinedResult.data.length === 0) {
+            log(`No results found from either Firecrawl or Google Scholar for query: "${serpQuery.query}". Skipping processing.`);
+            
+            // Add fallback content for this query to ensure we have some references
+            log(`Adding fallback content for query: "${serpQuery.query}"`);
+            
+            // Create a fallback URL and content
+            const fallbackUrl = `https://example.com/fallback?query=${encodeURIComponent(serpQuery.query)}`;
+            const fallbackContent = {
+              data: [{
+                description: `This is fallback content for the query: "${serpQuery.query}". No results were found from either Firecrawl or Google Scholar.`,
+                url: fallbackUrl,
+                title: `Fallback content for: ${serpQuery.query}`
+              }]
+            };
+            
+            // Process the fallback content
+            try {
+              const fallbackProcessed = await processSerpResult({
+                query: serpQuery.query,
+                result: fallbackContent,
+                globalReferenceMapping
+              });
+              
+              log(`Processed fallback content for query "${serpQuery.query}"`);
+              
+              if (fallbackProcessed.learnings) {
+                newLearnings.push(...fallbackProcessed.learnings);
+              }
+              if (fallbackProcessed.visitedUrls) {
+                newVisitedUrls.push(...fallbackProcessed.visitedUrls);
+              }
+              if (fallbackProcessed.referenceIndexes) {
+                Object.assign(referenceMapping, fallbackProcessed.referenceIndexes);
+              }
+            } catch (fallbackError) {
+              log(`Failed to process fallback content: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+            }
+            
+            reportProgress({ completedQueries: progress.completedQueries + 1 });
+            continue;
+          }
+
+          // Log reference mapping state before processing
+          const refCountBefore = Object.keys(referenceMapping).length;
+          log(`Reference mapping before processing query "${serpQuery.query}": ${refCountBefore} entries`);
+
+          const processed = await processSerpResult({
+            query: serpQuery.query,
+            result: combinedResult,
+            globalReferenceMapping
+          });
+
+          // Log detailed information about the processed results
+          log(`Processed results for query "${serpQuery.query}":
   - Learnings: ${processed.learnings?.length || 0}
   - Visited URLs: ${processed.visitedUrls?.length || 0}
   - Reference indexes: ${Object.keys(processed.referenceIndexes || {}).length || 0}`);
 
-        if (processed.learnings) {
-          newLearnings.push(...processed.learnings);
-        }
-        if (processed.visitedUrls) {
-          newVisitedUrls.push(...processed.visitedUrls);
-        }
-        // Store the reference index mapping from this search result
-        if (processed.referenceIndexes) {
-          const newReferences = Object.keys(processed.referenceIndexes).filter(url => !referenceMapping[url]);
-          log(`Adding ${newReferences.length} new references to global mapping from query "${serpQuery.query}"`);
+          if (processed.learnings) {
+            newLearnings.push(...processed.learnings);
+          }
+          if (processed.visitedUrls) {
+            newVisitedUrls.push(...processed.visitedUrls);
+          }
+          // Store the reference index mapping from this search result
+          if (processed.referenceIndexes) {
+            const newReferences = Object.keys(processed.referenceIndexes).filter(url => !referenceMapping[url]);
+            log(`Adding ${newReferences.length} new references to global mapping from query "${serpQuery.query}"`);
 
-          if (newReferences.length > 0) {
-            log(`New reference URLs added: ${newReferences.slice(0, 3).join(', ')}${newReferences.length > 3 ? ` and ${newReferences.length - 3} more...` : ''}`);
+            if (newReferences.length > 0) {
+              log(`New reference URLs added: ${newReferences.slice(0, 3).join(', ')}${newReferences.length > 3 ? ` and ${newReferences.length - 3} more...` : ''}`);
+            }
+
+            Object.assign(referenceMapping, processed.referenceIndexes);
+          } else {
+            log(`No reference indexes found in processed results for query "${serpQuery.query}"`);
           }
 
-          Object.assign(referenceMapping, processed.referenceIndexes);
-        } else {
-          log(`No reference indexes found in processed results for query "${serpQuery.query}"`);
+          reportProgress({ completedQueries: progress.completedQueries + 1 });
+        } catch (error) {
+          console.error('Error processing query:', serpQuery.query, error);
+          log(`Failed to process query "${serpQuery.query}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+          reportProgress({ completedQueries: progress.completedQueries + 1 });
         }
+      }
 
-        reportProgress({ completedQueries: progress.completedQueries + 1 });
-      } catch (error) {
-        console.error('Error processing query:', serpQuery.query, error);
-        log(`Failed to process query "${serpQuery.query}": ${error.message || 'Unknown error'}`);
-        reportProgress({ completedQueries: progress.completedQueries + 1 });
+      // Generate follow-up queries for the next depth level
+      if (currentDepth < depth) {
+        const followUpQueries = await generateSerpQueries({
+          query,
+          numQueries: breadth,
+          learnings: newLearnings,
+        });
+
+        serpQueries.length = 0;
+        serpQueries.push(...followUpQueries);
+
+        reportProgress({
+          totalQueries: progress.totalQueries + followUpQueries.length,
+          currentQuery: followUpQueries[0]?.query,
+        });
+      }
+
+      // Log the current state of the reference mapping
+      const refUrls = Object.keys(referenceMapping);
+      log(`Current reference mapping has ${refUrls.length} entries`);
+
+      if (refUrls.length === 0) {
+        log(`WARNING: No references found after depth ${currentDepth}/${depth}. This may affect the quality of the final report.`);
+      } else {
+        // Log a sample of the references
+        const sampleSize = Math.min(3, refUrls.length);
+        const refSample = refUrls.slice(0, sampleSize).map(url => `[${referenceMapping[url]}] ${url}`);
+        log(`Reference sample (${sampleSize}/${refUrls.length}): ${refSample.join(', ')}${refUrls.length > sampleSize ? ` and ${refUrls.length - sampleSize} more...` : ''}`);
+      }
+
+      // Save partial results to session
+      session.partialResults = [...results, {
+        learnings: [...new Set(newLearnings)],
+        visitedUrls: [...new Set(newVisitedUrls)],
+        referenceMapping
+      }];
+    }
+
+    // Log final reference statistics
+    const finalRefCount = Object.keys(referenceMapping).length;
+    log(`Research completed with ${finalRefCount} total references collected.`);
+
+    if (finalRefCount === 0) {
+      log(`WARNING: No references were collected during the entire research process. The final report will not contain citations.`);
+    } else {
+      log(`References will be included in the final report with consistent global numbering.`);
+    }
+
+    return session.partialResults;
+  } catch (error: unknown) {
+    // If any error occurs during the research process, refund the credits
+    if (creditsUsed > 0) {
+      try {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        log(`Research failed with error: ${errorMessage}. Refunding ${creditsUsed} credits to user ${userId}.`);
+        await creditManager.refundCredits(
+          userId, 
+          query, 
+          depth, 
+          breadth, 
+          `Research failed: ${errorMessage}`
+        );
+        log(`Successfully refunded ${creditsUsed} credits to user ${userId}.`);
+      } catch (refundError: unknown) {
+        const refundErrorMessage = refundError instanceof Error ? refundError.message : 'Unknown error';
+        log(`ERROR: Failed to refund credits to user ${userId}: ${refundErrorMessage}`);
+        console.error('Failed to refund credits:', refundError);
       }
     }
-
-    // Generate follow-up queries for the next depth level
-    if (currentDepth < depth) {
-      const followUpQueries = await generateSerpQueries({
-        query,
-        numQueries: breadth,
-        learnings: newLearnings,
-      });
-
-      serpQueries.length = 0;
-      serpQueries.push(...followUpQueries);
-
-      reportProgress({
-        totalQueries: progress.totalQueries + followUpQueries.length,
-        currentQuery: followUpQueries[0]?.query,
-      });
-    }
-
-    // Log the current state of the reference mapping
-    const refUrls = Object.keys(referenceMapping);
-    log(`Current reference mapping has ${refUrls.length} entries`);
-
-    if (refUrls.length === 0) {
-      log(`WARNING: No references found after depth ${currentDepth}/${depth}. This may affect the quality of the final report.`);
-    } else {
-      // Log a sample of the references
-      const sampleSize = Math.min(3, refUrls.length);
-      const refSample = refUrls.slice(0, sampleSize).map(url => `[${referenceMapping[url]}] ${url}`);
-      log(`Reference sample (${sampleSize}/${refUrls.length}): ${refSample.join(', ')}`);
-    }
-
-    // Save partial results to session
-    session.partialResults = [...results, {
-      learnings: [...new Set(newLearnings)],
-      visitedUrls: [...new Set(newVisitedUrls)],
-      referenceMapping
-    }];
+    
+    // Re-throw the original error so the caller can handle it
+    throw error;
   }
-
-  // Log final reference statistics
-  const finalRefCount = Object.keys(referenceMapping).length;
-  log(`Research completed with ${finalRefCount} total references collected.`);
-
-  if (finalRefCount === 0) {
-    log(`WARNING: No references were collected during the entire research process. The final report will not contain citations.`);
-  } else {
-    log(`References will be included in the final report with consistent global numbering.`);
-  }
-
-  return session.partialResults;
 }
 
 // Function to ask question with timeout
@@ -924,7 +949,7 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
           log(`Query appears to be already in English or translation returned same text`);
         }
       } catch (translationError) {
-        log(`Error during query translation: ${translationError.message || 'Unknown error'}`);
+        log(`Error during query translation: ${translationError instanceof Error ? translationError.message : 'Unknown error'}`);
         // Continue with original query if translation fails
       }
     }
@@ -970,7 +995,7 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
 
             log(`Successfully retrieved ${citations.formats.length} citation formats and ${citations.links.length} citation links for "${result.title}"`);
           } catch (citeError) {
-            log(`Error fetching citation formats for "${result.title}": ${citeError.message || 'Unknown error'}`);
+            log(`Error fetching citation formats for "${result.title}": ${citeError instanceof Error ? citeError.message : 'Unknown error'}`);
           }
         } else {
           log(`No result_id or serpapi_cite_link found for "${result.title}", cannot fetch citation formats`);
@@ -1007,7 +1032,7 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
 
     return formattedResults;
   } catch (error) {
-    log(`Error searching Google Scholar for "${query}": ${error.message || 'Unknown error'}`);
+    log(`Error searching Google Scholar for "${query}": ${error instanceof Error ? error.message : 'Unknown error'}`);
     return { data: [] };
   }
 }
