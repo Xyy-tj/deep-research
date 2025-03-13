@@ -935,6 +935,8 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
     // If translation is requested
     let searchQuery = query;
     let isTranslated = false;
+    let isRefined = false;
+    let originalQuery = query;
     
     if (options.translateToEnglish) {
       try {
@@ -954,11 +956,44 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
       }
     }
 
-    log(`Searching Google Scholar for: ${searchQuery}${isTranslated ? ' (translated from: ' + query + ')' : ''}`);
+    // Refine the query for academic search using AI
+    try {
+      log(`Refining query for academic search: "${searchQuery}"`);
+      const refinedQuery = await refineQueryForAcademicSearch(searchQuery);
+      
+      if (refinedQuery && refinedQuery !== searchQuery) {
+        log(`Original query: "${searchQuery}" refined to: "${refinedQuery}"`);
+        searchQuery = refinedQuery;
+        isRefined = true;
+      } else {
+        log(`Query refinement returned same or empty result, keeping original query`);
+      }
+    } catch (refinementError) {
+      log(`Error during query refinement: ${refinementError instanceof Error ? refinementError.message : 'Unknown error'}`);
+      // Continue with original or translated query if refinement fails
+    }
+
+    // Detect domain and add relevant academic keywords
+    let domainSpecificQuery = searchQuery;
+    let domainKeywords = '';
+    
+    try {
+      const { domain, keywords } = await detectDomainAndGetKeywords(searchQuery);
+      if (keywords && keywords.length > 0) {
+        domainKeywords = keywords;
+        domainSpecificQuery = `${searchQuery} ${keywords}`;
+        log(`Added domain-specific keywords for ${domain}: "${keywords}"`);
+      }
+    } catch (domainError) {
+      log(`Error detecting domain or getting keywords: ${domainError instanceof Error ? domainError.message : 'Unknown error'}`);
+      // Continue with refined or original query if domain detection fails
+    }
+
+    log(`Searching Google Scholar for: ${domainSpecificQuery}${isRefined ? ' (refined from: ' + originalQuery + ')' : ''}${isTranslated ? ' (translated from: ' + query + ')' : ''}${domainKeywords ? ' with domain keywords: ' + domainKeywords : ''}`);
     const response = await axios.get('https://serpapi.com/search', {
       params: {
         engine: 'google_scholar',
-        q: searchQuery,
+        q: domainSpecificQuery,
         api_key: serpApiKey,
         num: process.env.SERPAPI_LIMIT,
       },
@@ -1006,8 +1041,10 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
           title: result.title || '',
           description: `${result.title || ''}\n\n${result.publication_info?.summary || ''}\n\n${result.snippet || ''}\n\nAuthors: ${result.publication_info?.authors?.map((a: any) => a.name).join(', ') || 'Unknown'}\n\nCited by: ${result.inline_links?.cited_by?.total || 0} papers`,
           citations: citations,
-          // Add a flag to indicate if this result came from a translated query
-          fromTranslatedQuery: isTranslated
+          // Add flags to indicate query modifications
+          fromTranslatedQuery: isTranslated,
+          fromRefinedQuery: isRefined,
+          domainKeywordsAdded: !!domainKeywords
         };
       })
     );
@@ -1016,10 +1053,10 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
       data: resultsWithCitations,
     };
 
-    log(`Google Scholar search found ${formattedResults.data.length} results for "${searchQuery}"${isTranslated ? ' (translated from: ' + query + ')' : ''}`);
+    log(`Google Scholar search found ${formattedResults.data.length} results for "${domainSpecificQuery}"${isRefined ? ' (refined from: ' + originalQuery + ')' : ''}${isTranslated ? ' (translated from: ' + query + ')' : ''}${domainKeywords ? ' with domain keywords: ' + domainKeywords : ''}`);
 
     if (formattedResults.data.length === 0) {
-      log(`WARNING: No Google Scholar results found for query: "${searchQuery}"${isTranslated ? ' (translated from: ' + query + ')' : ''}. This may affect academic references.`);
+      log(`WARNING: No Google Scholar results found for query: "${domainSpecificQuery}"${isRefined ? ' (refined from: ' + originalQuery + ')' : ''}${isTranslated ? ' (translated from: ' + query + ')' : ''}${domainKeywords ? ' with domain keywords: ' + domainKeywords : ''}. This may affect academic references.`);
     } else {
       // Log sample of scholar results
       const sampleSize = Math.min(2, formattedResults.data.length);
@@ -1034,6 +1071,179 @@ async function searchGoogleScholar(query: string, options: { translateToEnglish?
   } catch (error) {
     log(`Error searching Google Scholar for "${query}": ${error instanceof Error ? error.message : 'Unknown error'}`);
     return { data: [] };
+  }
+}
+
+/**
+ * Refines a search query to be more suitable for academic search using AI
+ * Makes the query more specific and academic-oriented
+ */
+async function refineQueryForAcademicSearch(query: string): Promise<string> {
+  try {
+    // Use the AI model to refine the query
+    const prompt = `
+You are an academic research assistant helping to refine search queries for Google Scholar.
+Please refine the following query to make it more suitable for academic search:
+"${query}"
+
+Your refinement should:
+1. Make the query more specific and focused on academic concepts
+2. Use precise academic terminology
+3. Remove colloquial language
+4. Structure the query to match academic paper titles or keywords
+5. Do NOT add specific journal names or conferences (these will be added separately)
+6. Keep the refined query concise (under 10 words if possible)
+
+Return ONLY the refined query text with no additional explanation.
+`;
+
+    const refinedQuery = await callAI(prompt, 'query-refinement');
+    
+    // Clean up the response - remove quotes, newlines and extra spaces
+    const cleanedQuery = refinedQuery.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    
+    return cleanedQuery || query; // Return original if refinement is empty
+  } catch (error) {
+    log(`Error refining query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return query; // Return original query on error
+  }
+}
+
+/**
+ * Detects the academic domain of a query and returns relevant keywords for top journals/conferences
+ * @param query The search query
+ * @returns Object containing detected domain and keywords to append
+ */
+async function detectDomainAndGetKeywords(query: string): Promise<{ domain: string, keywords: string }> {
+  try {
+    // First, detect the domain using AI
+    const domainPrompt = `
+Analyze this research query and determine which academic domain it belongs to.
+Query: "${query}"
+
+Choose ONE domain from this list:
+- Computer Science
+- Electrical Engineering
+- Physics
+- Mathematics
+- Biology
+- Medicine
+- Chemistry
+- Economics
+- Psychology
+- Social Sciences
+- Environmental Science
+- Materials Science
+- Mechanical Engineering
+- Civil Engineering
+- Other (specify)
+
+Return ONLY the domain name with no additional explanation.
+`;
+
+    const domain = await callAI(domainPrompt, 'domain-detection');
+    const cleanDomain = domain.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    
+    // Domain-specific keywords for top journals and conferences
+    const domainKeywords: Record<string, string> = {
+      'Computer Science': 'IEEE ACM CVPR ICCV ECCV NeurIPS ICML',
+      'Computer Vision': 'CVPR ICCV ECCV SIGGRAPH WACV',
+      'Machine Learning': 'NeurIPS ICML ICLR JMLR TPAMI',
+      'Natural Language Processing': 'ACL EMNLP NAACL CoNLL',
+      'Artificial Intelligence': 'AAAI IJCAI AI',
+      'Electrical Engineering': 'IEEE Transactions',
+      'Physics': 'Physical Review Nature Physics',
+      'Mathematics': 'Journal of Mathematics',
+      'Biology': 'Nature Cell Biology',
+      'Medicine': 'NEJM Lancet BMJ',
+      'Chemistry': 'Journal of American Chemical Society',
+      'Economics': 'American Economic Review',
+      'Psychology': 'Journal of Experimental Psychology',
+      'Social Sciences': 'Social Science Research',
+      'Environmental Science': 'Environmental Science & Technology',
+      'Materials Science': 'Advanced Materials',
+      'Mechanical Engineering': 'Journal of Mechanical Design',
+      'Civil Engineering': 'Journal of Structural Engineering'
+    };
+
+    // Get more specific subdomain for better keyword matching
+    const subdomainPrompt = `
+Based on this research query: "${query}"
+And the general domain: "${cleanDomain}"
+
+Determine a more specific subdomain. For example:
+- If Computer Science, specify: Computer Vision, Machine Learning, Natural Language Processing, etc.
+- If Medicine, specify: Cardiology, Neurology, Oncology, etc.
+
+Return ONLY the specific subdomain with no additional explanation.
+`;
+
+    const subdomain = await callAI(subdomainPrompt, 'subdomain-detection');
+    const cleanSubdomain = subdomain.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    
+    // Try to get keywords for the subdomain first, then fall back to the main domain
+    let keywords = domainKeywords[cleanSubdomain] || domainKeywords[cleanDomain] || '';
+    
+    // If no predefined keywords, try to generate some using AI
+    if (!keywords && (cleanDomain !== 'Other' && !cleanDomain.includes('Other'))) {
+      const keywordPrompt = `
+Generate 3-5 keywords representing top journals or conferences in the field of ${cleanSubdomain || cleanDomain}.
+These should be abbreviations or short names commonly used in academic citations.
+For example, for Computer Vision: "CVPR ICCV ECCV"
+For Electrical Engineering: "IEEE Transactions"
+
+Return ONLY the keywords separated by spaces with no additional explanation.
+`;
+
+      keywords = await callAI(keywordPrompt, 'keyword-generation');
+      keywords = keywords.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+    }
+    
+    return { domain: cleanSubdomain || cleanDomain, keywords };
+  } catch (error) {
+    log(`Error detecting domain: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return { domain: 'Unknown', keywords: '' };
+  }
+}
+
+/**
+ * Helper function to call AI model with a prompt
+ * Reuses the existing AI model used elsewhere in the application
+ */
+async function callAI(prompt: string, purpose: string): Promise<string> {
+  try {
+    // Check if we have an AI model configured
+    if (!openaiApiKey) {
+      log(`No OpenAI API key found. Cannot perform ${purpose}.`);
+      return '';
+    }
+    
+    // Use the existing AI model configuration
+    const configuration = new Configuration({
+      apiKey: openaiApiKey,
+    });
+    const openai = new OpenAIApi(configuration);
+    
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful academic research assistant that provides concise, direct answers."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.3, // Lower temperature for more deterministic responses
+      max_tokens: 100,  // Limit token usage since we only need short responses
+    });
+    
+    return response.data.choices[0]?.message?.content || '';
+  } catch (error) {
+    log(`AI call error (${purpose}): ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return '';
   }
 }
 
