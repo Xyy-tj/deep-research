@@ -44,3 +44,4 @@ bun.lockb
 research.db
 *.zip
 /python
+/.VSCodeCounter
