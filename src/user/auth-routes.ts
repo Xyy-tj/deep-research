@@ -73,18 +73,20 @@ router.post('/send-verification', async (req, res) => {
         const db = await DB.getInstance();
 
         // 检查邀请码是否有效
-        if (!invitationCode) {
-            return res.status(400).json({ error: 'Invitation code is required' });
-        }
+        if (INVITATION_CODE_REQUIRED) {
+            if (!invitationCode) {
+                return res.status(400).json({ error: 'Invitation code is required' });
+            }
 
-        // 查询数据库中是否存在该邀请码且未被使用
-        const validInvitation = await db.get(
-            'SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0',
-            [invitationCode]
-        );
+            // 查询数据库中是否存在该邀请码且未被使用
+            const validInvitation = await db.get(
+                'SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0',
+                [invitationCode]
+            );
 
-        if (!validInvitation) {
-            return res.status(400).json({ error: 'Invalid or already used invitation code' });
+            if (!validInvitation) {
+                return res.status(400).json({ error: 'Invalid or already used invitation code' });
+            }
         }
 
         // 检查邮箱是否已被使用
@@ -142,18 +144,20 @@ router.post('/register', async (req, res) => {
         }
 
         // 检查邀请码是否匹配
-        if (storedVerification.invitationCode !== invitationCode) {
-            return res.status(400).json({ error: 'Invitation code does not match the one used for verification' });
-        }
+        if (INVITATION_CODE_REQUIRED) {
+            if (storedVerification.invitationCode !== invitationCode) {
+                return res.status(400).json({ error: 'Invitation code does not match the one used for verification' });
+            }
 
-        // 检查邀请码是否有效
-        const validInvitation = await db.get(
-            'SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0',
-            [invitationCode]
-        );
+            // 检查邀请码是否有效
+            const validInvitation = await db.get(
+                'SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0',
+                [invitationCode]
+            );
 
-        if (!validInvitation) {
-            return res.status(400).json({ error: 'Invalid or already used invitation code' });
+            if (!validInvitation) {
+                return res.status(400).json({ error: 'Invalid or already used invitation code' });
+            }
         }
 
         // 检查用户名是否已存在

@@ -166,7 +166,7 @@ export class Auth {
         }
     }
 
-    async registerWithVerificationCode(username, email, password, verificationCode, invitationCode) {
+    async registerWithVerificationCode(username, email, password, verificationCode, invitationCode = '') {
         if (!this.validateForm('register')) {
             return false;
         }
@@ -222,10 +222,10 @@ export class Auth {
             // Enable email and verification code fields
             email.required = true;
             verificationCode.required = true;
-            invitationCode.required = true;
+            
 
             // Validate email
-            if (!email.value || !email.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+            if (!email.value || !email.value.match(/^[^s@]+@[^s@]+\.[^s@]+$/)) {
                 email.classList.add('border-red-500');
                 isValid = false;
             }
@@ -233,12 +233,6 @@ export class Auth {
             // Validate verification code
             if (!verificationCode.value || verificationCode.value.length !== 6) {
                 verificationCode.classList.add('border-red-500');
-                isValid = false;
-            }
-            
-            // Validate invitation code
-            if (!invitationCode.value || invitationCode.value.length < 3) {
-                invitationCode.classList.add('border-red-500');
                 isValid = false;
             }
         }

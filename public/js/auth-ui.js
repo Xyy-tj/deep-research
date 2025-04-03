@@ -129,11 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Validate invitation code
-        if (!invitationCode.value) {
-            invitationCode.classList.add('border-red-500');
-            alert('Please enter a valid invitation code');
-            return;
-        }
+        // if (!invitationCode.value) {
+        //     invitationCode.classList.add('border-red-500');
+        //     alert('Please enter a valid invitation code');
+        //     return;
+        // }
         
         sendBtn.disabled = true;
         sendBtn.classList.add('opacity-50', 'cursor-not-allowed');

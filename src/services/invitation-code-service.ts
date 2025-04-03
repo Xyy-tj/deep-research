@@ -1,4 +1,10 @@
 import { DB } from '../db/database';
+import { config } from 'dotenv';
+
+
+// Load environment variables
+config();
+
 
 interface InvitationCode {
     id: number;
